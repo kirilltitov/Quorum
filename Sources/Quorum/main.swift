@@ -2,8 +2,6 @@ import LGNC
 import FDB
 import NIO
 
-print("Hello world")
-
 Services.Quorum.guaranteeCreateContract { request, requestInfo in
     return Services.Quorum.Contracts.Create.Response()
 }
@@ -16,6 +14,3 @@ try Services.Quorum.serveLGNS(
     writeTimeout: .seconds(1)
 )
 
-//class Controller: ControllerProtocol {
-//    
-//}
