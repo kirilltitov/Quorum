@@ -1,9 +1,9 @@
 import Entita
 import LGNC
+import LGNCore
 import LGNP
 import LGNS
-
-public typealias RequestInfo = LGNS.RequestInfo
+import NIO
 
 public struct Services {
     public typealias ContentType = LGNP.Message.ContentType
@@ -51,29 +51,34 @@ public struct Services {
                 self.map = map
             }
 
-            public static func initWithValidation(from dictionary: Entita.Dict) throws -> FieldMapping {
-                var errors: [String: [ValidatorError]] = [
+            public static func initWithValidation(from dictionary: Entita.Dict, on eventLoop: EventLoop) -> Future<FieldMapping> {
+                var validatorFutures: [String: [Future<(String, ValidatorError?)>]] = [
                     "map": [],
                 ]
 
                 var _map: [String: String] = [String: String]()
+
                 do {
-                    _map = try FieldMapping.extract(param: "map", from: dictionary)
-
-                } catch Entita.E.ExtractError {
-                    errors["map"]?.append(Validation.Error.MissingValue())
+                    do {
+                        _map = try FieldMapping.extract(param: "map", from: dictionary)
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["map"]!.append(eventLoop.newSucceededFuture(result: ("map", Validation.Error.MissingValue())))
+                    }
+                } catch {
+                    return eventLoop.newFailedFuture(error: error)
                 }
 
-                let filteredErrors = errors.filter({ _, value in value.count > 0 })
-                guard filteredErrors.count == 0 else {
-                    throw LGNC.E.DecodeError(filteredErrors)
+                return self.reduce(
+                    validators: validatorFutures,
+                    on: eventLoop
+                ).thenThrowing { errors in
+                    guard errors.count == 0 else {
+                        throw LGNC.E.DecodeError(errors)
+                    }
+                    return self.init(
+                        map: _map
+                    )
                 }
-
-                let instance = self.init(
-                    map: _map
-                )
-
-                return instance
             }
 
             public convenience init(from dictionary: Entita.Dict) throws {
@@ -105,39 +110,42 @@ public struct Services {
                 self.Response = Response
             }
 
-            public static func initWithValidation(from dictionary: Entita.Dict) throws -> ServiceFieldMapping {
-                var errors: [String: [ValidatorError]] = [
+            public static func initWithValidation(from dictionary: Entita.Dict, on eventLoop: EventLoop) -> Future<ServiceFieldMapping> {
+                var validatorFutures: [String: [Future<(String, ValidatorError?)>]] = [
                     "Request": [],
                     "Response": [],
                 ]
 
                 var _Request: FieldMapping = FieldMapping()
-                do {
-                    _Request = try ServiceFieldMapping.extract(param: "Request", from: dictionary)
-
-                } catch Entita.E.ExtractError {
-                    errors["Request"]?.append(Validation.Error.MissingValue())
-                }
-
                 var _Response: FieldMapping = FieldMapping()
+
                 do {
-                    _Response = try ServiceFieldMapping.extract(param: "Response", from: dictionary)
-
-                } catch Entita.E.ExtractError {
-                    errors["Response"]?.append(Validation.Error.MissingValue())
+                    do {
+                        _Request = try ServiceFieldMapping.extract(param: "Request", from: dictionary)
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["Request"]!.append(eventLoop.newSucceededFuture(result: ("Request", Validation.Error.MissingValue())))
+                    }
+                    do {
+                        _Response = try ServiceFieldMapping.extract(param: "Response", from: dictionary)
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["Response"]!.append(eventLoop.newSucceededFuture(result: ("Response", Validation.Error.MissingValue())))
+                    }
+                } catch {
+                    return eventLoop.newFailedFuture(error: error)
                 }
 
-                let filteredErrors = errors.filter({ _, value in value.count > 0 })
-                guard filteredErrors.count == 0 else {
-                    throw LGNC.E.DecodeError(filteredErrors)
+                return self.reduce(
+                    validators: validatorFutures,
+                    on: eventLoop
+                ).thenThrowing { errors in
+                    guard errors.count == 0 else {
+                        throw LGNC.E.DecodeError(errors)
+                    }
+                    return self.init(
+                        Request: _Request,
+                        Response: _Response
+                    )
                 }
-
-                let instance = self.init(
-                    Request: _Request,
-                    Response: _Response
-                )
-
-                return instance
             }
 
             public convenience init(from dictionary: Entita.Dict) throws {
@@ -168,29 +176,34 @@ public struct Services {
                 self.map = map
             }
 
-            public static func initWithValidation(from dictionary: Entita.Dict) throws -> ServiceFieldMappings {
-                var errors: [String: [ValidatorError]] = [
+            public static func initWithValidation(from dictionary: Entita.Dict, on eventLoop: EventLoop) -> Future<ServiceFieldMappings> {
+                var validatorFutures: [String: [Future<(String, ValidatorError?)>]] = [
                     "map": [],
                 ]
 
                 var _map: [String: ServiceFieldMapping] = [String: ServiceFieldMapping]()
+
                 do {
-                    _map = try ServiceFieldMappings.extract(param: "map", from: dictionary)
-
-                } catch Entita.E.ExtractError {
-                    errors["map"]?.append(Validation.Error.MissingValue())
+                    do {
+                        _map = try ServiceFieldMappings.extract(param: "map", from: dictionary)
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["map"]!.append(eventLoop.newSucceededFuture(result: ("map", Validation.Error.MissingValue())))
+                    }
+                } catch {
+                    return eventLoop.newFailedFuture(error: error)
                 }
 
-                let filteredErrors = errors.filter({ _, value in value.count > 0 })
-                guard filteredErrors.count == 0 else {
-                    throw LGNC.E.DecodeError(filteredErrors)
+                return self.reduce(
+                    validators: validatorFutures,
+                    on: eventLoop
+                ).thenThrowing { errors in
+                    guard errors.count == 0 else {
+                        throw LGNC.E.DecodeError(errors)
+                    }
+                    return self.init(
+                        map: _map
+                    )
                 }
-
-                let instance = self.init(
-                    map: _map
-                )
-
-                return instance
             }
 
             public convenience init(from dictionary: Entita.Dict) throws {
@@ -219,29 +232,34 @@ public struct Services {
                 self.monad = monad
             }
 
-            public static func initWithValidation(from dictionary: Entita.Dict) throws -> CharacterInfo {
-                var errors: [String: [ValidatorError]] = [
+            public static func initWithValidation(from dictionary: Entita.Dict, on eventLoop: EventLoop) -> Future<CharacterInfo> {
+                var validatorFutures: [String: [Future<(String, ValidatorError?)>]] = [
                     "monad": [],
                 ]
 
                 var _monad: String = String()
+
                 do {
-                    _monad = try CharacterInfo.extract(param: "monad", from: dictionary)
-
-                } catch Entita.E.ExtractError {
-                    errors["monad"]?.append(Validation.Error.MissingValue())
+                    do {
+                        _monad = try CharacterInfo.extract(param: "monad", from: dictionary)
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["monad"]!.append(eventLoop.newSucceededFuture(result: ("monad", Validation.Error.MissingValue())))
+                    }
+                } catch {
+                    return eventLoop.newFailedFuture(error: error)
                 }
 
-                let filteredErrors = errors.filter({ _, value in value.count > 0 })
-                guard filteredErrors.count == 0 else {
-                    throw LGNC.E.DecodeError(filteredErrors)
+                return self.reduce(
+                    validators: validatorFutures,
+                    on: eventLoop
+                ).thenThrowing { errors in
+                    guard errors.count == 0 else {
+                        throw LGNC.E.DecodeError(errors)
+                    }
+                    return self.init(
+                        monad: _monad
+                    )
                 }
-
-                let instance = self.init(
-                    monad: _monad
-                )
-
-                return instance
             }
 
             public convenience init(from dictionary: Entita.Dict) throws {
@@ -258,13 +276,14 @@ public struct Services {
         }
 
         public final class UserSignupRequest: ContractEntity {
-            public enum CallbackValidatorEmailAllowedValues: String, ValidatorErrorRepresentable {
+            public enum CallbackValidatorEmailAllowedValues: String, CallbackWithAllowedValuesRepresentable, ValidatorErrorRepresentable {
+                public typealias InputValue = String
+
                 case UserWithGivenEmailAlreadyExists = "User with given email already exists"
 
                 public func getErrorTuple() -> (message: String, code: Int) {
                     switch self {
-                    case .UserWithGivenEmailAlreadyExists:
-                        return (message: self.rawValue, code: 10001)
+                    case .UserWithGivenEmailAlreadyExists: return (message: self.rawValue, code: 10001)
                     }
                 }
             }
@@ -295,8 +314,8 @@ public struct Services {
                 self.sex = sex
             }
 
-            public static func initWithValidation(from dictionary: Entita.Dict) throws -> UserSignupRequest {
-                var errors: [String: [ValidatorError]] = [
+            public static func initWithValidation(from dictionary: Entita.Dict, on eventLoop: EventLoop) -> Future<UserSignupRequest> {
+                var validatorFutures: [String: [Future<(String, ValidatorError?)>]] = [
                     "email": [],
                     "password1": [],
                     "password2": [],
@@ -304,72 +323,78 @@ public struct Services {
                 ]
 
                 var _email: String = String()
-                do {
-                    _email = try UserSignupRequest.extract(param: "email", from: dictionary)
-
-                    if let error = Validation.Regexp(pattern: "^.+@.+\\..+$", message: "Invalid email format").validate(input: _email) {
-                        errors["email"]?.append(error)
-                    }
-
-                    if let validatorEmailClosure = self.validatorEmailClosure {
-                        if let error = Validation.CallbackWithAllowedValues<CallbackValidatorEmailAllowedValues>(callback: validatorEmailClosure).validate(input: _email) {
-                            errors["email"]?.append(error)
-                        }
-                    }
-                } catch Entita.E.ExtractError {
-                    errors["email"]?.append(Validation.Error.MissingValue())
-                }
-
                 var _password1: String = String()
-                do {
-                    _password1 = try UserSignupRequest.extract(param: "password1", from: dictionary)
-
-                    if let error = Validation.Length.Min(length: 6).validate(input: _password1) {
-                        errors["password1"]?.append(error)
-                    }
-
-                    if let error = Validation.Length.Max(length: 64, message: "Password must be less than 64 characters long").validate(input: _password1) {
-                        errors["password1"]?.append(error)
-                    }
-                } catch Entita.E.ExtractError {
-                    errors["password1"]?.append(Validation.Error.MissingValue())
-                }
-
                 var _password2: String = String()
-                do {
-                    _password2 = try UserSignupRequest.extract(param: "password2", from: dictionary)
-
-                    if let error = Validation.Identical(right: _password1, message: "Passwords must match").validate(input: _password2) {
-                        errors["password2"]?.append(error)
-                    }
-                } catch Entita.E.ExtractError {
-                    errors["password2"]?.append(Validation.Error.MissingValue())
-                }
-
                 var _sex: String = String()
+
                 do {
-                    _sex = try UserSignupRequest.extract(param: "sex", from: dictionary)
+                    do {
+                        _email = try UserSignupRequest.extract(param: "email", from: dictionary)
 
-                    if let error = Validation.In(allowedValues: ["Male", "Female", "Attack helicopter"]).validate(input: _sex) {
-                        errors["sex"]?.append(error)
+                        if let error = Validation.Regexp(pattern: "^.+@.+\\..+$", message: "Invalid email format").validate(input: _email) {
+                            validatorFutures["email"]!.append(eventLoop.newSucceededFuture(result: ("email", error)))
+                        }
+
+                        if let validatorEmailClosure = self.validatorEmailClosure {
+                            validatorFutures["email"]!.append(
+                                Validation.CallbackWithAllowedValues<CallbackValidatorEmailAllowedValues>(callback: validatorEmailClosure).validate(
+                                    input: _email,
+                                    on: eventLoop
+                                ).map { ("email", $0) }
+                            )
+                        }
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["email"]!.append(eventLoop.newSucceededFuture(result: ("email", Validation.Error.MissingValue())))
                     }
-                } catch Entita.E.ExtractError {
-                    errors["sex"]?.append(Validation.Error.MissingValue())
+                    do {
+                        _password1 = try UserSignupRequest.extract(param: "password1", from: dictionary)
+
+                        if let error = Validation.Length.Min(length: 6).validate(input: _password1) {
+                            validatorFutures["password1"]!.append(eventLoop.newSucceededFuture(result: ("password1", error)))
+                        }
+
+                        if let error = Validation.Length.Max(length: 64, message: "Password must be less than 64 characters long").validate(input: _password1) {
+                            validatorFutures["password1"]!.append(eventLoop.newSucceededFuture(result: ("password1", error)))
+                        }
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["password1"]!.append(eventLoop.newSucceededFuture(result: ("password1", Validation.Error.MissingValue())))
+                    }
+                    do {
+                        _password2 = try UserSignupRequest.extract(param: "password2", from: dictionary)
+
+                        if let error = Validation.Identical(right: _password1, message: "Passwords must match").validate(input: _password2) {
+                            validatorFutures["password2"]!.append(eventLoop.newSucceededFuture(result: ("password2", error)))
+                        }
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["password2"]!.append(eventLoop.newSucceededFuture(result: ("password2", Validation.Error.MissingValue())))
+                    }
+                    do {
+                        _sex = try UserSignupRequest.extract(param: "sex", from: dictionary)
+
+                        if let error = Validation.In(allowedValues: ["Male", "Female", "Attack helicopter"]).validate(input: _sex) {
+                            validatorFutures["sex"]!.append(eventLoop.newSucceededFuture(result: ("sex", error)))
+                        }
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["sex"]!.append(eventLoop.newSucceededFuture(result: ("sex", Validation.Error.MissingValue())))
+                    }
+                } catch {
+                    return eventLoop.newFailedFuture(error: error)
                 }
 
-                let filteredErrors = errors.filter({ _, value in value.count > 0 })
-                guard filteredErrors.count == 0 else {
-                    throw LGNC.E.DecodeError(filteredErrors)
+                return self.reduce(
+                    validators: validatorFutures,
+                    on: eventLoop
+                ).thenThrowing { errors in
+                    guard errors.count == 0 else {
+                        throw LGNC.E.DecodeError(errors)
+                    }
+                    return self.init(
+                        email: _email,
+                        password1: _password1,
+                        password2: _password2,
+                        sex: _sex
+                    )
                 }
-
-                let instance = self.init(
-                    email: _email,
-                    password1: _password1,
-                    password2: _password2,
-                    sex: _sex
-                )
-
-                return instance
             }
 
             public convenience init(from dictionary: Entita.Dict) throws {
@@ -450,8 +475,8 @@ public struct Services {
                 self.token = token
             }
 
-            public static func initWithValidation(from dictionary: Entita.Dict) throws -> UserSignupResponse {
-                var errors: [String: [ValidatorError]] = [
+            public static func initWithValidation(from dictionary: Entita.Dict, on eventLoop: EventLoop) -> Future<UserSignupResponse> {
+                var validatorFutures: [String: [Future<(String, ValidatorError?)>]] = [
                     "ID": [],
                     "email": [],
                     "sex": [],
@@ -466,132 +491,122 @@ public struct Services {
                 ]
 
                 var _ID: String = String()
-                do {
-                    _ID = try UserSignupResponse.extract(param: "ID", from: dictionary)
-
-                    if let error = Validation.UUID().validate(input: _ID) {
-                        errors["ID"]?.append(error)
-                    }
-                } catch Entita.E.ExtractError {
-                    errors["ID"]?.append(Validation.Error.MissingValue())
-                }
-
                 var _email: String = String()
-                do {
-                    _email = try UserSignupResponse.extract(param: "email", from: dictionary)
-
-                    if let error = Validation.Regexp(pattern: "^.+@.+\\..+$", message: "Invalid email format").validate(input: _email) {
-                        errors["email"]?.append(error)
-                    }
-
-                    if let error = Validation.Length.Min(length: 6).validate(input: _email) {
-                        errors["email"]?.append(error)
-                    }
-                } catch Entita.E.ExtractError {
-                    errors["email"]?.append(Validation.Error.MissingValue())
-                }
-
                 var _sex: String = String()
-                do {
-                    _sex = try UserSignupResponse.extract(param: "sex", from: dictionary)
-
-                    if let error = Validation.In(allowedValues: ["Male", "Female", "Attack helicopter"]).validate(input: _sex) {
-                        errors["sex"]?.append(error)
-                    }
-                } catch Entita.E.ExtractError {
-                    errors["sex"]?.append(Validation.Error.MissingValue())
-                }
-
                 var _ip: String = String()
-                do {
-                    _ip = try UserSignupResponse.extract(param: "ip", from: dictionary)
-
-                } catch Entita.E.ExtractError {
-                    errors["ip"]?.append(Validation.Error.MissingValue())
-                }
-
                 var _country: String = String()
-                do {
-                    _country = try UserSignupResponse.extract(param: "country", from: dictionary)
-
-                } catch Entita.E.ExtractError {
-                    errors["country"]?.append(Validation.Error.MissingValue())
-                }
-
                 var _dateSignup: String = String()
-                do {
-                    _dateSignup = try UserSignupResponse.extract(param: "dateSignup", from: dictionary)
-
-                    if let error = Validation.Date(format: "yyyy-MM-dd kk:mm:ss.SSSSxxx").validate(input: _dateSignup) {
-                        errors["dateSignup"]?.append(error)
-                    }
-                } catch Entita.E.ExtractError {
-                    errors["dateSignup"]?.append(Validation.Error.MissingValue())
-                }
-
                 var _dateLogin: String = String()
-                do {
-                    _dateLogin = try UserSignupResponse.extract(param: "dateLogin", from: dictionary)
-
-                    if let error = Validation.Date(format: "yyyy-MM-dd kk:mm:ss.SSSSxxx").validate(input: _dateLogin) {
-                        errors["dateLogin"]?.append(error)
-                    }
-                } catch Entita.E.ExtractError {
-                    errors["dateLogin"]?.append(Validation.Error.MissingValue())
-                }
-
                 var _currentCharacter: String?
-                do {
-                    _currentCharacter = try UserSignupResponse.extract(param: "currentCharacter", from: dictionary)
-
-                } catch Entita.E.ExtractError {
-                    errors["currentCharacter"]?.append(Validation.Error.MissingValue())
-                }
-
                 var _authorName: String = String()
-                do {
-                    _authorName = try UserSignupResponse.extract(param: "authorName", from: dictionary)
-
-                } catch Entita.E.ExtractError {
-                    errors["authorName"]?.append(Validation.Error.MissingValue())
-                }
-
                 var _characters: [String: CharacterInfo] = [String: CharacterInfo]()
-                do {
-                    _characters = try UserSignupResponse.extract(param: "characters", from: dictionary)
-
-                } catch Entita.E.ExtractError {
-                    errors["characters"]?.append(Validation.Error.MissingValue())
-                }
-
                 var _token: String = String()
+
                 do {
-                    _token = try UserSignupResponse.extract(param: "token", from: dictionary)
+                    do {
+                        _ID = try UserSignupResponse.extract(param: "ID", from: dictionary)
 
-                } catch Entita.E.ExtractError {
-                    errors["token"]?.append(Validation.Error.MissingValue())
+                        if let error = Validation.UUID().validate(input: _ID) {
+                            validatorFutures["ID"]!.append(eventLoop.newSucceededFuture(result: ("ID", error)))
+                        }
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["ID"]!.append(eventLoop.newSucceededFuture(result: ("ID", Validation.Error.MissingValue())))
+                    }
+                    do {
+                        _email = try UserSignupResponse.extract(param: "email", from: dictionary)
+
+                        if let error = Validation.Regexp(pattern: "^.+@.+\\..+$", message: "Invalid email format").validate(input: _email) {
+                            validatorFutures["email"]!.append(eventLoop.newSucceededFuture(result: ("email", error)))
+                        }
+
+                        if let error = Validation.Length.Min(length: 6).validate(input: _email) {
+                            validatorFutures["email"]!.append(eventLoop.newSucceededFuture(result: ("email", error)))
+                        }
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["email"]!.append(eventLoop.newSucceededFuture(result: ("email", Validation.Error.MissingValue())))
+                    }
+                    do {
+                        _sex = try UserSignupResponse.extract(param: "sex", from: dictionary)
+
+                        if let error = Validation.In(allowedValues: ["Male", "Female", "Attack helicopter"]).validate(input: _sex) {
+                            validatorFutures["sex"]!.append(eventLoop.newSucceededFuture(result: ("sex", error)))
+                        }
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["sex"]!.append(eventLoop.newSucceededFuture(result: ("sex", Validation.Error.MissingValue())))
+                    }
+                    do {
+                        _ip = try UserSignupResponse.extract(param: "ip", from: dictionary)
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["ip"]!.append(eventLoop.newSucceededFuture(result: ("ip", Validation.Error.MissingValue())))
+                    }
+                    do {
+                        _country = try UserSignupResponse.extract(param: "country", from: dictionary)
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["country"]!.append(eventLoop.newSucceededFuture(result: ("country", Validation.Error.MissingValue())))
+                    }
+                    do {
+                        _dateSignup = try UserSignupResponse.extract(param: "dateSignup", from: dictionary)
+
+                        if let error = Validation.Date(format: "yyyy-MM-dd kk:mm:ss.SSSSxxx").validate(input: _dateSignup) {
+                            validatorFutures["dateSignup"]!.append(eventLoop.newSucceededFuture(result: ("dateSignup", error)))
+                        }
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["dateSignup"]!.append(eventLoop.newSucceededFuture(result: ("dateSignup", Validation.Error.MissingValue())))
+                    }
+                    do {
+                        _dateLogin = try UserSignupResponse.extract(param: "dateLogin", from: dictionary)
+
+                        if let error = Validation.Date(format: "yyyy-MM-dd kk:mm:ss.SSSSxxx").validate(input: _dateLogin) {
+                            validatorFutures["dateLogin"]!.append(eventLoop.newSucceededFuture(result: ("dateLogin", error)))
+                        }
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["dateLogin"]!.append(eventLoop.newSucceededFuture(result: ("dateLogin", Validation.Error.MissingValue())))
+                    }
+                    do {
+                        _currentCharacter = try UserSignupResponse.extract(param: "currentCharacter", from: dictionary)
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["currentCharacter"]!.append(eventLoop.newSucceededFuture(result: ("currentCharacter", Validation.Error.MissingValue())))
+                    }
+                    do {
+                        _authorName = try UserSignupResponse.extract(param: "authorName", from: dictionary)
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["authorName"]!.append(eventLoop.newSucceededFuture(result: ("authorName", Validation.Error.MissingValue())))
+                    }
+                    do {
+                        _characters = try UserSignupResponse.extract(param: "characters", from: dictionary)
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["characters"]!.append(eventLoop.newSucceededFuture(result: ("characters", Validation.Error.MissingValue())))
+                    }
+                    do {
+                        _token = try UserSignupResponse.extract(param: "token", from: dictionary)
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["token"]!.append(eventLoop.newSucceededFuture(result: ("token", Validation.Error.MissingValue())))
+                    }
+                } catch {
+                    return eventLoop.newFailedFuture(error: error)
                 }
 
-                let filteredErrors = errors.filter({ _, value in value.count > 0 })
-                guard filteredErrors.count == 0 else {
-                    throw LGNC.E.DecodeError(filteredErrors)
+                return self.reduce(
+                    validators: validatorFutures,
+                    on: eventLoop
+                ).thenThrowing { errors in
+                    guard errors.count == 0 else {
+                        throw LGNC.E.DecodeError(errors)
+                    }
+                    return self.init(
+                        ID: _ID,
+                        email: _email,
+                        sex: _sex,
+                        ip: _ip,
+                        country: _country,
+                        dateSignup: _dateSignup,
+                        dateLogin: _dateLogin,
+                        currentCharacter: _currentCharacter,
+                        authorName: _authorName,
+                        characters: _characters,
+                        token: _token
+                    )
                 }
-
-                let instance = self.init(
-                    ID: _ID,
-                    email: _email,
-                    sex: _sex,
-                    ip: _ip,
-                    country: _country,
-                    dateSignup: _dateSignup,
-                    dateLogin: _dateLogin,
-                    currentCharacter: _currentCharacter,
-                    authorName: _authorName,
-                    characters: _characters,
-                    token: _token
-                )
-
-                return instance
             }
 
             public convenience init(from dictionary: Entita.Dict) throws {
@@ -628,13 +643,14 @@ public struct Services {
         }
 
         public final class NodeInfo: ContractEntity {
-            public enum CallbackValidatorNameAllowedValues: String, ValidatorErrorRepresentable {
+            public enum CallbackValidatorNameAllowedValues: String, CallbackWithAllowedValuesRepresentable, ValidatorErrorRepresentable {
+                public typealias InputValue = String
+
                 case NodeWithGivenNameAlreadyCheckedIn = "Node with given name already checked in"
 
                 public func getErrorTuple() -> (message: String, code: Int) {
                     switch self {
-                    case .NodeWithGivenNameAlreadyCheckedIn:
-                        return (message: self.rawValue, code: 409)
+                    case .NodeWithGivenNameAlreadyCheckedIn: return (message: self.rawValue, code: 409)
                     }
                 }
             }
@@ -661,54 +677,59 @@ public struct Services {
                 self.port = port
             }
 
-            public static func initWithValidation(from dictionary: Entita.Dict) throws -> NodeInfo {
-                var errors: [String: [ValidatorError]] = [
+            public static func initWithValidation(from dictionary: Entita.Dict, on eventLoop: EventLoop) -> Future<NodeInfo> {
+                var validatorFutures: [String: [Future<(String, ValidatorError?)>]] = [
                     "type": [],
                     "name": [],
                     "port": [],
                 ]
 
                 var _type: String = String()
-                do {
-                    _type = try NodeInfo.extract(param: "type", from: dictionary)
-
-                } catch Entita.E.ExtractError {
-                    errors["type"]?.append(Validation.Error.MissingValue())
-                }
-
                 var _name: String = String()
-                do {
-                    _name = try NodeInfo.extract(param: "name", from: dictionary)
-
-                    if let validatorNameClosure = self.validatorNameClosure {
-                        if let error = Validation.CallbackWithAllowedValues<CallbackValidatorNameAllowedValues>(callback: validatorNameClosure).validate(input: _name) {
-                            errors["name"]?.append(error)
-                        }
-                    }
-                } catch Entita.E.ExtractError {
-                    errors["name"]?.append(Validation.Error.MissingValue())
-                }
-
                 var _port: Int = Int()
+
                 do {
-                    _port = try NodeInfo.extract(param: "port", from: dictionary)
+                    do {
+                        _type = try NodeInfo.extract(param: "type", from: dictionary)
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["type"]!.append(eventLoop.newSucceededFuture(result: ("type", Validation.Error.MissingValue())))
+                    }
+                    do {
+                        _name = try NodeInfo.extract(param: "name", from: dictionary)
 
-                } catch Entita.E.ExtractError {
-                    errors["port"]?.append(Validation.Error.MissingValue())
+                        if let validatorNameClosure = self.validatorNameClosure {
+                            validatorFutures["name"]!.append(
+                                Validation.CallbackWithAllowedValues<CallbackValidatorNameAllowedValues>(callback: validatorNameClosure).validate(
+                                    input: _name,
+                                    on: eventLoop
+                                ).map { ("name", $0) }
+                            )
+                        }
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["name"]!.append(eventLoop.newSucceededFuture(result: ("name", Validation.Error.MissingValue())))
+                    }
+                    do {
+                        _port = try NodeInfo.extract(param: "port", from: dictionary)
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["port"]!.append(eventLoop.newSucceededFuture(result: ("port", Validation.Error.MissingValue())))
+                    }
+                } catch {
+                    return eventLoop.newFailedFuture(error: error)
                 }
 
-                let filteredErrors = errors.filter({ _, value in value.count > 0 })
-                guard filteredErrors.count == 0 else {
-                    throw LGNC.E.DecodeError(filteredErrors)
+                return self.reduce(
+                    validators: validatorFutures,
+                    on: eventLoop
+                ).thenThrowing { errors in
+                    guard errors.count == 0 else {
+                        throw LGNC.E.DecodeError(errors)
+                    }
+                    return self.init(
+                        type: _type,
+                        name: _name,
+                        port: _port
+                    )
                 }
-
-                let instance = self.init(
-                    type: _type,
-                    name: _name,
-                    port: _port
-                )
-
-                return instance
             }
 
             public convenience init(from dictionary: Entita.Dict) throws {
@@ -735,13 +756,14 @@ public struct Services {
         }
 
         public final class PingRequest: ContractEntity {
-            public enum CallbackValidatorNameAllowedValues: String, ValidatorErrorRepresentable {
+            public enum CallbackValidatorNameAllowedValues: String, CallbackWithAllowedValuesRepresentable, ValidatorErrorRepresentable {
+                public typealias InputValue = String
+
                 case NodeWithGivenNameIsNotCheckedIn = "Node with given name is not checked in"
 
                 public func getErrorTuple() -> (message: String, code: Int) {
                     switch self {
-                    case .NodeWithGivenNameIsNotCheckedIn:
-                        return (message: self.rawValue, code: 404)
+                    case .NodeWithGivenNameIsNotCheckedIn: return (message: self.rawValue, code: 404)
                     }
                 }
             }
@@ -764,44 +786,51 @@ public struct Services {
                 self.entities = entities
             }
 
-            public static func initWithValidation(from dictionary: Entita.Dict) throws -> PingRequest {
-                var errors: [String: [ValidatorError]] = [
+            public static func initWithValidation(from dictionary: Entita.Dict, on eventLoop: EventLoop) -> Future<PingRequest> {
+                var validatorFutures: [String: [Future<(String, ValidatorError?)>]] = [
                     "name": [],
                     "entities": [],
                 ]
 
                 var _name: String = String()
-                do {
-                    _name = try PingRequest.extract(param: "name", from: dictionary)
-
-                    if let validatorNameClosure = self.validatorNameClosure {
-                        if let error = Validation.CallbackWithAllowedValues<CallbackValidatorNameAllowedValues>(callback: validatorNameClosure).validate(input: _name) {
-                            errors["name"]?.append(error)
-                        }
-                    }
-                } catch Entita.E.ExtractError {
-                    errors["name"]?.append(Validation.Error.MissingValue())
-                }
-
                 var _entities: Int = Int()
+
                 do {
-                    _entities = try PingRequest.extract(param: "entities", from: dictionary)
+                    do {
+                        _name = try PingRequest.extract(param: "name", from: dictionary)
 
-                } catch Entita.E.ExtractError {
-                    errors["entities"]?.append(Validation.Error.MissingValue())
+                        if let validatorNameClosure = self.validatorNameClosure {
+                            validatorFutures["name"]!.append(
+                                Validation.CallbackWithAllowedValues<CallbackValidatorNameAllowedValues>(callback: validatorNameClosure).validate(
+                                    input: _name,
+                                    on: eventLoop
+                                ).map { ("name", $0) }
+                            )
+                        }
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["name"]!.append(eventLoop.newSucceededFuture(result: ("name", Validation.Error.MissingValue())))
+                    }
+                    do {
+                        _entities = try PingRequest.extract(param: "entities", from: dictionary)
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["entities"]!.append(eventLoop.newSucceededFuture(result: ("entities", Validation.Error.MissingValue())))
+                    }
+                } catch {
+                    return eventLoop.newFailedFuture(error: error)
                 }
 
-                let filteredErrors = errors.filter({ _, value in value.count > 0 })
-                guard filteredErrors.count == 0 else {
-                    throw LGNC.E.DecodeError(filteredErrors)
+                return self.reduce(
+                    validators: validatorFutures,
+                    on: eventLoop
+                ).thenThrowing { errors in
+                    guard errors.count == 0 else {
+                        throw LGNC.E.DecodeError(errors)
+                    }
+                    return self.init(
+                        name: _name,
+                        entities: _entities
+                    )
                 }
-
-                let instance = self.init(
-                    name: _name,
-                    entities: _entities
-                )
-
-                return instance
             }
 
             public convenience init(from dictionary: Entita.Dict) throws {
@@ -838,29 +867,34 @@ public struct Services {
                 self.result = result
             }
 
-            public static func initWithValidation(from dictionary: Entita.Dict) throws -> PingResponse {
-                var errors: [String: [ValidatorError]] = [
+            public static func initWithValidation(from dictionary: Entita.Dict, on eventLoop: EventLoop) -> Future<PingResponse> {
+                var validatorFutures: [String: [Future<(String, ValidatorError?)>]] = [
                     "result": [],
                 ]
 
                 var _result: String = String()
+
                 do {
-                    _result = try PingResponse.extract(param: "result", from: dictionary)
-
-                } catch Entita.E.ExtractError {
-                    errors["result"]?.append(Validation.Error.MissingValue())
+                    do {
+                        _result = try PingResponse.extract(param: "result", from: dictionary)
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["result"]!.append(eventLoop.newSucceededFuture(result: ("result", Validation.Error.MissingValue())))
+                    }
+                } catch {
+                    return eventLoop.newFailedFuture(error: error)
                 }
 
-                let filteredErrors = errors.filter({ _, value in value.count > 0 })
-                guard filteredErrors.count == 0 else {
-                    throw LGNC.E.DecodeError(filteredErrors)
+                return self.reduce(
+                    validators: validatorFutures,
+                    on: eventLoop
+                ).thenThrowing { errors in
+                    guard errors.count == 0 else {
+                        throw LGNC.E.DecodeError(errors)
+                    }
+                    return self.init(
+                        result: _result
+                    )
                 }
-
-                let instance = self.init(
-                    result: _result
-                )
-
-                return instance
             }
 
             public convenience init(from dictionary: Entita.Dict) throws {
@@ -877,13 +911,14 @@ public struct Services {
         }
 
         public final class CheckinRequest: ContractEntity {
-            public enum CallbackValidatorNameAllowedValues: String, ValidatorErrorRepresentable {
+            public enum CallbackValidatorNameAllowedValues: String, CallbackWithAllowedValuesRepresentable, ValidatorErrorRepresentable {
+                public typealias InputValue = String
+
                 case NodeWithGivenNameAlreadyCheckedIn = "Node with given name already checked in"
 
                 public func getErrorTuple() -> (message: String, code: Int) {
                     switch self {
-                    case .NodeWithGivenNameAlreadyCheckedIn:
-                        return (message: self.rawValue, code: 409)
+                    case .NodeWithGivenNameAlreadyCheckedIn: return (message: self.rawValue, code: 409)
                     }
                 }
             }
@@ -914,8 +949,8 @@ public struct Services {
                 self.entities = entities
             }
 
-            public static func initWithValidation(from dictionary: Entita.Dict) throws -> CheckinRequest {
-                var errors: [String: [ValidatorError]] = [
+            public static func initWithValidation(from dictionary: Entita.Dict, on eventLoop: EventLoop) -> Future<CheckinRequest> {
+                var validatorFutures: [String: [Future<(String, ValidatorError?)>]] = [
                     "type": [],
                     "name": [],
                     "port": [],
@@ -923,55 +958,58 @@ public struct Services {
                 ]
 
                 var _type: String = String()
-                do {
-                    _type = try CheckinRequest.extract(param: "type", from: dictionary)
-
-                } catch Entita.E.ExtractError {
-                    errors["type"]?.append(Validation.Error.MissingValue())
-                }
-
                 var _name: String = String()
-                do {
-                    _name = try CheckinRequest.extract(param: "name", from: dictionary)
-
-                    if let validatorNameClosure = self.validatorNameClosure {
-                        if let error = Validation.CallbackWithAllowedValues<CallbackValidatorNameAllowedValues>(callback: validatorNameClosure).validate(input: _name) {
-                            errors["name"]?.append(error)
-                        }
-                    }
-                } catch Entita.E.ExtractError {
-                    errors["name"]?.append(Validation.Error.MissingValue())
-                }
-
                 var _port: Int = Int()
-                do {
-                    _port = try CheckinRequest.extract(param: "port", from: dictionary)
-
-                } catch Entita.E.ExtractError {
-                    errors["port"]?.append(Validation.Error.MissingValue())
-                }
-
                 var _entities: Int = Int()
+
                 do {
-                    _entities = try CheckinRequest.extract(param: "entities", from: dictionary)
+                    do {
+                        _type = try CheckinRequest.extract(param: "type", from: dictionary)
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["type"]!.append(eventLoop.newSucceededFuture(result: ("type", Validation.Error.MissingValue())))
+                    }
+                    do {
+                        _name = try CheckinRequest.extract(param: "name", from: dictionary)
 
-                } catch Entita.E.ExtractError {
-                    errors["entities"]?.append(Validation.Error.MissingValue())
+                        if let validatorNameClosure = self.validatorNameClosure {
+                            validatorFutures["name"]!.append(
+                                Validation.CallbackWithAllowedValues<CallbackValidatorNameAllowedValues>(callback: validatorNameClosure).validate(
+                                    input: _name,
+                                    on: eventLoop
+                                ).map { ("name", $0) }
+                            )
+                        }
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["name"]!.append(eventLoop.newSucceededFuture(result: ("name", Validation.Error.MissingValue())))
+                    }
+                    do {
+                        _port = try CheckinRequest.extract(param: "port", from: dictionary)
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["port"]!.append(eventLoop.newSucceededFuture(result: ("port", Validation.Error.MissingValue())))
+                    }
+                    do {
+                        _entities = try CheckinRequest.extract(param: "entities", from: dictionary)
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["entities"]!.append(eventLoop.newSucceededFuture(result: ("entities", Validation.Error.MissingValue())))
+                    }
+                } catch {
+                    return eventLoop.newFailedFuture(error: error)
                 }
 
-                let filteredErrors = errors.filter({ _, value in value.count > 0 })
-                guard filteredErrors.count == 0 else {
-                    throw LGNC.E.DecodeError(filteredErrors)
+                return self.reduce(
+                    validators: validatorFutures,
+                    on: eventLoop
+                ).thenThrowing { errors in
+                    guard errors.count == 0 else {
+                        throw LGNC.E.DecodeError(errors)
+                    }
+                    return self.init(
+                        type: _type,
+                        name: _name,
+                        port: _port,
+                        entities: _entities
+                    )
                 }
-
-                let instance = self.init(
-                    type: _type,
-                    name: _name,
-                    port: _port,
-                    entities: _entities
-                )
-
-                return instance
             }
 
             public convenience init(from dictionary: Entita.Dict) throws {
@@ -1012,29 +1050,34 @@ public struct Services {
                 self.result = result
             }
 
-            public static func initWithValidation(from dictionary: Entita.Dict) throws -> CheckinResponse {
-                var errors: [String: [ValidatorError]] = [
+            public static func initWithValidation(from dictionary: Entita.Dict, on eventLoop: EventLoop) -> Future<CheckinResponse> {
+                var validatorFutures: [String: [Future<(String, ValidatorError?)>]] = [
                     "result": [],
                 ]
 
                 var _result: String = String()
+
                 do {
-                    _result = try CheckinResponse.extract(param: "result", from: dictionary)
-
-                } catch Entita.E.ExtractError {
-                    errors["result"]?.append(Validation.Error.MissingValue())
+                    do {
+                        _result = try CheckinResponse.extract(param: "result", from: dictionary)
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["result"]!.append(eventLoop.newSucceededFuture(result: ("result", Validation.Error.MissingValue())))
+                    }
+                } catch {
+                    return eventLoop.newFailedFuture(error: error)
                 }
 
-                let filteredErrors = errors.filter({ _, value in value.count > 0 })
-                guard filteredErrors.count == 0 else {
-                    throw LGNC.E.DecodeError(filteredErrors)
+                return self.reduce(
+                    validators: validatorFutures,
+                    on: eventLoop
+                ).thenThrowing { errors in
+                    guard errors.count == 0 else {
+                        throw LGNC.E.DecodeError(errors)
+                    }
+                    return self.init(
+                        result: _result
+                    )
                 }
-
-                let instance = self.init(
-                    result: _result
-                )
-
-                return instance
             }
 
             public convenience init(from dictionary: Entita.Dict) throws {
@@ -1071,49 +1114,50 @@ public struct Services {
                 self.password = password
             }
 
-            public static func initWithValidation(from dictionary: Entita.Dict) throws -> LoginRequest {
-                var errors: [String: [ValidatorError]] = [
+            public static func initWithValidation(from dictionary: Entita.Dict, on eventLoop: EventLoop) -> Future<LoginRequest> {
+                var validatorFutures: [String: [Future<(String, ValidatorError?)>]] = [
                     "portal": [],
                     "login": [],
                     "password": [],
                 ]
 
                 var _portal: String = String()
-                do {
-                    _portal = try LoginRequest.extract(param: "portal", from: dictionary)
-
-                } catch Entita.E.ExtractError {
-                    errors["portal"]?.append(Validation.Error.MissingValue())
-                }
-
                 var _login: String = String()
-                do {
-                    _login = try LoginRequest.extract(param: "login", from: dictionary)
-
-                } catch Entita.E.ExtractError {
-                    errors["login"]?.append(Validation.Error.MissingValue())
-                }
-
                 var _password: String = String()
+
                 do {
-                    _password = try LoginRequest.extract(param: "password", from: dictionary)
-
-                } catch Entita.E.ExtractError {
-                    errors["password"]?.append(Validation.Error.MissingValue())
+                    do {
+                        _portal = try LoginRequest.extract(param: "portal", from: dictionary)
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["portal"]!.append(eventLoop.newSucceededFuture(result: ("portal", Validation.Error.MissingValue())))
+                    }
+                    do {
+                        _login = try LoginRequest.extract(param: "login", from: dictionary)
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["login"]!.append(eventLoop.newSucceededFuture(result: ("login", Validation.Error.MissingValue())))
+                    }
+                    do {
+                        _password = try LoginRequest.extract(param: "password", from: dictionary)
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["password"]!.append(eventLoop.newSucceededFuture(result: ("password", Validation.Error.MissingValue())))
+                    }
+                } catch {
+                    return eventLoop.newFailedFuture(error: error)
                 }
 
-                let filteredErrors = errors.filter({ _, value in value.count > 0 })
-                guard filteredErrors.count == 0 else {
-                    throw LGNC.E.DecodeError(filteredErrors)
+                return self.reduce(
+                    validators: validatorFutures,
+                    on: eventLoop
+                ).thenThrowing { errors in
+                    guard errors.count == 0 else {
+                        throw LGNC.E.DecodeError(errors)
+                    }
+                    return self.init(
+                        portal: _portal,
+                        login: _login,
+                        password: _password
+                    )
                 }
-
-                let instance = self.init(
-                    portal: _portal,
-                    login: _login,
-                    password: _password
-                )
-
-                return instance
             }
 
             public convenience init(from dictionary: Entita.Dict) throws {
@@ -1150,39 +1194,42 @@ public struct Services {
                 self.userID = userID
             }
 
-            public static func initWithValidation(from dictionary: Entita.Dict) throws -> LoginResponse {
-                var errors: [String: [ValidatorError]] = [
+            public static func initWithValidation(from dictionary: Entita.Dict, on eventLoop: EventLoop) -> Future<LoginResponse> {
+                var validatorFutures: [String: [Future<(String, ValidatorError?)>]] = [
                     "token": [],
                     "userID": [],
                 ]
 
                 var _token: String = String()
-                do {
-                    _token = try LoginResponse.extract(param: "token", from: dictionary)
-
-                } catch Entita.E.ExtractError {
-                    errors["token"]?.append(Validation.Error.MissingValue())
-                }
-
                 var _userID: String = String()
+
                 do {
-                    _userID = try LoginResponse.extract(param: "userID", from: dictionary)
-
-                } catch Entita.E.ExtractError {
-                    errors["userID"]?.append(Validation.Error.MissingValue())
+                    do {
+                        _token = try LoginResponse.extract(param: "token", from: dictionary)
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["token"]!.append(eventLoop.newSucceededFuture(result: ("token", Validation.Error.MissingValue())))
+                    }
+                    do {
+                        _userID = try LoginResponse.extract(param: "userID", from: dictionary)
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["userID"]!.append(eventLoop.newSucceededFuture(result: ("userID", Validation.Error.MissingValue())))
+                    }
+                } catch {
+                    return eventLoop.newFailedFuture(error: error)
                 }
 
-                let filteredErrors = errors.filter({ _, value in value.count > 0 })
-                guard filteredErrors.count == 0 else {
-                    throw LGNC.E.DecodeError(filteredErrors)
+                return self.reduce(
+                    validators: validatorFutures,
+                    on: eventLoop
+                ).thenThrowing { errors in
+                    guard errors.count == 0 else {
+                        throw LGNC.E.DecodeError(errors)
+                    }
+                    return self.init(
+                        token: _token,
+                        userID: _userID
+                    )
                 }
-
-                let instance = self.init(
-                    token: _token,
-                    userID: _userID
-                )
-
-                return instance
             }
 
             public convenience init(from dictionary: Entita.Dict) throws {
@@ -1241,8 +1288,8 @@ public struct Services {
                 self.dateUpdated = dateUpdated
             }
 
-            public static func initWithValidation(from dictionary: Entita.Dict) throws -> Comment {
-                var errors: [String: [ValidatorError]] = [
+            public static func initWithValidation(from dictionary: Entita.Dict, on eventLoop: EventLoop) -> Future<Comment> {
+                var validatorFutures: [String: [Future<(String, ValidatorError?)>]] = [
                     "ID": [],
                     "IDUser": [],
                     "IDPost": [],
@@ -1254,95 +1301,89 @@ public struct Services {
                 ]
 
                 var _ID: String = String()
-                do {
-                    _ID = try Comment.extract(param: "ID", from: dictionary)
-
-                } catch Entita.E.ExtractError {
-                    errors["ID"]?.append(Validation.Error.MissingValue())
-                }
-
                 var _IDUser: String = String()
-                do {
-                    _IDUser = try Comment.extract(param: "IDUser", from: dictionary)
-
-                    if let error = Validation.UUID().validate(input: _IDUser) {
-                        errors["IDUser"]?.append(error)
-                    }
-                } catch Entita.E.ExtractError {
-                    errors["IDUser"]?.append(Validation.Error.MissingValue())
-                }
-
                 var _IDPost: Int = Int()
-                do {
-                    _IDPost = try Comment.extract(param: "IDPost", from: dictionary)
-
-                } catch Entita.E.ExtractError {
-                    errors["IDPost"]?.append(Validation.Error.MissingValue())
-                }
-
                 var _IDReplyComment: String = String()
-                do {
-                    _IDReplyComment = try Comment.extract(param: "IDReplyComment", from: dictionary)
-
-                } catch Entita.E.ExtractError {
-                    errors["IDReplyComment"]?.append(Validation.Error.MissingValue())
-                }
-
                 var _isDeleted: Bool = Bool()
-                do {
-                    _isDeleted = try Comment.extract(param: "isDeleted", from: dictionary)
-
-                } catch Entita.E.ExtractError {
-                    errors["isDeleted"]?.append(Validation.Error.MissingValue())
-                }
-
                 var _body: String = String()
-                do {
-                    _body = try Comment.extract(param: "body", from: dictionary)
-
-                } catch Entita.E.ExtractError {
-                    errors["body"]?.append(Validation.Error.MissingValue())
-                }
-
                 var _dateCreated: String = String()
-                do {
-                    _dateCreated = try Comment.extract(param: "dateCreated", from: dictionary)
-
-                    if let error = Validation.Date(format: "yyyy-MM-dd kk:mm:ss.SSSSxxx").validate(input: _dateCreated) {
-                        errors["dateCreated"]?.append(error)
-                    }
-                } catch Entita.E.ExtractError {
-                    errors["dateCreated"]?.append(Validation.Error.MissingValue())
-                }
-
                 var _dateUpdated: String = String()
+
                 do {
-                    _dateUpdated = try Comment.extract(param: "dateUpdated", from: dictionary)
-
-                    if let error = Validation.Date(format: "yyyy-MM-dd kk:mm:ss.SSSSxxx").validate(input: _dateUpdated) {
-                        errors["dateUpdated"]?.append(error)
+                    do {
+                        _ID = try Comment.extract(param: "ID", from: dictionary)
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["ID"]!.append(eventLoop.newSucceededFuture(result: ("ID", Validation.Error.MissingValue())))
                     }
-                } catch Entita.E.ExtractError {
-                    errors["dateUpdated"]?.append(Validation.Error.MissingValue())
+                    do {
+                        _IDUser = try Comment.extract(param: "IDUser", from: dictionary)
+
+                        if let error = Validation.UUID().validate(input: _IDUser) {
+                            validatorFutures["IDUser"]!.append(eventLoop.newSucceededFuture(result: ("IDUser", error)))
+                        }
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["IDUser"]!.append(eventLoop.newSucceededFuture(result: ("IDUser", Validation.Error.MissingValue())))
+                    }
+                    do {
+                        _IDPost = try Comment.extract(param: "IDPost", from: dictionary)
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["IDPost"]!.append(eventLoop.newSucceededFuture(result: ("IDPost", Validation.Error.MissingValue())))
+                    }
+                    do {
+                        _IDReplyComment = try Comment.extract(param: "IDReplyComment", from: dictionary)
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["IDReplyComment"]!.append(eventLoop.newSucceededFuture(result: ("IDReplyComment", Validation.Error.MissingValue())))
+                    }
+                    do {
+                        _isDeleted = try Comment.extract(param: "isDeleted", from: dictionary)
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["isDeleted"]!.append(eventLoop.newSucceededFuture(result: ("isDeleted", Validation.Error.MissingValue())))
+                    }
+                    do {
+                        _body = try Comment.extract(param: "body", from: dictionary)
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["body"]!.append(eventLoop.newSucceededFuture(result: ("body", Validation.Error.MissingValue())))
+                    }
+                    do {
+                        _dateCreated = try Comment.extract(param: "dateCreated", from: dictionary)
+
+                        if let error = Validation.Date(format: "yyyy-MM-dd kk:mm:ss.SSSSxxx").validate(input: _dateCreated) {
+                            validatorFutures["dateCreated"]!.append(eventLoop.newSucceededFuture(result: ("dateCreated", error)))
+                        }
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["dateCreated"]!.append(eventLoop.newSucceededFuture(result: ("dateCreated", Validation.Error.MissingValue())))
+                    }
+                    do {
+                        _dateUpdated = try Comment.extract(param: "dateUpdated", from: dictionary)
+
+                        if let error = Validation.Date(format: "yyyy-MM-dd kk:mm:ss.SSSSxxx").validate(input: _dateUpdated) {
+                            validatorFutures["dateUpdated"]!.append(eventLoop.newSucceededFuture(result: ("dateUpdated", error)))
+                        }
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["dateUpdated"]!.append(eventLoop.newSucceededFuture(result: ("dateUpdated", Validation.Error.MissingValue())))
+                    }
+                } catch {
+                    return eventLoop.newFailedFuture(error: error)
                 }
 
-                let filteredErrors = errors.filter({ _, value in value.count > 0 })
-                guard filteredErrors.count == 0 else {
-                    throw LGNC.E.DecodeError(filteredErrors)
+                return self.reduce(
+                    validators: validatorFutures,
+                    on: eventLoop
+                ).thenThrowing { errors in
+                    guard errors.count == 0 else {
+                        throw LGNC.E.DecodeError(errors)
+                    }
+                    return self.init(
+                        ID: _ID,
+                        IDUser: _IDUser,
+                        IDPost: _IDPost,
+                        IDReplyComment: _IDReplyComment,
+                        isDeleted: _isDeleted,
+                        body: _body,
+                        dateCreated: _dateCreated,
+                        dateUpdated: _dateUpdated
+                    )
                 }
-
-                let instance = self.init(
-                    ID: _ID,
-                    IDUser: _IDUser,
-                    IDPost: _IDPost,
-                    IDReplyComment: _IDReplyComment,
-                    isDeleted: _isDeleted,
-                    body: _body,
-                    dateCreated: _dateCreated,
-                    dateUpdated: _dateUpdated
-                )
-
-                return instance
             }
 
             public convenience init(from dictionary: Entita.Dict) throws {
@@ -1381,19 +1422,25 @@ public struct Services {
             ) {
             }
 
-            public static func initWithValidation(from _: Entita.Dict) throws -> Empty {
-                var errors: [String: [ValidatorError]] = [
+            public static func initWithValidation(from _: Entita.Dict, on eventLoop: EventLoop) -> Future<Empty> {
+                var validatorFutures: [String: [Future<(String, ValidatorError?)>]] = [
                     :
                 ]
 
-                let filteredErrors = errors.filter({ _, value in value.count > 0 })
-                guard filteredErrors.count == 0 else {
-                    throw LGNC.E.DecodeError(filteredErrors)
+                do {
+                } catch {
+                    return eventLoop.newFailedFuture(error: error)
                 }
 
-                let instance = self.init()
-
-                return instance
+                return self.reduce(
+                    validators: validatorFutures,
+                    on: eventLoop
+                ).thenThrowing { errors in
+                    guard errors.count == 0 else {
+                        throw LGNC.E.DecodeError(errors)
+                    }
+                    return self.init()
+                }
             }
 
             public convenience init(from _: Entita.Dict) throws {
@@ -1466,8 +1513,8 @@ public struct Services {
                 self.characters = characters
             }
 
-            public static func initWithValidation(from dictionary: Entita.Dict) throws -> User {
-                var errors: [String: [ValidatorError]] = [
+            public static func initWithValidation(from dictionary: Entita.Dict, on eventLoop: EventLoop) -> Future<User> {
+                var validatorFutures: [String: [Future<(String, ValidatorError?)>]] = [
                     "ID": [],
                     "email": [],
                     "password": [],
@@ -1484,153 +1531,140 @@ public struct Services {
                 ]
 
                 var _ID: String = String()
-                do {
-                    _ID = try User.extract(param: "ID", from: dictionary)
-
-                    if let error = Validation.UUID().validate(input: _ID) {
-                        errors["ID"]?.append(error)
-                    }
-                } catch Entita.E.ExtractError {
-                    errors["ID"]?.append(Validation.Error.MissingValue())
-                }
-
                 var _email: String = String()
-                do {
-                    _email = try User.extract(param: "email", from: dictionary)
-
-                    if let error = Validation.Regexp(pattern: "^.+@.+\\..+$", message: "Invalid email format").validate(input: _email) {
-                        errors["email"]?.append(error)
-                    }
-
-                    if let error = Validation.Length.Min(length: 6).validate(input: _email) {
-                        errors["email"]?.append(error)
-                    }
-                } catch Entita.E.ExtractError {
-                    errors["email"]?.append(Validation.Error.MissingValue())
-                }
-
                 var _password: String = String()
-                do {
-                    _password = try User.extract(param: "password", from: dictionary)
-
-                } catch Entita.E.ExtractError {
-                    errors["password"]?.append(Validation.Error.MissingValue())
-                }
-
                 var _sex: String = String()
-                do {
-                    _sex = try User.extract(param: "sex", from: dictionary)
-
-                    if let error = Validation.In(allowedValues: ["Male", "Female", "Attack helicopter"]).validate(input: _sex) {
-                        errors["sex"]?.append(error)
-                    }
-                } catch Entita.E.ExtractError {
-                    errors["sex"]?.append(Validation.Error.MissingValue())
-                }
-
                 var _isBanned: Bool = Bool()
-                do {
-                    _isBanned = try User.extract(param: "isBanned", from: dictionary)
-
-                } catch Entita.E.ExtractError {
-                    errors["isBanned"]?.append(Validation.Error.MissingValue())
-                }
-
                 var _ip: String = String()
-                do {
-                    _ip = try User.extract(param: "ip", from: dictionary)
-
-                } catch Entita.E.ExtractError {
-                    errors["ip"]?.append(Validation.Error.MissingValue())
-                }
-
                 var _country: String = String()
-                do {
-                    _country = try User.extract(param: "country", from: dictionary)
-
-                } catch Entita.E.ExtractError {
-                    errors["country"]?.append(Validation.Error.MissingValue())
-                }
-
                 var _dateUnsuccessfulLogin: String = String()
-                do {
-                    _dateUnsuccessfulLogin = try User.extract(param: "dateUnsuccessfulLogin", from: dictionary)
-
-                    if let error = Validation.Date(format: "yyyy-MM-dd kk:mm:ss.SSSSxxx").validate(input: _dateUnsuccessfulLogin) {
-                        errors["dateUnsuccessfulLogin"]?.append(error)
-                    }
-                } catch Entita.E.ExtractError {
-                    errors["dateUnsuccessfulLogin"]?.append(Validation.Error.MissingValue())
-                }
-
                 var _dateSignup: String = String()
-                do {
-                    _dateSignup = try User.extract(param: "dateSignup", from: dictionary)
-
-                    if let error = Validation.Date(format: "yyyy-MM-dd kk:mm:ss.SSSSxxx").validate(input: _dateSignup) {
-                        errors["dateSignup"]?.append(error)
-                    }
-                } catch Entita.E.ExtractError {
-                    errors["dateSignup"]?.append(Validation.Error.MissingValue())
-                }
-
                 var _dateLogin: String = String()
-                do {
-                    _dateLogin = try User.extract(param: "dateLogin", from: dictionary)
-
-                    if let error = Validation.Date(format: "yyyy-MM-dd kk:mm:ss.SSSSxxx").validate(input: _dateLogin) {
-                        errors["dateLogin"]?.append(error)
-                    }
-                } catch Entita.E.ExtractError {
-                    errors["dateLogin"]?.append(Validation.Error.MissingValue())
-                }
-
                 var _currentCharacter: String?
-                do {
-                    _currentCharacter = try User.extract(param: "currentCharacter", from: dictionary)
-
-                } catch Entita.E.ExtractError {
-                    errors["currentCharacter"]?.append(Validation.Error.MissingValue())
-                }
-
                 var _authorName: String = String()
-                do {
-                    _authorName = try User.extract(param: "authorName", from: dictionary)
-
-                } catch Entita.E.ExtractError {
-                    errors["authorName"]?.append(Validation.Error.MissingValue())
-                }
-
                 var _characters: [String: CharacterInfo] = [String: CharacterInfo]()
+
                 do {
-                    _characters = try User.extract(param: "characters", from: dictionary)
+                    do {
+                        _ID = try User.extract(param: "ID", from: dictionary)
 
-                } catch Entita.E.ExtractError {
-                    errors["characters"]?.append(Validation.Error.MissingValue())
+                        if let error = Validation.UUID().validate(input: _ID) {
+                            validatorFutures["ID"]!.append(eventLoop.newSucceededFuture(result: ("ID", error)))
+                        }
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["ID"]!.append(eventLoop.newSucceededFuture(result: ("ID", Validation.Error.MissingValue())))
+                    }
+                    do {
+                        _email = try User.extract(param: "email", from: dictionary)
+
+                        if let error = Validation.Regexp(pattern: "^.+@.+\\..+$", message: "Invalid email format").validate(input: _email) {
+                            validatorFutures["email"]!.append(eventLoop.newSucceededFuture(result: ("email", error)))
+                        }
+
+                        if let error = Validation.Length.Min(length: 6).validate(input: _email) {
+                            validatorFutures["email"]!.append(eventLoop.newSucceededFuture(result: ("email", error)))
+                        }
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["email"]!.append(eventLoop.newSucceededFuture(result: ("email", Validation.Error.MissingValue())))
+                    }
+                    do {
+                        _password = try User.extract(param: "password", from: dictionary)
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["password"]!.append(eventLoop.newSucceededFuture(result: ("password", Validation.Error.MissingValue())))
+                    }
+                    do {
+                        _sex = try User.extract(param: "sex", from: dictionary)
+
+                        if let error = Validation.In(allowedValues: ["Male", "Female", "Attack helicopter"]).validate(input: _sex) {
+                            validatorFutures["sex"]!.append(eventLoop.newSucceededFuture(result: ("sex", error)))
+                        }
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["sex"]!.append(eventLoop.newSucceededFuture(result: ("sex", Validation.Error.MissingValue())))
+                    }
+                    do {
+                        _isBanned = try User.extract(param: "isBanned", from: dictionary)
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["isBanned"]!.append(eventLoop.newSucceededFuture(result: ("isBanned", Validation.Error.MissingValue())))
+                    }
+                    do {
+                        _ip = try User.extract(param: "ip", from: dictionary)
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["ip"]!.append(eventLoop.newSucceededFuture(result: ("ip", Validation.Error.MissingValue())))
+                    }
+                    do {
+                        _country = try User.extract(param: "country", from: dictionary)
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["country"]!.append(eventLoop.newSucceededFuture(result: ("country", Validation.Error.MissingValue())))
+                    }
+                    do {
+                        _dateUnsuccessfulLogin = try User.extract(param: "dateUnsuccessfulLogin", from: dictionary)
+
+                        if let error = Validation.Date(format: "yyyy-MM-dd kk:mm:ss.SSSSxxx").validate(input: _dateUnsuccessfulLogin) {
+                            validatorFutures["dateUnsuccessfulLogin"]!.append(eventLoop.newSucceededFuture(result: ("dateUnsuccessfulLogin", error)))
+                        }
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["dateUnsuccessfulLogin"]!.append(eventLoop.newSucceededFuture(result: ("dateUnsuccessfulLogin", Validation.Error.MissingValue())))
+                    }
+                    do {
+                        _dateSignup = try User.extract(param: "dateSignup", from: dictionary)
+
+                        if let error = Validation.Date(format: "yyyy-MM-dd kk:mm:ss.SSSSxxx").validate(input: _dateSignup) {
+                            validatorFutures["dateSignup"]!.append(eventLoop.newSucceededFuture(result: ("dateSignup", error)))
+                        }
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["dateSignup"]!.append(eventLoop.newSucceededFuture(result: ("dateSignup", Validation.Error.MissingValue())))
+                    }
+                    do {
+                        _dateLogin = try User.extract(param: "dateLogin", from: dictionary)
+
+                        if let error = Validation.Date(format: "yyyy-MM-dd kk:mm:ss.SSSSxxx").validate(input: _dateLogin) {
+                            validatorFutures["dateLogin"]!.append(eventLoop.newSucceededFuture(result: ("dateLogin", error)))
+                        }
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["dateLogin"]!.append(eventLoop.newSucceededFuture(result: ("dateLogin", Validation.Error.MissingValue())))
+                    }
+                    do {
+                        _currentCharacter = try User.extract(param: "currentCharacter", from: dictionary)
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["currentCharacter"]!.append(eventLoop.newSucceededFuture(result: ("currentCharacter", Validation.Error.MissingValue())))
+                    }
+                    do {
+                        _authorName = try User.extract(param: "authorName", from: dictionary)
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["authorName"]!.append(eventLoop.newSucceededFuture(result: ("authorName", Validation.Error.MissingValue())))
+                    }
+                    do {
+                        _characters = try User.extract(param: "characters", from: dictionary)
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["characters"]!.append(eventLoop.newSucceededFuture(result: ("characters", Validation.Error.MissingValue())))
+                    }
+                } catch {
+                    return eventLoop.newFailedFuture(error: error)
                 }
 
-                let filteredErrors = errors.filter({ _, value in value.count > 0 })
-                guard filteredErrors.count == 0 else {
-                    throw LGNC.E.DecodeError(filteredErrors)
+                return self.reduce(
+                    validators: validatorFutures,
+                    on: eventLoop
+                ).thenThrowing { errors in
+                    guard errors.count == 0 else {
+                        throw LGNC.E.DecodeError(errors)
+                    }
+                    return self.init(
+                        ID: _ID,
+                        email: _email,
+                        password: _password,
+                        sex: _sex,
+                        isBanned: _isBanned,
+                        ip: _ip,
+                        country: _country,
+                        dateUnsuccessfulLogin: _dateUnsuccessfulLogin,
+                        dateSignup: _dateSignup,
+                        dateLogin: _dateLogin,
+                        currentCharacter: _currentCharacter,
+                        authorName: _authorName,
+                        characters: _characters
+                    )
                 }
-
-                let instance = self.init(
-                    ID: _ID,
-                    email: _email,
-                    password: _password,
-                    sex: _sex,
-                    isBanned: _isBanned,
-                    ip: _ip,
-                    country: _country,
-                    dateUnsuccessfulLogin: _dateUnsuccessfulLogin,
-                    dateSignup: _dateSignup,
-                    dateLogin: _dateLogin,
-                    currentCharacter: _currentCharacter,
-                    authorName: _authorName,
-                    characters: _characters
-                )
-
-                return instance
             }
 
             public convenience init(from dictionary: Entita.Dict) throws {

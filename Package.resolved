@@ -2,21 +2,12 @@
   "object": {
     "pins": [
       {
-        "package": "Socket",
-        "repositoryURL": "https://github.com/IBM-Swift/BlueSocket.git",
+        "package": "Signals",
+        "repositoryURL": "https://github.com/IBM-Swift/BlueSignals.git",
         "state": {
           "branch": null,
-          "revision": "fb4e74cd8eb3ce4a2b860fbf727b2dada796d77d",
-          "version": "1.0.22"
-        }
-      },
-      {
-        "package": "SSLService",
-        "repositoryURL": "https://github.com/IBM-Swift/BlueSSLService.git",
-        "state": {
-          "branch": null,
-          "revision": "e2af36601f91b3cefa371c00ecdcb62fef1d000a",
-          "version": "1.0.22"
+          "revision": "23f62ec7a38a837e1c14acffc2e963b667a88b46",
+          "version": "1.0.16"
         }
       },
       {
@@ -33,26 +24,8 @@
         "repositoryURL": "https://github.com/krzyzanowskim/CryptoSwift.git",
         "state": {
           "branch": null,
-          "revision": "2bcb008fe23d286e5da79311051e19b3345f1cd5",
-          "version": "0.12.0"
-        }
-      },
-      {
-        "package": "Entita",
-        "repositoryURL": "git@bitbucket.org:1711-games/Entita.git",
-        "state": {
-          "branch": "master",
-          "revision": "e69622333cb364d9639d48eaa6e016cacfa4828a",
-          "version": null
-        }
-      },
-      {
-        "package": "FDBSwift",
-        "repositoryURL": "https://github.com/kirilltitov/FDBSwift.git",
-        "state": {
-          "branch": "master",
-          "revision": "8d7a21b1e9df92ed9173e5f5a7d5228feb212a10",
-          "version": null
+          "revision": "c5ee516c9616ec7dc2a000007ddb8bf5d9543c74",
+          "version": "0.13.1"
         }
       },
       {
@@ -65,93 +38,30 @@
         }
       },
       {
-        "package": "Kitura",
-        "repositoryURL": "https://github.com/IBM-Swift/Kitura.git",
-        "state": {
-          "branch": null,
-          "revision": "d4ffe850684e442015ee5d927f7e66674d797d3e",
-          "version": "2.5.3"
-        }
-      },
-      {
-        "package": "KituraCORS",
-        "repositoryURL": "https://github.com/IBM-Swift/Kitura-CORS.git",
-        "state": {
-          "branch": null,
-          "revision": "534734a0b0c0ddf56adfed0715e45a57bd97d1a3",
-          "version": "2.1.0"
-        }
-      },
-      {
-        "package": "Kitura-net",
-        "repositoryURL": "https://github.com/IBM-Swift/Kitura-net.git",
-        "state": {
-          "branch": null,
-          "revision": "f791c0aaf18ecfefebc0cb67cad9beb58859a7e7",
-          "version": "2.1.2"
-        }
-      },
-      {
-        "package": "Kitura-TemplateEngine",
-        "repositoryURL": "https://github.com/IBM-Swift/Kitura-TemplateEngine.git",
-        "state": {
-          "branch": null,
-          "revision": "b030d2d176719acc6a902c40db1b87dc6a83e2fc",
-          "version": "2.0.0"
-        }
-      },
-      {
-        "package": "KituraContracts",
-        "repositoryURL": "https://github.com/IBM-Swift/KituraContracts.git",
-        "state": {
-          "branch": null,
-          "revision": "8e41f3fc81b662722020754f74a8fd8c7bdbbf3b",
-          "version": "1.1.0"
-        }
-      },
-      {
-        "package": "LGNCore",
-        "repositoryURL": "git@bitbucket.org:1711-games/LGNCore.git",
+        "package": "LGNPContenter",
+        "repositoryURL": "git@bitbucket.org:1711-games/LGNPContenter.git",
         "state": {
           "branch": "master",
-          "revision": "f7b85fc97440eccf964682478f8586eef7f66f8b",
+          "revision": "ad2efa42e345aeeff50d80c9d509bdd44286191f",
           "version": null
         }
       },
       {
-        "package": "LGNP",
-        "repositoryURL": "git@bitbucket.org:1711-games/LGNP.git",
+        "package": "MessagePack",
+        "repositoryURL": "git@github.com:kirilltitov/MessagePack.git",
         "state": {
           "branch": "master",
-          "revision": "1de7820ae6d06999cf4b69b2bb767d1275e88983",
+          "revision": "6f6b7c04c8b901b1ea1a6bef8e21f9ae083ae691",
           "version": null
-        }
-      },
-      {
-        "package": "LGNS",
-        "repositoryURL": "git@bitbucket.org:1711-games/LGNS.git",
-        "state": {
-          "branch": "master",
-          "revision": "8635f88afeda33d7ce3ad814ee2daf8d603cc30c",
-          "version": null
-        }
-      },
-      {
-        "package": "LoggerAPI",
-        "repositoryURL": "https://github.com/IBM-Swift/LoggerAPI.git",
-        "state": {
-          "branch": null,
-          "revision": "5041f2673aa75d6e973d9b6bd3956bc5068387c8",
-          "version": "1.7.3"
         }
       },
       {
         "package": "swift-nio",
-        "repositoryURL": "https://github.com/apple/swift-nio.git",
+        "repositoryURL": "https://github.com/apple/swift-nio",
         "state": {
           "branch": null,
-          "revision": "5d8148c8b45dfb449276557f22120694567dd1d2",
-          "version": "1.9.5"
+          "revision": "a20e129c22ad00a51c902dca54a5456f90664780",
+          "version": "1.12.0"
         }
       },
       {
@@ -168,17 +78,8 @@
         "repositoryURL": "https://github.com/kirilltitov/SwiftMsgPack.git",
         "state": {
           "branch": "master",
-          "revision": "d0930478e40a84513626dfbb8ea7af6f0d64a27d",
+          "revision": "5dfa9b119145fbfc2436bfe851ba938d7b38e49e",
           "version": null
-        }
-      },
-      {
-        "package": "TypeDecoder",
-        "repositoryURL": "https://github.com/IBM-Swift/TypeDecoder.git",
-        "state": {
-          "branch": null,
-          "revision": "2fd9b413df610a526ae5291aaf860cbb8b1856b5",
-          "version": "1.3.0"
         }
       }
     ]
