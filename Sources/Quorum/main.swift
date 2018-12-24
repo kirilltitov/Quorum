@@ -3,9 +3,8 @@ import LGNCore
 import LGNC
 import LGNP
 import LGNS
-import FDB
+import Entita2FDB
 import NIO
-import Entita2
 
 LGNP.verbose = false
 
@@ -42,48 +41,20 @@ let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCou
 let cryptor = try LGNP.Cryptor(salt: "da kak tak", key: "3858f62230ac3c91")
 
 let fdb = FDB()
-let subspace = Subspace(SERVICE_ID, PORTAL_ID)
+let subspaceMain = Subspace(SERVICE_ID, PORTAL_ID)
 
-extension FDB: E2Storage {
-    public func load(by key: Bytes, on eventLoop: EventLoop) -> EventLoopFuture<Bytes?> {
-        return self
-            .begin(eventLoop: eventLoop)
-            .then { $0.get(key: key) }
-            .map { $0.0 }
-    }
-    
-    public func save(bytes: Bytes, by key: Bytes, on eventLoop: EventLoop) -> EventLoopFuture<Void> {
-        return self
-            .begin(eventLoop: eventLoop)
-            .then { $0.set(key: key, value: bytes, commit: true) }
-            .map { _ in () }
-    }
-    
-    public func delete(by key: Bytes, on eventLoop: EventLoop) -> EventLoopFuture<Void> {
-        return self
-            .begin(eventLoop: eventLoop)
-            .then { $0.clear(key: key, commit: true) }
-            .map { _ in () }
-    }
-}
-
-public protocol GenericModel: E2Entity {}
-public extension GenericModel {
-    public static var storage: E2Storage {
+public extension E2FDBModel {
+    public static var storage: FDB {
         return fdb
     }
-    
-    public static var format: E2.Format {
-        return .MsgPack
-    }
 
-    public static func _getKeyFrom(ID: Identifier) -> Bytes {
-        return subspace[self.entityName][ID._bytes].asFDBKey()
+    public static var subspace: Subspace {
+        return subspaceMain
     }
 }
 
-public protocol Model: GenericModel where Identifier == E2.UUID {}
-public protocol ModelInt: GenericModel where Identifier == Int {}
+public protocol Model: E2FDBModel where Identifier == E2.UUID {}
+public protocol ModelInt: E2FDBModel where Identifier == Int {}
 
 final public class Test: Model {
     public let ID: E2.UUID
@@ -115,7 +86,6 @@ public class LogicPost {
 
     public static func get(by ID: Int, on eventLoop: EventLoop) -> Future<Post?> {
         if let post = self.lru.get(for: ID) {
-            print("loading from cache")
             return eventLoop.newSucceededFuture(result: post)
         }
 
@@ -163,10 +133,6 @@ let promise: Promise<Void> = eventLoopGroup.eventLoop.newPromise()
 promise.futureResult.whenComplete {
     print("Quorum service on portal ID \(PORTAL_ID) started at \(address)")
 }
-
-//let post = try LogicPost.get(by: 1337, on: eventLoopGroup.eventLoop).wait()!
-
-//exit(0)
 
 try Services.Quorum.serveLGNS(
     at: address,
