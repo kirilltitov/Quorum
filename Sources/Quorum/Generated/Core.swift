@@ -8,11 +8,7 @@ import NIO
 public struct Services {
     public typealias ContentType = LGNP.Message.ContentType
 
-    public enum ServiceVisibility {
-        case Public, Private
-    }
-
-    public static let registry: [String: (port: Int, contracts: [String: ServiceVisibility])] = [
+    public static let registry: LGNC.ServicesRegistry = [
         "Quorum": (
             port: Services.Quorum.port,
             contracts: [
@@ -1262,7 +1258,7 @@ public struct Services {
             public let ID: String
             public let IDUser: String
             public let IDPost: Int
-            public let IDReplyComment: String
+            public let IDReplyComment: String?
             public let isDeleted: Bool
             public let body: String
             public let dateCreated: String
@@ -1272,7 +1268,7 @@ public struct Services {
                 ID: String,
                 IDUser: String,
                 IDPost: Int,
-                IDReplyComment: String,
+                IDReplyComment: String? = nil,
                 isDeleted: Bool,
                 body: String,
                 dateCreated: String,
@@ -1303,7 +1299,7 @@ public struct Services {
                 var _ID: String = String()
                 var _IDUser: String = String()
                 var _IDPost: Int = Int()
-                var _IDReplyComment: String = String()
+                var _IDReplyComment: String?
                 var _isDeleted: Bool = Bool()
                 var _body: String = String()
                 var _dateCreated: String = String()
@@ -1312,6 +1308,10 @@ public struct Services {
                 do {
                     do {
                         _ID = try Comment.extract(param: "ID", from: dictionary)
+
+                        if let error = Validation.UUID().validate(input: _ID) {
+                            validatorFutures["ID"]!.append(eventLoop.newSucceededFuture(result: ("ID", error)))
+                        }
                     } catch Entita.E.ExtractError {
                         validatorFutures["ID"]!.append(eventLoop.newSucceededFuture(result: ("ID", Validation.Error.MissingValue())))
                     }
@@ -1331,6 +1331,10 @@ public struct Services {
                     }
                     do {
                         _IDReplyComment = try Comment.extract(param: "IDReplyComment", from: dictionary)
+
+                        if let _IDReplyComment = _IDReplyComment, let error = Validation.UUID().validate(input: _IDReplyComment) {
+                            validatorFutures["IDReplyComment"]!.append(eventLoop.newSucceededFuture(result: ("IDReplyComment", error)))
+                        }
                     } catch Entita.E.ExtractError {
                         validatorFutures["IDReplyComment"]!.append(eventLoop.newSucceededFuture(result: ("IDReplyComment", Validation.Error.MissingValue())))
                     }
@@ -1391,7 +1395,7 @@ public struct Services {
                     ID: try Comment.extract(param: "ID", from: dictionary),
                     IDUser: try Comment.extract(param: "IDUser", from: dictionary),
                     IDPost: try Comment.extract(param: "IDPost", from: dictionary),
-                    IDReplyComment: try Comment.extract(param: "IDReplyComment", from: dictionary),
+                    IDReplyComment: try Comment.extract(param: "IDReplyComment", from: dictionary, isOptional: true),
                     isDeleted: try Comment.extract(param: "isDeleted", from: dictionary),
                     body: try Comment.extract(param: "body", from: dictionary),
                     dateCreated: try Comment.extract(param: "dateCreated", from: dictionary),
