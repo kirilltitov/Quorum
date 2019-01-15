@@ -29,30 +29,12 @@
         }
       },
       {
-        "package": "Entita2",
-        "repositoryURL": "git@bitbucket.org:1711-games/Entita2.git",
-        "state": {
-          "branch": "master",
-          "revision": "efdbe98e3c1ad49fe42f44ee62c5ba32f135da75",
-          "version": null
-        }
-      },
-      {
-        "package": "Entita2FDB",
-        "repositoryURL": "git@bitbucket.org:1711-games/Entita2FDB.git",
-        "state": {
-          "branch": "master",
-          "revision": "49a248841cd59e9851831dc7fdc909f9d461368e",
-          "version": null
-        }
-      },
-      {
         "package": "FDBSwift",
-        "repositoryURL": "git@github.com:kirilltitov/FDBSwift.git",
+        "repositoryURL": "https://github.com/kirilltitov/FDBSwift.git",
         "state": {
-          "branch": "master",
+          "branch": null,
           "revision": "a78689bb6936864d97f79b0ab2e5640db5ebe990",
-          "version": null
+          "version": "2.0.0"
         }
       },
       {
@@ -62,24 +44,6 @@
           "branch": null,
           "revision": "377e8bff2a7c99fb5a588dec351334efa3fd0b94",
           "version": "4.0.4"
-        }
-      },
-      {
-        "package": "LGNPContenter",
-        "repositoryURL": "git@bitbucket.org:1711-games/LGNPContenter.git",
-        "state": {
-          "branch": "master",
-          "revision": "ad2efa42e345aeeff50d80c9d509bdd44286191f",
-          "version": null
-        }
-      },
-      {
-        "package": "MessagePack",
-        "repositoryURL": "git@github.com:kirilltitov/MessagePack.git",
-        "state": {
-          "branch": "master",
-          "revision": "6f6b7c04c8b901b1ea1a6bef8e21f9ae083ae691",
-          "version": null
         }
       },
       {
@@ -105,7 +69,7 @@
         "repositoryURL": "https://github.com/kirilltitov/SwiftMsgPack.git",
         "state": {
           "branch": "master",
-          "revision": "5dfa9b119145fbfc2436bfe851ba938d7b38e49e",
+          "revision": "3323bf501859277767afd78b163e7ee4fd529bf3",
           "version": null
         }
       }
