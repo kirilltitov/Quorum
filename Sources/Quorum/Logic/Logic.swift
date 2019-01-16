@@ -1,3 +1,4 @@
+import Foundation
 import Generated
 import LGNC
 import Entita2
@@ -31,7 +32,7 @@ public extension Logic {
                 )
                 .flatMapThrowing { response in
                     guard let rawIDUser = response.IDUser else {
-                        throw LGNC.ContractError.GeneralError("Token not authorized", 403)
+                        throw LGNC.ContractError.GeneralError("Not authorized", 403)
                     }
                     guard let IDUser = Models.User.Identifier(rawIDUser) else {
                         throw LGNC.ContractError.GeneralError("Invalid ID User \(rawIDUser)", 403)
@@ -45,10 +46,6 @@ public extension Logic {
                     return user
                 }
         }
-
-//        public static func getUser(by token: String, on eventLoop: EventLoop) -> Future<Models.User?> {
-//            return eventLoop.newSucceededFuture(result: Models.User.unknown)
-//        }
 
         public static func get(by ID: Models.User.Identifier, on eventLoop: EventLoop) -> Future<Models.User?> {
             typealias Contract = Services.Author.Contracts.UserInfo
@@ -68,8 +65,22 @@ public extension Logic {
     }
 
     public class Comment {
-        public static func get(by ID: Int, on eventLoop: EventLoop) -> Future<Models.Comment?> {
+        public static func get(by ID: Models.Comment.Identifier, on eventLoop: EventLoop) -> Future<Models.Comment?> {
             return Models.Comment.get(by: ID, on: eventLoop)
+        }
+        
+        public static func getThrowingWithTransaction(
+            by ID: Models.Comment.Identifier,
+            on eventLoop: EventLoop
+        ) -> Future<(Models.Comment, Transaction)> {
+            return Models.Comment
+                .loadWithTransaction(by: ID, on: eventLoop)
+                .thenThrowing { maybeComment, transaction in
+                    guard let comment = maybeComment else {
+                        throw LGNC.ContractError.GeneralError("Comment not found (it should)", 404)
+                    }
+                    return (comment, transaction)
+            }
         }
 
         public static func doExists(ID: Int, on eventLoop: EventLoop) -> Future<Bool> {
@@ -114,6 +125,21 @@ public extension Logic {
             on eventLoop: EventLoop
         ) -> Future<Int> {
             return Models.Like.like(comment: comment, by: user, on: eventLoop)
+        }
+        
+        public static func edit(
+            comment: Models.Comment,
+            body: String,
+            with transaction: Transaction,
+            on eventLoop: EventLoop
+        ) -> Future<Models.Comment> {
+            comment.body = Logic.Comment.getProcessedBody(from: body)
+            comment.dateUpdated = Date()
+
+            return comment
+                .save(with: transaction, on: eventLoop)
+                .then { transaction in transaction.commit() }
+                .map { _ in comment }
         }
     }
 

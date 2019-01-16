@@ -31,12 +31,6 @@ public struct DeleteController {
             }
         }
 
-        Contract.Request.validateToken { token, eventLoop in
-            return Logic.User
-                .authorize(token: token, on: eventLoop)
-                .map { _ in nil }
-        }
-
         Contract.guarantee { (request: Contract.Request, info: LGNC.RequestInfo) -> Future<Contract.Response> in
             return Logic.Comment
                 .delete(commentID: request.IDComment, on: info.eventLoop)

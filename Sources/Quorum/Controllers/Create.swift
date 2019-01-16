@@ -5,12 +5,12 @@ import LGNS
 import LGNC
 import Entita2
 
-typealias CreateContract = Services.Quorum.Contracts.Create
-
 public struct CreateController {
+    typealias CreateContract = Services.Quorum.Contracts.Create
+
     public static func setup() {
         CreateContract.Request.validateIdpost { ID, eventLoop in
-            return Logic.Post
+            Logic.Post
                 .get(by: ID, on: eventLoop)
                 .map { post in
                     guard let post = post else {
@@ -23,14 +23,8 @@ public struct CreateController {
                 }
         }
 
-        CreateContract.Request.validateToken { token, eventLoop in
-            return Logic.User
-                .authorize(token: token, on: eventLoop)
-                .map { _ in nil }
-        }
-
         CreateContract.Request.validateIdreplycomment { ID, eventLoop in
-            return Logic.Comment
+            Logic.Comment
                 .doExists(ID: ID, on: eventLoop)
                 .map {
                     guard $0 == true else {

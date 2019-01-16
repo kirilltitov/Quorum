@@ -3,7 +3,7 @@ import Generated
 import LGNCore
 import LGNS
 import LGNC
-import Entita2
+import Entita2FDB
 
 public struct EditController {
     typealias EditContract = Services.Quorum.Contracts.Edit
@@ -27,59 +27,57 @@ public struct EditController {
             Logic.Comment
                 .get(by: ID, on: eventLoop)
                 .map {
-                    guard let comment: Models.Comment = $0 else {
+                    guard let _: Models.Comment = $0 else {
                         return .CommentNotFound
-                    }
-                    guard comment.dateCreated.timeIntervalSince < COMMENT_EDITABLE_TIME else {
-                        return .ThisCommentIsNotEditableAnymore
                     }
                     return nil
                 }
         }
 
-        EditContract.Request.validateToken { token, eventLoop in
-            return Logic.User
-                .authorize(token: token, on: eventLoop)
-                .map { _ in nil }
-        }
-
         EditContract.guarantee { (request: EditContract.Request, info: LGNC.RequestInfo) -> Future<EditContract.Response> in
-            return Logic.User
-                .authorize(token: request.token, on: info.eventLoop)
-                .then { (user: Models.User) -> Future<(Models.Comment, Models.User)> in
+            let eventLoop = info.eventLoop
+
+            let userFuture = Logic.User.authorize(token: request.token, on: eventLoop)
+
+            return userFuture
+                .then { (user: Models.User) -> Future<(Models.Comment, Transaction)> in
                     Logic.Comment
-                        .get(by: request.IDComment, on: info.eventLoop)
-                        .thenThrowing {
-                            guard let comment = $0 else {
-                                throw LGNC.ContractError.GeneralError("Comment still not found (how is this possible?)", 1711)
+                        .getThrowingWithTransaction(by: request.IDComment, on: eventLoop)
+                        .thenThrowing { comment, transaction in
+                            if user.isAdmin == true {
+                                return (comment, transaction)
                             }
-//                            guard user.ID == comment.IDUser else {
-//                                throw LGNC.ContractError.GeneralError("It's not your comment", 403)
-//                            }
-                            return (comment, user)
+                            guard user.ID == comment.IDUser else {
+                                throw LGNC.ContractError.GeneralError("It's not your comment", 403)
+                            }
+                            guard comment.dateCreated.timeIntervalSince < COMMENT_EDITABLE_TIME else {
+                                throw LGNC.ContractError.GeneralError("This comment is not editable anymore", 408)
+                            }
+                            guard comment.dateUpdated.timeIntervalSince > COMMENT_EDIT_COOLDOWN else {
+                                throw LGNC.ContractError.GeneralError("You're editing too often", 429)
+                            }
+                            return (comment, transaction)
                         }
                 }
-                .then { (comment, user) -> Future<(Models.Comment, Models.User)> in
-                    comment.body = Logic.Comment.getProcessedBody(from: request.body)
-                    comment.dateUpdated = Date()
-                    return Logic.Comment
-                        .save(comment: comment, on: info.eventLoop)
-                        .map { ($0, user) }
+                .then { comment, transaction in
+                    Logic.Comment.edit(
+                        comment: comment,
+                        body: request.body,
+                        with: transaction,
+                        on: eventLoop
+                    )
                 }
-                .then { (comment, user) in
-                    Models.Like.getLikesFor(comment: comment, user: user, on: info.eventLoop)
-                }
-                .map { tuple in
-                    let (comment, likes, user) = tuple
-                    return EditContract.Response(
+                .then { comment in
+                    EditContract.Response.await(
+                        on: eventLoop,
                         ID: comment.ID,
-                        IDUser: comment.IDUser.string,
-                        userName: user.username,
+                        IDUser: userFuture.map { $0.ID.string },
+                        userName: userFuture.map { $0.username },
                         IDPost: comment.IDPost,
                         IDReplyComment: comment.IDReplyComment,
                         isDeleted: comment.isDeleted,
                         body: comment.body,
-                        likes: likes,
+                        likes: Models.Like.getLikesFor(comment: comment, on: eventLoop),
                         dateCreated: comment.dateCreated.formatted,
                         dateUpdated: comment.dateUpdated.formatted
                     )

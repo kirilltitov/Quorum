@@ -42,6 +42,7 @@ public extension LGNS.Address {
 
 let COMMENT_EDITABLE_TIME: TimeInterval = 3600
 let COMMENT_LIKEABLE_TIME: TimeInterval = 86400 * 365
+let COMMENT_EDIT_COOLDOWN: TimeInterval = 10
 
 let defaultUser = E2.UUID("00000000-1637-0034-1711-000000000000")!
 
@@ -51,6 +52,8 @@ let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCou
 let cryptor = try LGNP.Cryptor(salt: "da kak tak", key: "3858f62230ac3c91")
 
 let fdb = FDB()
+try fdb.connect()
+
 let subspaceMain = Subspace(SERVICE_ID, PORTAL_ID)
 
 let requiredBitmask: LGNP.Message.ControlBitmask = [.signatureSHA1, .encrypted, .contentTypeMsgPack]

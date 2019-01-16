@@ -42,15 +42,13 @@ public struct CommentsController {
                             users[user.ID] = user
                         }
                     ).map { users -> (
-                        [Models.Comment.Identifier: Logic.Post.CommentWithLikes],
-                        [Models.User.Identifier: Models.User]
-                    ) in
-                        (commentsWithLikes, users)
+                            [Models.Comment.Identifier: Logic.Post.CommentWithLikes],
+                            [Models.User.Identifier: Models.User]
+                        ) in (commentsWithLikes, users)
                     }
                 }
-                .map { (tuple) -> ListContract.Response in
-                    let (commentsWithLikes, users) = tuple
-                    return ListContract.Response(
+                .map { commentsWithLikes, users -> ListContract.Response in
+                    ListContract.Response(
                         comments: commentsWithLikes.map { commentWithLikes in
                             let comment = commentWithLikes.value.comment
                             return .init(
