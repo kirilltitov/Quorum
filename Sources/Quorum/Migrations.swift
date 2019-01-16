@@ -56,7 +56,7 @@ let migrations: Migrations = [
         }
     },
     {
-        try Logic.Comment.insert(
+        let _ = try Logic.Comment.insert(
             comment: comment,
             on: eventLoopGroup.eventLoop
         ).wait()
