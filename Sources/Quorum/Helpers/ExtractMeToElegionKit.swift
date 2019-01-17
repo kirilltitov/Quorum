@@ -6,10 +6,44 @@ import NIO
 
 //MARK EventLoopFuture
 public extension Future {
-    public func flatMapThrowing<U>(closure: @escaping (T) throws -> Future<U>) -> Future<U> {
-        return self.then {
+    public func flatMapThrowing<U>(
+        file: StaticString = #file,
+        line: UInt = #line,
+        _ callback: @escaping (T) throws -> Future<U>
+    ) -> Future<U> {
+        return self.then(file: file, line: line) {
             do {
-                return try closure($0)
+                return try callback($0)
+            } catch {
+                return self.eventLoop.newFailedFuture(error: error)
+            }
+        }
+    }
+    
+    public func mapThrowing<U>(
+        file: StaticString = #file,
+        line: UInt = #line,
+        _ callback: @escaping (T) throws -> U
+    ) -> Future<U> {
+        return self.thenThrowing(file: file, line: line, callback)
+    }
+
+    public func flatMap<U>(
+        file: StaticString = #file,
+        line: UInt = #line,
+        _ callback: @escaping (T) -> Future<U>
+    ) -> Future<U> {
+        return self.then(file: file, line: line, callback)
+    }
+
+    public func flatMapIfErrorThrowing(
+        file: StaticString = #file,
+        line: UInt = #line,
+        _ callback: @escaping (Error) throws -> Future<T>
+    ) -> Future<T> {
+        return self.thenIfError(file: file, line: line) {
+            do {
+                return try callback($0)
             } catch {
                 return self.eventLoop.newFailedFuture(error: error)
             }
@@ -45,10 +79,23 @@ public final class Reference<Target: E2Entity, Key: TuplePackable> where Target.
     public func getIndexKey(from key: Key) -> Subspace {
         return Reference.subspace["ref"][Target.entityName][self.indexName][key]
     }
+    
+    public func loadTarget(
+        by value: Key,
+        on eventLoop: EventLoop
+    ) -> Future<Target?> {
+        return fdb
+            .begin(eventLoop: eventLoop)
+            .then { self.loadTarget(by: value, with: $0, on: eventLoop) }
+    }
 
-    public func loadTarget(by value: Key, on eventLoop: EventLoop) -> Future<Target?> {
+    public func loadTarget(
+        by value: Key,
+        with transaction: Transaction,
+        on eventLoop: EventLoop
+    ) -> Future<Target?> {
         return self
-            .load(by: value, on: eventLoop)
+            .load(by: value, with: transaction)
             .then { (bytes: Bytes?) -> Future<Bytes?> in
                 guard let bytes = bytes else {
                     return eventLoop.newSucceededFuture(result: nil)
@@ -68,14 +115,22 @@ public final class Reference<Target: E2Entity, Key: TuplePackable> where Target.
             .load(by: value, on: eventLoop)
             .map { $0 != nil }
     }
-
+    
     public func load(
         by value: Key,
         on eventLoop: EventLoop
     ) -> Future<Bytes?> {
         return fdb
             .begin(eventLoop: eventLoop)
-            .then { $0.get(key: self.getIndexKey(from: value)) }
+            .then { self.load(by: value, with: $0) }
+    }
+
+    public func load(
+        by value: Key,
+        with transaction: Transaction
+    ) -> Future<Bytes?> {
+        return transaction
+            .get(key: self.getIndexKey(from: value))
             .map { $0.0 }
     }
 

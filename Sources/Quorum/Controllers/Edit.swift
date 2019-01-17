@@ -33,14 +33,17 @@ public struct EditController {
                     return nil
                 }
         }
-
-        EditContract.guarantee { (request: EditContract.Request, info: LGNC.RequestInfo) -> Future<EditContract.Response> in
+        
+        func contractRoutine(
+            request: EditContract.Request,
+            info: LGNC.RequestInfo
+        ) -> Future<EditContract.Response> {
             let eventLoop = info.eventLoop
-
+            
             let userFuture = Logic.User.authorize(token: request.token, on: eventLoop)
-
+            
             return userFuture
-                .then { (user: Models.User) -> Future<(Models.Comment, Transaction)> in
+                .flatMap { (user: Models.User) -> Future<(Models.Comment, Transaction)> in
                     Logic.Comment
                         .getThrowingWithTransaction(by: request.IDComment, on: eventLoop)
                         .thenThrowing { comment, transaction in
@@ -57,9 +60,9 @@ public struct EditController {
                                 throw LGNC.ContractError.GeneralError("You're editing too often", 429)
                             }
                             return (comment, transaction)
-                        }
+                    }
                 }
-                .then { comment, transaction in
+                .flatMap { comment, transaction in
                     Logic.Comment.edit(
                         comment: comment,
                         body: request.body,
@@ -67,7 +70,7 @@ public struct EditController {
                         on: eventLoop
                     )
                 }
-                .then { comment in
+                .flatMap { comment in
                     EditContract.Response.await(
                         on: eventLoop,
                         ID: comment.ID,
@@ -82,6 +85,14 @@ public struct EditController {
                         dateUpdated: comment.dateUpdated.formatted
                     )
                 }
+                .flatMapIfErrorThrowing { error in
+                    if case FDB.Error.TransactionRetry = error {
+                        return contractRoutine(request: request, info: info)
+                    }
+                    throw error
+                }
         }
+
+        EditContract.guarantee(contractRoutine)
     }
 }

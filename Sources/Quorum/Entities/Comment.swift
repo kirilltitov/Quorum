@@ -40,8 +40,24 @@ public extension Models {
             }
         }
 
-        public static func get(by ID: Comment.Identifier, on eventLoop: EventLoop) -> Future<Models.Comment?> {
+        public static func getUsingRefID(
+            by ID: Comment.Identifier,
+            on eventLoop: EventLoop
+        ) -> Future<Models.Comment?> {
             return self.refID.loadTarget(by: ID, on: eventLoop)
+        }
+
+        public static func getUsingRefIDWithTransaction(
+            by ID: Comment.Identifier,
+            on eventLoop: EventLoop
+        ) -> Future<(Models.Comment?, Transaction)> {
+            return fdb
+                .begin(eventLoop: eventLoop)
+                .then { transaction in
+                    self.refID
+                        .loadTarget(by: ID, with: transaction, on: eventLoop)
+                        .map { maybeComment in (maybeComment, transaction) }
+                }
         }
 
         // this is extracted because logic would like to use it as range

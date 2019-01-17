@@ -30,7 +30,7 @@ public struct CommentsController {
         ) -> Future<ListContract.Response> in
             return Logic.Post
                 .getCommentsFor(ID: request.IDPost, on: info.eventLoop)
-                .then { commentsWithLikes in
+                .flatMap { commentsWithLikes in
                     EventLoopFuture<[Models.User.Identifier: Models.User]>.reduce(
                         into: [:],
                         Set(commentsWithLikes.map { $0.value.comment.IDUser }).map {

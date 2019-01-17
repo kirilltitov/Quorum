@@ -32,8 +32,21 @@ public struct DeleteController {
         }
 
         Contract.guarantee { (request: Contract.Request, info: LGNC.RequestInfo) -> Future<Contract.Response> in
-            return Logic.Comment
-                .delete(commentID: request.IDComment, on: info.eventLoop)
+            let eventLoop = info.eventLoop
+
+            return Logic.User
+                .authorize(token: request.token, on: eventLoop)
+                .then { user in
+                    Logic.Comment
+                        .getThrowing(by: request.IDComment, on: eventLoop)
+                        .map { comment in (user, comment) }
+                }
+                .flatMapThrowing { (user: Models.User, comment: Models.Comment) throws -> Future<Void> in
+                    guard comment.IDUser == user.ID || user.isAdmin == true else {
+                        throw LGNC.ContractError.GeneralError("This is not your comment", 403)
+                    }
+                    return Logic.Comment.delete(commentID: comment.ID, on: eventLoop)
+                }
                 .map { _ in Contract.Response() }
         }
     }
