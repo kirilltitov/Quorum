@@ -28,6 +28,11 @@ public extension Models {
         public let dateCreated: Date
         public var dateUpdated: Date
 
+        public static let indices = [
+            \Comment.ID,
+            \Comment.IDUser,
+        ]
+
         public func getUser(on eventLoop: EventLoop) -> Future<User> {
             return Logic.User.get(
                 by: self.IDUser,

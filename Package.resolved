@@ -29,15 +29,6 @@
         }
       },
       {
-        "package": "FDBSwift",
-        "repositoryURL": "https://github.com/kirilltitov/FDBSwift.git",
-        "state": {
-          "branch": null,
-          "revision": "e5e8059296ad2340204d429c0d7e855c5e535cbf",
-          "version": "2.1.0"
-        }
-      },
-      {
         "package": "Gzip",
         "repositoryURL": "https://github.com/1024jp/GzipSwift.git",
         "state": {
@@ -47,26 +38,8 @@
         }
       },
       {
-        "package": "LGNKit-Swift",
-        "repositoryURL": "git@bitbucket.org:1711-games/LGNKit-Swift.git",
-        "state": {
-          "branch": "master",
-          "revision": "ea2358fe223d74ba0e0441caeb463d7d30dfcd72",
-          "version": null
-        }
-      },
-      {
-        "package": "MessagePack",
-        "repositoryURL": "https://github.com/kirilltitov/MessagePack.git",
-        "state": {
-          "branch": "master",
-          "revision": "aa2e70893b419253a3dfb876dd82b1fb9d9e05f2",
-          "version": null
-        }
-      },
-      {
         "package": "swift-nio",
-        "repositoryURL": "https://github.com/apple/swift-nio.git",
+        "repositoryURL": "https://github.com/apple/swift-nio",
         "state": {
           "branch": null,
           "revision": "a20e129c22ad00a51c902dca54a5456f90664780",
