@@ -11,7 +11,8 @@ public extension Logic {
             case UserNotFound
         }
         
-        private static let usersLRU: CacheLRU<E2.UUID, Models.User> = CacheLRU(capacity: 1000)
+        //private static let usersLRU: CacheLRU<E2.UUID, Models.User> = CacheLRU(capacity: 1000)
+        private static let usersLRU = SyncDict<E2.UUID, Models.User>()
         
         public static func authorize(token: String, on eventLoop: EventLoop) -> Future<Models.User> {
             let exploded = token.split(separator: ".", maxSplits: 2).map { String($0) }
@@ -56,8 +57,8 @@ public extension Logic {
         
         public static func get(by ID: Models.User.Identifier, on eventLoop: EventLoop) -> Future<Models.User?> {
             typealias Contract = Services.Author.Contracts.UserInfo
-            
-            return self.usersLRU.getOrSet(for: ID) {
+
+            return self.usersLRU.getOrSet(by: ID, on: eventLoop) {
                 Contract
                     .execute(at: .port(1700), with: .init(ID: ID.string), using: client)
                     .map { Models.User(ID: ID, username: $0.username, isAdmin: $0.accessLevel == "Admin") }

@@ -33,7 +33,7 @@ public struct CommentsController {
                 .flatMap { commentsWithLikes in
                     EventLoopFuture<[Models.User.Identifier: Models.User]>.reduce(
                         into: [:],
-                        Set(commentsWithLikes.map { $0.value.comment.IDUser }).map {
+                        Set(commentsWithLikes.map { $0.comment.IDUser }).map {
                             Logic.User.get(by: $0, on: info.eventLoop)
                         },
                         eventLoop: info.eventLoop,
@@ -42,7 +42,7 @@ public struct CommentsController {
                             users[user.ID] = user
                         }
                     ).map { users -> (
-                            [Models.Comment.Identifier: Logic.Post.CommentWithLikes],
+                            [Logic.Post.CommentWithLikes],
                             [Models.User.Identifier: Models.User]
                         ) in (commentsWithLikes, users)
                     }
@@ -50,7 +50,7 @@ public struct CommentsController {
                 .map { commentsWithLikes, users -> ListContract.Response in
                     ListContract.Response(
                         comments: commentsWithLikes.map { commentWithLikes in
-                            let comment = commentWithLikes.value.comment
+                            let comment = commentWithLikes.comment
                             return .init(
                                 ID: comment.ID,
                                 IDUser: comment.IDUser.string,
@@ -59,7 +59,7 @@ public struct CommentsController {
                                 IDReplyComment: comment.IDReplyComment,
                                 isDeleted: comment.isDeleted,
                                 body: comment.body,
-                                likes: commentWithLikes.value.likes,
+                                likes: commentWithLikes.likes,
                                 dateCreated: comment.dateCreated.formatted,
                                 dateUpdated: comment.dateUpdated.formatted
                             )
