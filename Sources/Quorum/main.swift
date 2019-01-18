@@ -71,6 +71,7 @@ extension SyncStorage {
 
         self.queue.async {
             self.set0(by: key, value: value)
+            promise.succeed(result: ())
         }
 
         return promise.futureResult
