@@ -1,40 +1,6 @@
-import LGNS
-import NIOConcurrencyHelpers
+import Foundation
 
-public protocol Cache {
-    associatedtype Key: Hashable
-    associatedtype Value
-
-    var lock: Lock { get }
-    var eventLoop: EventLoop { get }
-
-    func get0(for key: Key) -> Value?
-    func set0(_ value: Value, for key: Key)
-    func getOrSet(for key: Key, getter: () -> Future<Value?>) -> Future<Value?>
-    func remove(for key: Key)
-}
-
-public extension Cache {
-    public func getOrSet(for key: Key, getter: () -> Future<Value?>) -> Future<Value?> {
-        self.lock.lock()
-
-        if let value = self.get0(for: key) {
-            self.lock.unlock()
-            return self.eventLoop.newSucceededFuture(result: value)
-        }
-
-        let future = getter()
-        future.whenSuccess {
-            if let result = $0 {
-                self.set0(result, for: key)
-            }
-        }
-        future.whenComplete(self.lock.unlock)
-        return future
-    }
-}
-
-final public class CacheLRU<Key: Hashable, Value>: Cache {
+final public class CacheLRU<Key: Hashable, Value>: SyncStorage {
     final private class DoublyLinkedList<T> {
         final class Node {
             var value: T
@@ -114,18 +80,19 @@ final public class CacheLRU<Key: Hashable, Value>: Cache {
         public let key: Key
         public let value: Value
     }
-    
+
     private let capacity: Int
     private let list = DoublyLinkedList<Box>()
     private var nodesDict: [Key: DoublyLinkedList<Box>.Node] = [:]
-    public let eventLoop: EventLoop = EmbeddedEventLoop()
-    public let lock: Lock = Lock()
     
-    public init(capacity: Int) {
+    public let queue: DispatchQueue
+
+    public init(capacity: Int, queue: DispatchQueue = CacheLRU.getQueue()) {
         self.capacity = max(0, capacity)
+        self.queue = queue
     }
-    
-    public func set0(_ value: Value, for key: Key) {
+
+    public func set0(by key: Key, value: Value) {
         let box = Box(key: key, value: value)
 
         if let node = nodesDict[key] {
@@ -144,7 +111,7 @@ final public class CacheLRU<Key: Hashable, Value>: Cache {
         }
     }
     
-    public func get0(for key: Key) -> Value? {
+    public func get0(by key: Key) -> Value? {
         guard let node = nodesDict[key] else {
             return nil
         }
@@ -154,8 +121,8 @@ final public class CacheLRU<Key: Hashable, Value>: Cache {
         return node.value.value
     }
     
-    public func remove(for key: Key) {
+    public func remove0(by key: Key) -> Value? {
         // todo
-        // nodesDict.removeValue(forKey: key)
+        return nil
     }
 }

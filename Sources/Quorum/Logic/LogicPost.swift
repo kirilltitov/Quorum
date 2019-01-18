@@ -7,11 +7,15 @@ import NIO
 
 public extension Logic {
     public class Post {
-        public struct CommentWithLikes {
+        public class CommentWithLikes {
             public let comment: Models.Comment
-            private(set) var likes: Int
+            private(set) var likes: Int = 0
 
-            mutating func incrementLikes() {
+            public init(_ comment: Models.Comment) {
+                self.comment = comment
+            }
+
+            func incrementLikes() {
                 self.likes += 1
             }
         }
@@ -23,7 +27,7 @@ public extension Logic {
         private static let postsLRU: CacheLRU<Int, Models.Post> = CacheLRU(capacity: 1000)
 
         public static func get(by ID: Int, on eventLoop: EventLoop) -> Future<Models.Post?> {
-            return self.postsLRU.getOrSet(for: ID) {
+            return self.postsLRU.getOrSet(by: ID, on: eventLoop) {
                 Models.Post.load(
                     by: ID,
                     on: eventLoop
@@ -40,7 +44,7 @@ public extension Logic {
         public static func getCommentsFor(
             ID: Int,
             on eventLoop: EventLoop
-        ) -> Future<[Models.Comment.Identifier: CommentWithLikes]> {
+        ) -> Future<[CommentWithLikes]> {
             return self.get(
                 by: ID,
                 on: eventLoop
@@ -56,16 +60,17 @@ public extension Logic {
                     .get(range: Models.Comment._getPostPrefix(post.ID).range)
                     .map { $0.0 }
             }.thenThrowing {
-                var result: [Models.Comment.Identifier: CommentWithLikes] = [:]
+                var result: [CommentWithLikes] = []
                 for record in $0.records {
                     let tuple = Tuple(from: record.key)
+                    var commentWithLikes: CommentWithLikes?
                     if Models.Comment.doesRelateToThis(tuple: tuple) {
-                        let comment = try Models.Comment(from: record.value)
-                        result[comment.ID] = CommentWithLikes(comment: comment, likes: 0)
-                    } else if Models.Like.doesRelateToThis(tuple: tuple) {
-                        if let commentID = Models.Like.getCommentID(from: tuple) {
-                            result[commentID]?.incrementLikes()
+                        if let _comm = commentWithLikes {
+                            result.append(_comm)
                         }
+                        commentWithLikes = CommentWithLikes(try Models.Comment(from: record.value))
+                    } else if Models.Like.doesRelateToThis(tuple: tuple) {
+                        commentWithLikes?.incrementLikes()
                     }
                 }
                 return result
