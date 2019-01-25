@@ -28,6 +28,10 @@ public struct Services {
                     visibility: Services.Quorum.Contracts.Delete.visibility,
                     transports: Services.Quorum.Contracts.Delete.transports
                 ),
+                "Like": (
+                    visibility: Services.Quorum.Contracts.Like.visibility,
+                    transports: Services.Quorum.Contracts.Like.transports
+                ),
             ]
         ),
         "Author": (

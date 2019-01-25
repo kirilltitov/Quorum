@@ -62,21 +62,21 @@ let migrations: Migrations = [
         ).wait()
     },
     {
-        let _ = try Logic.Comment.like(
+        let _ = try Logic.Comment.likeOrUnlike(
             comment: comment,
             by: Models.User(ID: defaultUser, username: "Kirill Titov", isAdmin: true),
             on: eventLoopGroup.eventLoop
         ).wait()
     },
     {
-        let _ = try Logic.Comment.like(
+        let _ = try Logic.Comment.likeOrUnlike(
             comment: comment,
             by: Models.User(ID: E2.UUID(), username: "Kirill Titov", isAdmin: true),
             on: eventLoopGroup.eventLoop
         ).wait()
     },
     {
-        let _ = try Logic.Comment.like(
+        let _ = try Logic.Comment.likeOrUnlike(
             comment: comment,
             by: Models.User(ID: E2.UUID(), username: "Kirill Titov", isAdmin: true),
             on: eventLoopGroup.eventLoop

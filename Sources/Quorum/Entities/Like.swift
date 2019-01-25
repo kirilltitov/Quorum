@@ -38,16 +38,24 @@ public extension Models {
             user: User,
             on eventLoop: EventLoop
         ) -> Future<(Models.Comment, Int, Models.User)> {
-            return Like
+            return self
                 .getLikesFor(comment: comment, on: eventLoop)
                 .map { (comment, $0, user) }
         }
 
-        public static func like(comment: Comment, by user: User, on eventLoop: EventLoop) -> Future<Int> {
+        public static func likeOrUnlike(comment: Comment, by user: User, on eventLoop: EventLoop) -> Future<Int> {
             return fdb
                 .begin(eventLoop: eventLoop)
-                .then { $0.set(key: self.getPrefix(for: comment)[user.ID], value: Bytes(), commit: true) }
-                .then { _ in self.getLikesFor(comment: comment, on: eventLoop) }
+                .then { $0.get(key: self.getPrefix(for: comment)[user.ID]) }
+                .then { (maybeLike, transaction) -> Future<Transaction> in
+                    if maybeLike == nil {
+                        return transaction.set(key: self.getPrefix(for: comment)[user.ID], value: Bytes())
+                    } else {
+                        return transaction.clear(key: self.getPrefix(for: comment)[user.ID])
+                    }
+                }
+                .then { transaction in transaction.get(range: self.getPrefix(for: comment).range, commit: true) }
+                .map { $0.0.records.count }
         }
     }
 }

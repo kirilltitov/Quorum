@@ -10,132 +10,6 @@ import NIO
 import MessagePack
 import Signals
 
-public protocol SyncStorage {
-    associatedtype Key: Hashable
-    associatedtype Value
-
-    var queue: DispatchQueue { get }
-
-    func getOrSet(
-        by key: Key,
-        on eventLoop: EventLoop,
-        _ getter: @escaping () -> Future<Value?>
-    ) -> Future<Value?>
-
-    func has(key: Key, on eventLoop: EventLoop) -> Future<Bool>
-    func get(by key: Key, on eventLoop: EventLoop) -> Future<Value?>
-    func set(by key: Key, value: Value, on eventLoop: EventLoop) -> Future<Void>
-    @discardableResult func remove(by key: Key, on eventLoop: EventLoop) -> Future<Value?>
-
-    func has0(key: Key) -> Bool
-    func get0(by key: Key) -> Value?
-    func set0(by key: Key, value: Value)
-    func remove0(by key: Key) -> Value?
-}
-
-extension SyncStorage {
-    public static func getQueue() -> DispatchQueue {
-        return DispatchQueue(
-            label: "games.1711.SyncStorage.\(Self.self)",
-            qos: .userInitiated,
-            attributes: .concurrent
-        )
-    }
-
-    public func has0(key: Key) -> Bool {
-        return self.get0(by: key) != nil
-    }
-
-    public func has(key: Key, on eventLoop: EventLoop) -> Future<Bool> {
-        let promise: Promise<Bool> = eventLoop.newPromise()
-
-        self.queue.async {
-            promise.succeed(result: self.has0(key: key))
-        }
-
-        return promise.futureResult
-    }
-    
-    public func get(by key: Key, on eventLoop: EventLoop) -> Future<Value?> {
-        let promise: Promise<Value?> = eventLoop.newPromise()
-
-        self.queue.async {
-            promise.succeed(result: self.get0(by: key))
-        }
-
-        return promise.futureResult
-    }
-    
-    public func set(by key: Key, value: Value, on eventLoop: EventLoop) -> Future<Void> {
-        let promise: Promise<Void> = eventLoop.newPromise()
-
-        self.queue.async {
-            self.set0(by: key, value: value)
-            promise.succeed(result: ())
-        }
-
-        return promise.futureResult
-    }
-    
-    public func getOrSet(
-        by key: Key,
-        on eventLoop: EventLoop,
-        _ getter: @escaping () -> EventLoopFuture<Value?>
-    ) -> EventLoopFuture<Value?> {
-        let promise: Promise<Value?> = eventLoop.newPromise()
-
-        self.queue.async(flags: .barrier) {
-            if let value = self.get0(by: key) {
-                promise.succeed(result: value)
-                return
-            }
-
-            do {
-                let result = try getter().wait()
-                if let result = result {
-                    self.set0(by: key, value: result)
-                }
-                promise.succeed(result: result)
-            } catch {
-                promise.fail(error: error)
-            }
-        }
-
-        return promise.futureResult
-    }
-    
-    @discardableResult public func remove(by key: Key, on eventLoop: EventLoop) -> Future<Value?> {
-        let promise: Promise<Value?> = eventLoop.newPromise()
-
-        self.queue.async(flags: .barrier) {
-            promise.succeed(result: self.remove0(by: key))
-        }
-
-        return promise.futureResult
-    }
-}
-
-public final class SyncDict<Key: Hashable, Value>: SyncStorage {
-    public let queue: DispatchQueue
-    private var storage: [Key: Value] = [:]
-
-    public init(queue: DispatchQueue = SyncDict.getQueue()) {
-        self.queue = queue
-    }
-
-    public func get0(by key: Key) -> Value? {
-        return self.storage[key]
-    }
-
-    public func set0(by key: Key, value: Value) {
-        self.storage[key] = value
-    }
-
-    public func remove0(by key: Key) -> Value? {
-        return self.storage.removeValue(forKey: key)
-    }
-}
-
 public struct Models {}
 public struct Logic {}
 
@@ -177,13 +51,21 @@ typealias SQuorum = Services.Quorum
 let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
 let cryptor = try LGNP.Cryptor(salt: "da kak tak", key: "3858f62230ac3c91")
 
-let fdb = FDB()
+let fdb = FDB(cluster: "/opt/foundationdb/fdb.cluster")
 try fdb.connect()
 
 let subspaceMain = Subspace(SERVICE_ID, PORTAL_ID)
 
-let requiredBitmask: LGNP.Message.ControlBitmask = [.signatureSHA1, .encrypted, .contentTypeMsgPack]
+let requiredBitmask: LGNP.Message.ControlBitmask = [.signatureSHA1, /*.encrypted,*/ .contentTypeMsgPack]
 let client = LGNS.Client(cryptor: cryptor, controlBitmask: requiredBitmask, eventLoopGroup: eventLoopGroup)
+
+//let user = Models.User(ID: E2.UUID(), username: "sdf")
+//let keyPath: PartialKeyPath<Models.User> = \Models.User.ID
+//let val = user[keyPath: keyPath]
+//
+//dump((val as? TuplePackable)?.pack()._string)
+//
+//exit(0)
 
 //let comments = try Logic.Post.getCommentsFor(ID: 1, on: eventLoopGroup.eventLoop).wait()
 //try comments.forEach {
@@ -203,6 +85,7 @@ CreateController.setup()
 CommentsController.setup()
 EditController.setup()
 DeleteController.setup()
+LikeController.setup()
 
 let testPostID: Int = 1
 

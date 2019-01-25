@@ -61,16 +61,15 @@ public extension Logic {
                     .map { $0.0 }
             }.thenThrowing {
                 var result: [CommentWithLikes] = []
+                var currentCommentWithLikes: CommentWithLikes?
                 for record in $0.records {
                     let tuple = Tuple(from: record.key)
-                    var commentWithLikes: CommentWithLikes?
                     if Models.Comment.doesRelateToThis(tuple: tuple) {
-                        if let _comm = commentWithLikes {
-                            result.append(_comm)
-                        }
-                        commentWithLikes = CommentWithLikes(try Models.Comment(from: record.value))
+                        let instance = CommentWithLikes(try Models.Comment(from: record.value))
+                        currentCommentWithLikes = instance
+                        result.append(instance)
                     } else if Models.Like.doesRelateToThis(tuple: tuple) {
-                        commentWithLikes?.incrementLikes()
+                        currentCommentWithLikes?.incrementLikes()
                     }
                 }
                 return result

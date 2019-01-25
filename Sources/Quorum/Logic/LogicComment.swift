@@ -75,12 +75,12 @@ public extension Logic {
             }
         }
         
-        public static func like(
+        public static func likeOrUnlike(
             comment: Models.Comment,
             by user: Models.User,
             on eventLoop: EventLoop
         ) -> Future<Int> {
-            return Models.Like.like(comment: comment, by: user, on: eventLoop)
+            return Models.Like.likeOrUnlike(comment: comment, by: user, on: eventLoop)
         }
         
         public static func edit(
