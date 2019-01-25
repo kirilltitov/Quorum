@@ -4,9 +4,13 @@ import Entita2FDB
 import NIO
 
 public extension Models {
-    final public class Comment: ModelInt {
+    final public class Comment: ModelInt, Entita2FDBIndexedEntity {
+        public static let IDKey: KeyPath<Comment, Int> = \.ID
         public static var fullEntityName = false
-        public static let refID = Reference<Comment, Comment.Identifier>("ID")
+        
+        public static var indices: [String : Entita2.Index<Models.Comment>] = [
+            "ID": E2.Index(\.ID)
+        ]
 
         public enum CodingKeys: String, CodingKey {
             case ID = "a"
@@ -44,7 +48,7 @@ public extension Models {
             by ID: Comment.Identifier,
             on eventLoop: EventLoop
         ) -> Future<Models.Comment?> {
-            return self.refID.loadTarget(by: ID, on: eventLoop)
+            return self.loadByIndex(name: "ID", value: ID, on: eventLoop)
         }
 
         public static func getUsingRefIDWithTransaction(
@@ -54,10 +58,14 @@ public extension Models {
             return fdb
                 .begin(eventLoop: eventLoop)
                 .then { transaction in
-                    self.refID
-                        .loadTarget(by: ID, with: transaction, on: eventLoop)
+                    self
+                        .loadByIndex(name: "ID", value: ID, with: transaction, on: eventLoop)
                         .map { maybeComment in (maybeComment, transaction) }
                 }
+        }
+
+        public func getIndexIndexSubspace() -> Subspace {
+            return Comment.subspace[Comment.entityName][self.ID]["idx"]
         }
 
         // this is extracted because logic would like to use it as range
@@ -70,21 +78,7 @@ public extension Models {
         }
 
         public func getIDAsKey() -> Bytes {
-            return _getFullPrefix().asFDBKey()
-        }
-
-        public func afterInsert(on eventLoop: EventLoop) -> Future<Void> {
-            return Comment.refID.save(
-                by: self.ID,
-                targetKey: self.getIDAsKey(),
-                on: eventLoop
-            )
-        }
-
-        public func afterDelete(on eventLoop: EventLoop) -> EventLoopFuture<Void> {
-            print("TO DO")
-            return eventLoop.newSucceededFuture(result: ())
-            //return Comment.refID.dele
+            return self._getFullPrefix().asFDBKey()
         }
 
         public init(
