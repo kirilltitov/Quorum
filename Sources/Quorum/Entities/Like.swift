@@ -4,6 +4,8 @@ import Entita2FDB
 // not to be created at all
 public extension Models {
     final public class Like: ModelInt {
+        public static var IDKey: KeyPath<Like, Int> = \.ID
+
         public static var fullEntityName = false
 
         public let ID: Int

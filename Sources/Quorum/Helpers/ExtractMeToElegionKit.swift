@@ -65,88 +65,7 @@ extension E2.ID: TuplePackable where Value == UUID {
     }
 }
 
-public final class Reference<Target: E2Entity, Key: TuplePackable> where Target.Identifier: TuplePackable {
-    public static var subspace: Subspace {
-        return subspaceMain
-    }
-
-    private let indexName: String
-
-    public init(_ indexName: String) {
-        self.indexName = indexName
-    }
-
-    public func getIndexKey(from key: Key) -> Subspace {
-        return Reference.subspace["ref"][Target.entityName][self.indexName][key]
-    }
-    
-    public func loadTarget(
-        by value: Key,
-        on eventLoop: EventLoop
-    ) -> Future<Target?> {
-        return fdb
-            .begin(eventLoop: eventLoop)
-            .then { self.loadTarget(by: value, with: $0, on: eventLoop) }
-    }
-
-    public func loadTarget(
-        by value: Key,
-        with transaction: Transaction,
-        on eventLoop: EventLoop
-    ) -> Future<Target?> {
-        return self
-            .load(by: value, with: transaction)
-            .then { (bytes: Bytes?) -> Future<Bytes?> in
-                guard let bytes = bytes else {
-                    return eventLoop.newSucceededFuture(result: nil)
-                }
-                return fdb.load(by: bytes, on: eventLoop)
-            }
-            .thenThrowing {
-                guard let bytes = $0 else {
-                    return nil
-                }
-                return try Target(from: bytes)
-        }
-    }
-
-    public func doExists(by value: Key, on eventLoop: EventLoop) -> Future<Bool> {
-        return self
-            .load(by: value, on: eventLoop)
-            .map { $0 != nil }
-    }
-    
-    public func load(
-        by value: Key,
-        on eventLoop: EventLoop
-    ) -> Future<Bytes?> {
-        return fdb
-            .begin(eventLoop: eventLoop)
-            .then { self.load(by: value, with: $0) }
-    }
-
-    public func load(
-        by value: Key,
-        with transaction: Transaction
-    ) -> Future<Bytes?> {
-        return transaction
-            .get(key: self.getIndexKey(from: value))
-            .map { $0.0 }
-    }
-
-    public func save(
-        by value: Key,
-        targetKey: Bytes,
-        on eventLoop: EventLoop
-    ) -> Future<Void> {
-        return fdb
-            .begin(eventLoop: eventLoop)
-            .then { $0.set(key: self.getIndexKey(from: value), value: targetKey) }
-            .then { $0.commit() }
-    }
-}
-
-public extension E2FDBModel {
+public extension E2FDBEntity {
     public static var storage: FDB {
         return fdb
     }
@@ -156,8 +75,8 @@ public extension E2FDBModel {
     }
 }
 
-public protocol Model: E2FDBModel where Identifier == E2.UUID {}
-public protocol ModelInt: E2FDBModel where Identifier == Int {}
+public protocol Model: E2FDBEntity where Identifier == E2.UUID {}
+public protocol ModelInt: E2FDBEntity where Identifier == Int {}
 
 public extension ModelInt {
     public static func getNextID(on eventLoop: EventLoop) -> Future<Self.Identifier> {

@@ -67,12 +67,8 @@ public extension Logic {
                     guard let comment = $0 else {
                         return eventLoop.newSucceededFuture(result: ())
                     }
-                    return fdb
-                        .begin(eventLoop: eventLoop)
-                        .then { $0.clear(key: comment.getIDAsKey()) }
-                        .then { $0.clear(key: Models.Comment.refID.getIndexKey(from: comment.ID)) }
-                        .then { $0.commit() }
-            }
+                    return comment.delete(on: eventLoop)
+                }
         }
         
         public static func likeOrUnlike(
