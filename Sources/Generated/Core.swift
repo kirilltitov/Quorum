@@ -362,6 +362,7 @@ public struct Services {
                 "password1": "d",
                 "password2": "e",
                 "sex": "f",
+                "recaptchaToken": "g",
             ]
 
             public let username: String
@@ -369,6 +370,7 @@ public struct Services {
             public let password1: String
             public let password2: String
             public let sex: String
+            public let recaptchaToken: String
 
             private static var validatorUsernameClosure: Validation.CallbackWithAllowedValues<CallbackValidatorUsernameAllowedValues>.Callback?
             private static var validatorEmailClosure: Validation.CallbackWithAllowedValues<CallbackValidatorEmailAllowedValues>.Callback?
@@ -378,13 +380,15 @@ public struct Services {
                 email: String,
                 password1: String,
                 password2: String,
-                sex: String
+                sex: String,
+                recaptchaToken: String
             ) {
                 self.username = username
                 self.email = email
                 self.password1 = password1
                 self.password2 = password2
                 self.sex = sex
+                self.recaptchaToken = recaptchaToken
             }
 
             public static func initWithValidation(from dictionary: Entita.Dict, on eventLoop: EventLoop) -> Future<UserSignupRequest> {
@@ -394,6 +398,7 @@ public struct Services {
                     "password1": [],
                     "password2": [],
                     "sex": [],
+                    "recaptchaToken": [],
                 ]
 
                 var _username: String = String()
@@ -401,6 +406,7 @@ public struct Services {
                 var _password1: String = String()
                 var _password2: String = String()
                 var _sex: String = String()
+                var _recaptchaToken: String = String()
 
                 do {
                     do {
@@ -478,6 +484,11 @@ public struct Services {
                     } catch Entita.E.ExtractError {
                         validatorFutures["sex"]!.append(eventLoop.newSucceededFuture(result: ("sex", Validation.Error.MissingValue())))
                     }
+                    do {
+                        _recaptchaToken = try UserSignupRequest.extract(param: "recaptchaToken", from: dictionary)
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["recaptchaToken"]!.append(eventLoop.newSucceededFuture(result: ("recaptchaToken", Validation.Error.MissingValue())))
+                    }
                 } catch {
                     return eventLoop.newFailedFuture(error: error)
                 }
@@ -494,7 +505,8 @@ public struct Services {
                         email: _email,
                         password1: _password1,
                         password2: _password2,
-                        sex: _sex
+                        sex: _sex,
+                        recaptchaToken: _recaptchaToken
                     )
                 }
             }
@@ -505,7 +517,8 @@ public struct Services {
                     email: try UserSignupRequest.extract(param: "email", from: dictionary),
                     password1: try UserSignupRequest.extract(param: "password1", from: dictionary),
                     password2: try UserSignupRequest.extract(param: "password2", from: dictionary),
-                    sex: try UserSignupRequest.extract(param: "sex", from: dictionary)
+                    sex: try UserSignupRequest.extract(param: "sex", from: dictionary),
+                    recaptchaToken: try UserSignupRequest.extract(param: "recaptchaToken", from: dictionary)
                 )
             }
 
@@ -516,6 +529,7 @@ public struct Services {
                     self.getDictionaryKey("password1"): try self.encode(self.password1),
                     self.getDictionaryKey("password2"): try self.encode(self.password2),
                     self.getDictionaryKey("sex"): try self.encode(self.sex),
+                    self.getDictionaryKey("recaptchaToken"): try self.encode(self.recaptchaToken),
                 ]
             }
 
@@ -1240,20 +1254,24 @@ public struct Services {
                 "portal": "b",
                 "login": "c",
                 "password": "d",
+                "recaptchaToken": "e",
             ]
 
             public let portal: String
             public let login: String
             public let password: String
+            public let recaptchaToken: String?
 
             public init(
                 portal: String,
                 login: String,
-                password: String
+                password: String,
+                recaptchaToken: String? = nil
             ) {
                 self.portal = portal
                 self.login = login
                 self.password = password
+                self.recaptchaToken = recaptchaToken
             }
 
             public static func initWithValidation(from dictionary: Entita.Dict, on eventLoop: EventLoop) -> Future<LoginRequest> {
@@ -1261,11 +1279,13 @@ public struct Services {
                     "portal": [],
                     "login": [],
                     "password": [],
+                    "recaptchaToken": [],
                 ]
 
                 var _portal: String = String()
                 var _login: String = String()
                 var _password: String = String()
+                var _recaptchaToken: String?
 
                 do {
                     do {
@@ -1283,6 +1303,11 @@ public struct Services {
                     } catch Entita.E.ExtractError {
                         validatorFutures["password"]!.append(eventLoop.newSucceededFuture(result: ("password", Validation.Error.MissingValue())))
                     }
+                    do {
+                        _recaptchaToken = try LoginRequest.extract(param: "recaptchaToken", from: dictionary, isOptional: true)
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["recaptchaToken"]!.append(eventLoop.newSucceededFuture(result: ("recaptchaToken", Validation.Error.MissingValue())))
+                    }
                 } catch {
                     return eventLoop.newFailedFuture(error: error)
                 }
@@ -1297,7 +1322,8 @@ public struct Services {
                     return self.init(
                         portal: _portal,
                         login: _login,
-                        password: _password
+                        password: _password,
+                        recaptchaToken: _recaptchaToken
                     )
                 }
             }
@@ -1306,7 +1332,8 @@ public struct Services {
                 self.init(
                     portal: try LoginRequest.extract(param: "portal", from: dictionary),
                     login: try LoginRequest.extract(param: "login", from: dictionary),
-                    password: try LoginRequest.extract(param: "password", from: dictionary)
+                    password: try LoginRequest.extract(param: "password", from: dictionary),
+                    recaptchaToken: try LoginRequest.extract(param: "recaptchaToken", from: dictionary, isOptional: true)
                 )
             }
 
@@ -1315,6 +1342,7 @@ public struct Services {
                     self.getDictionaryKey("portal"): try self.encode(self.portal),
                     self.getDictionaryKey("login"): try self.encode(self.login),
                     self.getDictionaryKey("password"): try self.encode(self.password),
+                    self.getDictionaryKey("recaptchaToken"): try self.encode(self.recaptchaToken),
                 ]
             }
         }
