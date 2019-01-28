@@ -9,17 +9,6 @@ public struct DeleteController {
     typealias Contract = Services.Quorum.Contracts.Delete
 
     public static func setup() {
-        Contract.Request.validateIdpost { ID, eventLoop in
-            return Logic.Post
-                .get(by: ID, on: eventLoop)
-                .map { post in
-                    guard let _ = post else {
-                        return .PostNotFound
-                    }
-                    return nil
-            }
-        }
-
         Contract.Request.validateIdcomment { ID, eventLoop in
             Logic.Comment
                 .get(by: ID, on: eventLoop)
@@ -42,8 +31,8 @@ public struct DeleteController {
                         .map { comment in (user, comment) }
                 }
                 .flatMapThrowing { (user: Models.User, comment: Models.Comment) throws -> Future<Void> in
-                    guard comment.IDUser == user.ID || user.isAdmin == true else {
-                        throw LGNC.ContractError.GeneralError("This is not your comment", 403)
+                    guard comment.IDUser == user.ID || user.isAtLeastModerator else {
+                        throw LGNC.ContractError.GeneralError("You have no authority to delete this comment", 403)
                     }
                     return Logic.Comment.delete(commentID: comment.ID, on: eventLoop)
                 }

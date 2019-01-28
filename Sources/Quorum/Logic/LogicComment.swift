@@ -45,12 +45,26 @@ public extension Logic {
                 .map { $0 != nil }
         }
         
-        public static func insert(comment: Models.Comment, on eventLoop: EventLoop) -> Future<Models.Comment> {
-            return comment.insert(on: eventLoop).map { _ in comment }
+        public static func insert(
+            comment: Models.Comment,
+            as user: Models.User,
+            on eventLoop: EventLoop
+        ) -> Future<Models.Comment> {
+            return comment
+                .insert(on: eventLoop)
+                .then { _ -> Future<Void> in
+                    if user.isAtLeastModerator {
+                        return eventLoop.newSucceededFuture(result: ())
+                    }
+                    return Models.UnapprovedComment.saveUnapproved(comment: comment, on: eventLoop)
+                }
+                .map { _ in comment }
         }
         
         public static func save(comment: Models.Comment, on eventLoop: EventLoop) -> Future<Models.Comment> {
-            return comment.save(on: eventLoop).map { _ in comment }
+            return comment
+                .save(on: eventLoop)
+                .map { _ in comment }
         }
         
         public static func getProcessedBody(from string: String) -> String {
@@ -62,12 +76,22 @@ public extension Logic {
             on eventLoop: EventLoop
         ) -> Future<Void> {
             return self
-                .get(by: commentID, on: eventLoop)
-                .then {
-                    guard let comment = $0 else {
-                        return eventLoop.newSucceededFuture(result: ())
-                    }
-                    return comment.delete(on: eventLoop)
+                .getThrowing(by: commentID, on: eventLoop)
+                .then { comment in
+                    comment.isDeleted = true
+                    return comment.save(on: eventLoop)
+                }
+        }
+
+        public static func undelete(
+            commentID: Models.Comment.Identifier,
+            on eventLoop: EventLoop
+        ) -> Future<Void> {
+            return self
+                .getThrowing(by: commentID, on: eventLoop)
+                .then { comment in
+                    comment.isDeleted = false
+                    return comment.save(on: eventLoop)
                 }
         }
         
@@ -76,6 +100,9 @@ public extension Logic {
             by user: Models.User,
             on eventLoop: EventLoop
         ) -> Future<Int> {
+            guard comment.isDeleted == false && comment.isApproved == true else {
+                return eventLoop.newSucceededFuture(result: 0)
+            }
             return Models.Like.likeOrUnlike(comment: comment, by: user, on: eventLoop)
         }
         
@@ -86,12 +113,34 @@ public extension Logic {
             on eventLoop: EventLoop
         ) -> Future<Models.Comment> {
             comment.body = Logic.Comment.getProcessedBody(from: body)
-            comment.dateUpdated = Date()
-            
+
             return comment
                 .save(with: transaction, on: eventLoop)
                 .then { transaction in transaction.commit() }
                 .map { _ in comment }
+        }
+
+        public static func approve(comment: Models.Comment, on eventLoop: EventLoop) -> Future<Models.Comment> {
+            guard !comment.isApproved else {
+                return eventLoop.newSucceededFuture(result: comment)
+            }
+
+            comment.isApproved = true
+
+            return comment
+                .save(on: eventLoop)
+                .then { Models.UnapprovedComment.clearRoutine(comment: comment, on: eventLoop) }
+                .map { _ in comment }
+        }
+
+        public static func reject(comment: Models.Comment, on eventLoop: EventLoop) -> Future<Void> {
+            guard !comment.isApproved else {
+                return eventLoop.newSucceededFuture(result: ())
+            }
+
+            return comment
+                .delete(on: eventLoop)
+                .then { Models.UnapprovedComment.clearRoutine(comment: comment, on: eventLoop) }
         }
     }
 }

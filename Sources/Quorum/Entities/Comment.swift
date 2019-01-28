@@ -18,9 +18,10 @@ public extension Models {
             case IDPost = "c"
             case IDReplyComment = "d"
             case isDeleted = "e"
-            case body = "f"
-            case dateCreated = "g"
-            case dateUpdated = "h"
+            case isApproved = "f"
+            case body = "g"
+            case dateCreated = "h"
+            case dateUpdated = "i"
         }
 
         public let ID: Int
@@ -28,14 +29,32 @@ public extension Models {
         public let IDPost: Post.Identifier
         public let IDReplyComment: Int?
         public var isDeleted: Bool
+        public var isApproved: Bool
         public var body: String
         public let dateCreated: Date
         public var dateUpdated: Date
 
-        public static let indices = [
-            \Comment.ID,
-            \Comment.IDUser,
-        ]
+        public init(
+            ID: Int,
+            IDUser: User.Identifier,
+            IDPost: Post.Identifier,
+            IDReplyComment: Int?,
+            isDeleted: Bool = false,
+            isApproved: Bool = false,
+            body: String,
+            dateCreated: Date,
+            dateUpdated: Date
+        ) {
+            self.ID = ID
+            self.IDUser = IDUser
+            self.IDPost = IDPost
+            self.IDReplyComment = IDReplyComment
+            self.isDeleted = isDeleted
+            self.isApproved = isApproved
+            self.body = body
+            self.dateCreated = dateCreated
+            self.dateUpdated = dateUpdated
+        }
 
         public func getUser(on eventLoop: EventLoop) -> Future<User> {
             return Logic.User.get(
@@ -86,26 +105,6 @@ public extension Models {
             return self._getFullPrefix().asFDBKey()
         }
 
-        public init(
-            ID: Int,
-            IDUser: User.Identifier,
-            IDPost: Post.Identifier,
-            IDReplyComment: Int?,
-            isDeleted: Bool,
-            body: String,
-            dateCreated: Date,
-            dateUpdated: Date
-        ) {
-            self.ID = ID
-            self.IDUser = IDUser
-            self.IDPost = IDPost
-            self.IDReplyComment = IDReplyComment
-            self.isDeleted = isDeleted
-            self.body = body
-            self.dateCreated = dateCreated
-            self.dateUpdated = dateUpdated
-        }
-
         public static func await(
             on eventLoop: EventLoop,
             ID IDFuture: Future<Int>,
@@ -113,6 +112,7 @@ public extension Models {
             IDPost: Post.Identifier,
             IDReplyComment: Int?,
             isDeleted: Bool,
+            isApproved isApprovedFuture: Future<Bool>,
             body: String,
             dateCreated: Date,
             dateUpdated: Date
@@ -124,18 +124,28 @@ public extension Models {
                 .then { (ID) in
                     IDUserFuture.map { IDUser in (ID, IDUser) }
                 }
-                .map { (ID, IDUser) in
+                .then { (ID, IDUser) in
+                    isApprovedFuture.map { isApproved in (ID, IDUser, isApproved) }
+                }
+                .map { (ID, IDUser, isApproved) -> (Models.Comment) in
                     Comment(
                         ID: ID,
                         IDUser: IDUser,
                         IDPost: IDPost,
                         IDReplyComment: IDReplyComment,
                         isDeleted: isDeleted,
+                        isApproved: isApproved,
                         body: body,
                         dateCreated: dateCreated,
                         dateUpdated: dateUpdated
                     )
                 }
+        }
+
+        public func beforeSave(with transaction: AnyTransaction?, on eventLoop: EventLoop) -> EventLoopFuture<Void> {
+            self.dateUpdated = Date()
+
+            return eventLoop.newSucceededFuture(result: ())
         }
     }
 }

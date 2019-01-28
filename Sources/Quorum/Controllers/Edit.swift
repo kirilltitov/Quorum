@@ -6,24 +6,10 @@ import LGNC
 import Entita2FDB
 
 public struct EditController {
-    typealias EditContract = Services.Quorum.Contracts.Edit
+    typealias Contract = Services.Quorum.Contracts.Edit
 
     public static func setup() {
-        EditContract.Request.validateIdpost { ID, eventLoop in
-            return Logic.Post
-                .get(by: ID, on: eventLoop)
-                .map { post in
-                    guard let post = post else {
-                        return .PostNotFound
-                    }
-                    guard post.isCommentable else {
-                        return .PostIsReadOnly
-                    }
-                    return nil
-                }
-        }
-
-        EditContract.Request.validateIdcomment { ID, eventLoop in
+        Contract.Request.validateIdcomment { ID, eventLoop in
             Logic.Comment
                 .get(by: ID, on: eventLoop)
                 .map {
@@ -35,9 +21,9 @@ public struct EditController {
         }
         
         func contractRoutine(
-            request: EditContract.Request,
+            request: Contract.Request,
             info: LGNC.RequestInfo
-        ) -> Future<EditContract.Response> {
+        ) -> Future<Contract.Response> {
             let eventLoop = info.eventLoop
             
             let userFuture = Logic.User.authorize(token: request.token, on: eventLoop)
@@ -46,9 +32,20 @@ public struct EditController {
                 .flatMap { (user: Models.User) -> Future<(Models.Comment, Transaction)> in
                     Logic.Comment
                         .getThrowingWithTransaction(by: request.IDComment, on: eventLoop)
-                        .thenThrowing { comment, transaction in
-                            if user.isAdmin == true {
+                        .then { (comment, transaction) in
+                            Logic.Post
+                                .getThrowing(by: comment.IDPost, on: eventLoop)
+                                .map { post in (post, comment, transaction) }
+                        }
+                        .thenThrowing { post, comment, transaction in
+                            if user.isAtLeastModerator {
                                 return (comment, transaction)
+                            }
+                            guard post.isCommentable else {
+                                throw LGNC.ContractError.GeneralError("Comment is not aditable anymore", 403)
+                            }
+                            guard comment.isApproved else {
+                                throw LGNC.ContractError.GeneralError("Comment is not approved yet", 403)
                             }
                             guard user.ID == comment.IDUser else {
                                 throw LGNC.ContractError.GeneralError("It's not your comment", 403)
@@ -71,7 +68,7 @@ public struct EditController {
                     )
                 }
                 .flatMap { comment in
-                    EditContract.Response.await(
+                    Contract.Response.await(
                         on: eventLoop,
                         ID: comment.ID,
                         IDUser: userFuture.map { $0.ID.string },
@@ -79,6 +76,7 @@ public struct EditController {
                         IDPost: comment.IDPost,
                         IDReplyComment: comment.IDReplyComment,
                         isDeleted: comment.isDeleted,
+                        isApproved: comment.isApproved,
                         body: comment.body,
                         likes: Models.Like.getLikesFor(comment: comment, on: eventLoop),
                         dateCreated: comment.dateCreated.formatted,
@@ -93,6 +91,6 @@ public struct EditController {
                 }
         }
 
-        EditContract.guarantee(contractRoutine)
+        Contract.guarantee(contractRoutine)
     }
 }

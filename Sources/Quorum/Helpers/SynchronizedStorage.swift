@@ -202,6 +202,13 @@ final public class CacheLRU<Key: Hashable, Value>: SyncStorage {
 
             return tail
         }
+
+        public func remove(_ node: Node) {
+            node.previous?.next = node.next
+            node.next?.previous = node.previous
+
+            self.count -= 1
+        }
     }
 
     private struct Box {
@@ -250,8 +257,14 @@ final public class CacheLRU<Key: Hashable, Value>: SyncStorage {
     }
 
     public func remove0(by key: Key) -> Value? {
-        // todo
-        return nil
+        guard let node = nodesDict[key] else {
+            return nil
+        }
+
+        list.remove(node)
+        nodesDict[key] = nil
+
+        return node.value.value
     }
 }
 

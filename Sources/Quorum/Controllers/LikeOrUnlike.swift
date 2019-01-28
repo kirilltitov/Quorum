@@ -4,10 +4,10 @@ import LGNCore
 import LGNC
 
 public class LikeController {
-    typealias LikeContract = Services.Quorum.Contracts.Like
+    typealias Contract = Services.Quorum.Contracts.Like
 
     public static func setup() {
-        LikeContract.Request.validateIdcomment { ID, eventLoop in
+        Contract.Request.validateIdcomment { ID, eventLoop in
             Logic.Comment
                 .get(by: ID, on: eventLoop)
                 .map {
@@ -18,7 +18,7 @@ public class LikeController {
                 }
         }
 
-        LikeContract.guarantee { (request, info) -> Future<LikeContract.Response> in
+        Contract.guarantee { (request, info) -> Future<Contract.Response> in
             let eventLoop = info.eventLoop
 
             return Logic.User
@@ -29,7 +29,7 @@ public class LikeController {
                         .map { comment in (user, comment) }
                 }
                 .then { user, comment in
-                    LikeContract.Response.await(
+                    Contract.Response.await(
                         on: eventLoop,
                         likes: Logic.Comment.likeOrUnlike(comment: comment, by: user, on: eventLoop)
                     )

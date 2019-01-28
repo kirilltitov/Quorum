@@ -12,13 +12,17 @@ public struct Services {
         "Quorum": (
             transports: Services.Quorum.transports,
             contracts: [
-                "Create": (
-                    visibility: Services.Quorum.Contracts.Create.visibility,
-                    transports: Services.Quorum.Contracts.Create.transports
-                ),
                 "Comments": (
                     visibility: Services.Quorum.Contracts.Comments.visibility,
                     transports: Services.Quorum.Contracts.Comments.transports
+                ),
+                "UnapprovedComments": (
+                    visibility: Services.Quorum.Contracts.UnapprovedComments.visibility,
+                    transports: Services.Quorum.Contracts.UnapprovedComments.transports
+                ),
+                "Create": (
+                    visibility: Services.Quorum.Contracts.Create.visibility,
+                    transports: Services.Quorum.Contracts.Create.transports
                 ),
                 "Edit": (
                     visibility: Services.Quorum.Contracts.Edit.visibility,
@@ -28,9 +32,25 @@ public struct Services {
                     visibility: Services.Quorum.Contracts.Delete.visibility,
                     transports: Services.Quorum.Contracts.Delete.transports
                 ),
+                "Undelete": (
+                    visibility: Services.Quorum.Contracts.Undelete.visibility,
+                    transports: Services.Quorum.Contracts.Undelete.transports
+                ),
                 "Like": (
                     visibility: Services.Quorum.Contracts.Like.visibility,
                     transports: Services.Quorum.Contracts.Like.transports
+                ),
+                "Approve": (
+                    visibility: Services.Quorum.Contracts.Approve.visibility,
+                    transports: Services.Quorum.Contracts.Approve.transports
+                ),
+                "Reject": (
+                    visibility: Services.Quorum.Contracts.Reject.visibility,
+                    transports: Services.Quorum.Contracts.Reject.transports
+                ),
+                "RefreshUser": (
+                    visibility: Services.Quorum.Contracts.RefreshUser.visibility,
+                    transports: Services.Quorum.Contracts.RefreshUser.transports
                 ),
             ]
         ),
@@ -1433,10 +1453,11 @@ public struct Services {
                 "IDPost": "e",
                 "IDReplyComment": "f",
                 "isDeleted": "g",
-                "body": "h",
-                "likes": "i",
-                "dateCreated": "j",
-                "dateUpdated": "k",
+                "isApproved": "h",
+                "body": "i",
+                "likes": "j",
+                "dateCreated": "k",
+                "dateUpdated": "l",
             ]
 
             public let ID: Int
@@ -1445,6 +1466,7 @@ public struct Services {
             public let IDPost: Int
             public let IDReplyComment: Int?
             public let isDeleted: Bool
+            public let isApproved: Bool
             public let body: String
             public let likes: Int
             public let dateCreated: String
@@ -1457,6 +1479,7 @@ public struct Services {
                 IDPost: Int,
                 IDReplyComment: Int? = nil,
                 isDeleted: Bool,
+                isApproved: Bool,
                 body: String,
                 likes: Int,
                 dateCreated: String,
@@ -1468,6 +1491,7 @@ public struct Services {
                 self.IDPost = IDPost
                 self.IDReplyComment = IDReplyComment
                 self.isDeleted = isDeleted
+                self.isApproved = isApproved
                 self.body = body
                 self.likes = likes
                 self.dateCreated = dateCreated
@@ -1482,6 +1506,7 @@ public struct Services {
                 IDPost: Int,
                 IDReplyComment: Int?,
                 isDeleted: Bool,
+                isApproved: Bool,
                 body: String,
                 likes likesFuture: Future<Int>,
                 dateCreated: String,
@@ -1504,6 +1529,7 @@ public struct Services {
                         IDPost: IDPost,
                         IDReplyComment: IDReplyComment,
                         isDeleted: isDeleted,
+                        isApproved: isApproved,
                         body: body,
                         likes: likes,
                         dateCreated: dateCreated,
@@ -1520,6 +1546,7 @@ public struct Services {
                     "IDPost": [],
                     "IDReplyComment": [],
                     "isDeleted": [],
+                    "isApproved": [],
                     "body": [],
                     "likes": [],
                     "dateCreated": [],
@@ -1532,6 +1559,7 @@ public struct Services {
                 var _IDPost: Int = Int()
                 var _IDReplyComment: Int?
                 var _isDeleted: Bool = Bool()
+                var _isApproved: Bool = Bool()
                 var _body: String = String()
                 var _likes: Int = Int()
                 var _dateCreated: String = String()
@@ -1571,6 +1599,11 @@ public struct Services {
                         _isDeleted = try Comment.extract(param: "isDeleted", from: dictionary)
                     } catch Entita.E.ExtractError {
                         validatorFutures["isDeleted"]!.append(eventLoop.newSucceededFuture(result: ("isDeleted", Validation.Error.MissingValue())))
+                    }
+                    do {
+                        _isApproved = try Comment.extract(param: "isApproved", from: dictionary)
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["isApproved"]!.append(eventLoop.newSucceededFuture(result: ("isApproved", Validation.Error.MissingValue())))
                     }
                     do {
                         _body = try Comment.extract(param: "body", from: dictionary)
@@ -1618,6 +1651,7 @@ public struct Services {
                         IDPost: _IDPost,
                         IDReplyComment: _IDReplyComment,
                         isDeleted: _isDeleted,
+                        isApproved: _isApproved,
                         body: _body,
                         likes: _likes,
                         dateCreated: _dateCreated,
@@ -1634,6 +1668,7 @@ public struct Services {
                     IDPost: try Comment.extract(param: "IDPost", from: dictionary),
                     IDReplyComment: try Comment.extract(param: "IDReplyComment", from: dictionary, isOptional: true),
                     isDeleted: try Comment.extract(param: "isDeleted", from: dictionary),
+                    isApproved: try Comment.extract(param: "isApproved", from: dictionary),
                     body: try Comment.extract(param: "body", from: dictionary),
                     likes: try Comment.extract(param: "likes", from: dictionary),
                     dateCreated: try Comment.extract(param: "dateCreated", from: dictionary),
@@ -1649,6 +1684,7 @@ public struct Services {
                     self.getDictionaryKey("IDPost"): try self.encode(self.IDPost),
                     self.getDictionaryKey("IDReplyComment"): try self.encode(self.IDReplyComment),
                     self.getDictionaryKey("isDeleted"): try self.encode(self.isDeleted),
+                    self.getDictionaryKey("isApproved"): try self.encode(self.isApproved),
                     self.getDictionaryKey("body"): try self.encode(self.body),
                     self.getDictionaryKey("likes"): try self.encode(self.likes),
                     self.getDictionaryKey("dateCreated"): try self.encode(self.dateCreated),

@@ -7,10 +7,10 @@ import Entita2
 import NIO
 
 public struct CommentsController {
-    typealias ListContract = Services.Quorum.Contracts.Comments
+    typealias Contract = Services.Quorum.Contracts.Comments
 
     public static func setup() {
-        ListContract.Request.validateIdpost { ID, eventLoop in
+        Contract.Request.validateIdpost { ID, eventLoop in
             return Logic.Post
                 .get(by: ID, on: eventLoop)
                 .map { post in
@@ -24,19 +24,21 @@ public struct CommentsController {
                 }
         }
 
-        ListContract.guarantee { (
-            request: ListContract.Request,
+        Contract.guarantee { (
+            request: Contract.Request,
             info: LGNC.RequestInfo
-        ) -> Future<ListContract.Response> in
-            return Logic.Post
-                .getCommentsFor(ID: request.IDPost, on: info.eventLoop)
+        ) -> Future<Contract.Response> in
+            let eventLoop = info.eventLoop
+            return Logic.User
+                .maybeAuthorize(token: request.token, on: eventLoop)
+                .then { maybeUser in Logic.Post.getCommentsFor(ID: request.IDPost, as: maybeUser, on: eventLoop) }
                 .flatMap { commentsWithLikes in
                     EventLoopFuture<[Models.User.Identifier: Models.User]>.reduce(
                         into: [:],
                         Set(commentsWithLikes.map { $0.comment.IDUser }).map {
-                            Logic.User.get(by: $0, on: info.eventLoop)
+                            Logic.User.get(by: $0, on: eventLoop)
                         },
-                        eventLoop: info.eventLoop,
+                        eventLoop: eventLoop,
                         { users, _user in
                             let user = _user ?? Models.User.unknown
                             users[user.ID] = user
@@ -47,8 +49,8 @@ public struct CommentsController {
                         ) in (commentsWithLikes, users)
                     }
                 }
-                .map { commentsWithLikes, users -> ListContract.Response in
-                    ListContract.Response(
+                .map { commentsWithLikes, users -> Contract.Response in
+                    Contract.Response(
                         comments: commentsWithLikes.map { commentWithLikes in
                             let comment = commentWithLikes.comment
                             return .init(
@@ -58,6 +60,7 @@ public struct CommentsController {
                                 IDPost: comment.IDPost,
                                 IDReplyComment: comment.IDReplyComment,
                                 isDeleted: comment.isDeleted,
+                                isApproved: comment.isApproved,
                                 body: comment.body,
                                 likes: commentWithLikes.likes,
                                 dateCreated: comment.dateCreated.formatted,

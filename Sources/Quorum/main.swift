@@ -86,6 +86,11 @@ CommentsController.setup()
 EditController.setup()
 DeleteController.setup()
 LikeController.setup()
+ApproveCommentController.setup()
+UnapprovedCommentsController.setup()
+UndeleteController.setup()
+RefreshUserController.setup()
+RejectCommentController.setup()
 
 let testPostID: Int = 1
 
@@ -166,21 +171,23 @@ let comment1 = Models.Comment(
 
 let dispatchGroup = DispatchGroup()
 
+let host = "127.0.0.1"
+
 DispatchQueue(label: "games.1711.server.http", qos: .userInitiated, attributes: .concurrent).async(group: dispatchGroup) {
-    let address: LGNC.HTTP.Server.BindTo = .port(8080)
+    let address: LGNC.HTTP.Server.BindTo = .ip(host: "127.0.0.1", port: 8080)
     let promise: Promise<Void> = eventLoopGroup.eventLoop.newPromise()
     promise.futureResult.whenComplete {
         LGNCore.log("Quorum HTTP service on portal ID \(PORTAL_ID) started at \(address)")
     }
     try! SQuorum.serveHTTP(
-        at: .port(8080),
+        at: address,
         eventLoopGroup: eventLoopGroup,
         promise: promise
     )
 }
 
 DispatchQueue(label: "games.1711.server.lgns", qos: .userInitiated, attributes: .concurrent).async(group: dispatchGroup) {
-    let address: LGNS.Address = .port(1711)
+    let address: LGNS.Address = .ip(host: host, port: 1711)
     let promise: Promise<Void> = eventLoopGroup.eventLoop.newPromise()
     promise.futureResult.whenComplete {
         LGNCore.log("Quorum LGNS service on portal ID \(PORTAL_ID) started at \(address)")

@@ -35,6 +35,17 @@ public extension Logic {
             }
         }
 
+        public static func getThrowing(by ID: Int, on eventLoop: EventLoop) -> Future<Models.Post> {
+            return self
+                .get(by: ID, on: eventLoop)
+                .thenThrowing { maybePost in
+                    guard let post = maybePost else {
+                        throw LGNC.ContractError.GeneralError("Post not found", 404)
+                    }
+                    return post
+                }
+        }
+
         public static func isExistingAndCommentable(_ ID: Int, on eventLoop: EventLoop) -> Future<Bool> {
             return self
                 .get(by: ID, on: eventLoop)
@@ -43,6 +54,7 @@ public extension Logic {
 
         public static func getCommentsFor(
             ID: Int,
+            as user: Models.User? = nil,
             on eventLoop: EventLoop
         ) -> Future<[CommentWithLikes]> {
             return self.get(
@@ -65,7 +77,15 @@ public extension Logic {
                 for record in $0.records {
                     let tuple = Tuple(from: record.key)
                     if Models.Comment.doesRelateToThis(tuple: tuple) {
-                        let instance = CommentWithLikes(try Models.Comment(from: record.value))
+                        let comment = try Models.Comment(from: record.value)
+                        if let user = user {
+                            if user.isOrdinaryUser && (comment.isDeleted == true || comment.isApproved == false) {
+                                continue
+                            }
+                        } else if comment.isDeleted == true || comment.isApproved == false {
+                            continue
+                        }
+                        let instance = CommentWithLikes(comment)
                         currentCommentWithLikes = instance
                         result.append(instance)
                     } else if Models.Like.doesRelateToThis(tuple: tuple) {
