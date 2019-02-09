@@ -4,7 +4,31 @@ import Entita2FDB
 import FDB
 import NIO
 
-//MARK EventLoopFuture
+//MARK:- FDB
+public extension Tuple {
+    public var _string: String {
+        return self.tuple.map {
+            guard let val = $0 else {
+                return "NULL"
+            }
+            return String(describing: val)
+        }.joined(separator: " / ")
+    }
+}
+
+public extension Subspace {
+    public var _string: String {
+        return Tuple(from: self.prefix)._string
+    }
+}
+
+public extension FDBKey {
+    public var _string: String {
+        return Tuple(from: self.asFDBKey())._string
+    }
+}
+
+//MARK:- EventLoopFuture
 public extension Future {
     public func flatMapThrowing<U>(
         file: StaticString = #file,
@@ -51,14 +75,14 @@ public extension Future {
     }
 }
 
-//MARK General
+//MARK:- General
 public extension EventLoopGroup {
     public var eventLoop: EventLoop {
         return self.next()
     }
 }
 
-//MARK Entita2FDB
+//MARK:- Entita2FDB
 extension E2.ID: TuplePackable where Value == UUID {
     public func pack() -> Bytes {
         return self._bytes.pack()
@@ -91,7 +115,7 @@ public extension ModelInt {
     }
 }
 
-//MARK Migrations
+//MARK- Migrations
 
 public typealias Migrations = [() throws -> Void]
 

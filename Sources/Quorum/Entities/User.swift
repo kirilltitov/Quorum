@@ -1,7 +1,8 @@
+import Foundation
 import Entita2FDB
 
 public extension Models {
-    final public class User: Model {
+    final public class User: Model, Entita2FDBIndexedEntity {
         public enum AccessLevel: String, Codable {
             case User, Moderator, Admin
         }
@@ -14,9 +15,16 @@ public extension Models {
             accessLevel: .User
         )
 
+        public static var indices: [String : Entita2.Index<Models.User>] = [:]
+
         public let ID: E2.UUID
-        public let username: String
-        public let accessLevel: AccessLevel
+
+        // synchronizable from Author
+        public var username: String
+        public var accessLevel: AccessLevel
+
+        public var mutedUntil: Date? = nil
+        public var color: String = "default"
 
         public var isAtLeastModerator: Bool {
             return self.accessLevel == .Moderator || self.accessLevel == .Admin

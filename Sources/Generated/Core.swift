@@ -20,33 +20,37 @@ public struct Services {
                     visibility: Services.Quorum.Contracts.UnapprovedComments.visibility,
                     transports: Services.Quorum.Contracts.UnapprovedComments.transports
                 ),
-                "Create": (
-                    visibility: Services.Quorum.Contracts.Create.visibility,
-                    transports: Services.Quorum.Contracts.Create.transports
+                "CreatePost": (
+                    visibility: Services.Quorum.Contracts.CreatePost.visibility,
+                    transports: Services.Quorum.Contracts.CreatePost.transports
                 ),
-                "Edit": (
-                    visibility: Services.Quorum.Contracts.Edit.visibility,
-                    transports: Services.Quorum.Contracts.Edit.transports
+                "CreateComment": (
+                    visibility: Services.Quorum.Contracts.CreateComment.visibility,
+                    transports: Services.Quorum.Contracts.CreateComment.transports
                 ),
-                "Delete": (
-                    visibility: Services.Quorum.Contracts.Delete.visibility,
-                    transports: Services.Quorum.Contracts.Delete.transports
+                "EditComment": (
+                    visibility: Services.Quorum.Contracts.EditComment.visibility,
+                    transports: Services.Quorum.Contracts.EditComment.transports
                 ),
-                "Undelete": (
-                    visibility: Services.Quorum.Contracts.Undelete.visibility,
-                    transports: Services.Quorum.Contracts.Undelete.transports
+                "DeleteComment": (
+                    visibility: Services.Quorum.Contracts.DeleteComment.visibility,
+                    transports: Services.Quorum.Contracts.DeleteComment.transports
                 ),
-                "Like": (
-                    visibility: Services.Quorum.Contracts.Like.visibility,
-                    transports: Services.Quorum.Contracts.Like.transports
+                "UndeleteComment": (
+                    visibility: Services.Quorum.Contracts.UndeleteComment.visibility,
+                    transports: Services.Quorum.Contracts.UndeleteComment.transports
                 ),
-                "Approve": (
-                    visibility: Services.Quorum.Contracts.Approve.visibility,
-                    transports: Services.Quorum.Contracts.Approve.transports
+                "LikeComment": (
+                    visibility: Services.Quorum.Contracts.LikeComment.visibility,
+                    transports: Services.Quorum.Contracts.LikeComment.transports
                 ),
-                "Reject": (
-                    visibility: Services.Quorum.Contracts.Reject.visibility,
-                    transports: Services.Quorum.Contracts.Reject.transports
+                "ApproveComment": (
+                    visibility: Services.Quorum.Contracts.ApproveComment.visibility,
+                    transports: Services.Quorum.Contracts.ApproveComment.transports
+                ),
+                "RejectComment": (
+                    visibility: Services.Quorum.Contracts.RejectComment.visibility,
+                    transports: Services.Quorum.Contracts.RejectComment.transports
                 ),
                 "RefreshUser": (
                     visibility: Services.Quorum.Contracts.RefreshUser.visibility,
@@ -88,6 +92,22 @@ public struct Services {
                 "Authenticate": (
                     visibility: Services.Author.Contracts.Authenticate.visibility,
                     transports: Services.Author.Contracts.Authenticate.transports
+                ),
+                "ValidateEmail": (
+                    visibility: Services.Author.Contracts.ValidateEmail.visibility,
+                    transports: Services.Author.Contracts.ValidateEmail.transports
+                ),
+                "ResendValidationEmail": (
+                    visibility: Services.Author.Contracts.ResendValidationEmail.visibility,
+                    transports: Services.Author.Contracts.ResendValidationEmail.transports
+                ),
+                "ResetPasswordStep1": (
+                    visibility: Services.Author.Contracts.ResetPasswordStep1.visibility,
+                    transports: Services.Author.Contracts.ResetPasswordStep1.transports
+                ),
+                "ResetPasswordStep2": (
+                    visibility: Services.Author.Contracts.ResetPasswordStep2.visibility,
+                    transports: Services.Author.Contracts.ResetPasswordStep2.transports
                 ),
             ]
         ),
@@ -362,7 +382,8 @@ public struct Services {
                 "password1": "d",
                 "password2": "e",
                 "sex": "f",
-                "recaptchaToken": "g",
+                "language": "g",
+                "recaptchaToken": "h",
             ]
 
             public let username: String
@@ -370,6 +391,7 @@ public struct Services {
             public let password1: String
             public let password2: String
             public let sex: String
+            public let language: String
             public let recaptchaToken: String
 
             private static var validatorUsernameClosure: Validation.CallbackWithAllowedValues<CallbackValidatorUsernameAllowedValues>.Callback?
@@ -381,6 +403,7 @@ public struct Services {
                 password1: String,
                 password2: String,
                 sex: String,
+                language: String,
                 recaptchaToken: String
             ) {
                 self.username = username
@@ -388,6 +411,7 @@ public struct Services {
                 self.password1 = password1
                 self.password2 = password2
                 self.sex = sex
+                self.language = language
                 self.recaptchaToken = recaptchaToken
             }
 
@@ -398,6 +422,7 @@ public struct Services {
                     "password1": [],
                     "password2": [],
                     "sex": [],
+                    "language": [],
                     "recaptchaToken": [],
                 ]
 
@@ -406,6 +431,7 @@ public struct Services {
                 var _password1: String = String()
                 var _password2: String = String()
                 var _sex: String = String()
+                var _language: String = String()
                 var _recaptchaToken: String = String()
 
                 do {
@@ -485,6 +511,15 @@ public struct Services {
                         validatorFutures["sex"]!.append(eventLoop.newSucceededFuture(result: ("sex", Validation.Error.MissingValue())))
                     }
                     do {
+                        _language = try UserSignupRequest.extract(param: "language", from: dictionary)
+
+                        if let error = Validation.In(allowedValues: ["en", "ru"]).validate(input: _language) {
+                            validatorFutures["language"]!.append(eventLoop.newSucceededFuture(result: ("language", error)))
+                        }
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["language"]!.append(eventLoop.newSucceededFuture(result: ("language", Validation.Error.MissingValue())))
+                    }
+                    do {
                         _recaptchaToken = try UserSignupRequest.extract(param: "recaptchaToken", from: dictionary)
                     } catch Entita.E.ExtractError {
                         validatorFutures["recaptchaToken"]!.append(eventLoop.newSucceededFuture(result: ("recaptchaToken", Validation.Error.MissingValue())))
@@ -506,6 +541,7 @@ public struct Services {
                         password1: _password1,
                         password2: _password2,
                         sex: _sex,
+                        language: _language,
                         recaptchaToken: _recaptchaToken
                     )
                 }
@@ -518,6 +554,7 @@ public struct Services {
                     password1: try UserSignupRequest.extract(param: "password1", from: dictionary),
                     password2: try UserSignupRequest.extract(param: "password2", from: dictionary),
                     sex: try UserSignupRequest.extract(param: "sex", from: dictionary),
+                    language: try UserSignupRequest.extract(param: "language", from: dictionary),
                     recaptchaToken: try UserSignupRequest.extract(param: "recaptchaToken", from: dictionary)
                 )
             }
@@ -529,6 +566,7 @@ public struct Services {
                     self.getDictionaryKey("password1"): try self.encode(self.password1),
                     self.getDictionaryKey("password2"): try self.encode(self.password2),
                     self.getDictionaryKey("sex"): try self.encode(self.sex),
+                    self.getDictionaryKey("language"): try self.encode(self.language),
                     self.getDictionaryKey("recaptchaToken"): try self.encode(self.recaptchaToken),
                 ]
             }
@@ -543,258 +581,6 @@ public struct Services {
                 _ callback: @escaping Validation.CallbackWithAllowedValues<CallbackValidatorEmailAllowedValues>.Callback
             ) {
                 self.validatorEmailClosure = callback
-            }
-        }
-
-        public final class UserSignupResponse: ContractEntity {
-            public static let keyDictionary: [String: String] = [
-                "ID": "a",
-                "username": "c",
-                "email": "d",
-                "sex": "e",
-                "ip": "f",
-                "country": "g",
-                "dateSignup": "h",
-                "dateLogin": "i",
-                "currentCharacter": "j",
-                "authorName": "k",
-                "accessLevel": "l",
-                "characters": "m",
-                "token": "n",
-            ]
-
-            public let ID: String
-            public let username: String
-            public let email: String
-            public let sex: String
-            public let ip: String
-            public let country: String
-            public let dateSignup: String
-            public let dateLogin: String
-            public let currentCharacter: String?
-            public let authorName: String
-            public let accessLevel: String
-            public let characters: [String: CharacterInfo]
-            public let token: String
-
-            public init(
-                ID: String,
-                username: String,
-                email: String,
-                sex: String,
-                ip: String,
-                country: String,
-                dateSignup: String,
-                dateLogin: String,
-                currentCharacter: String? = nil,
-                authorName: String,
-                accessLevel: String,
-                characters: [String: CharacterInfo] = [String: CharacterInfo](),
-                token: String
-            ) {
-                self.ID = ID
-                self.username = username
-                self.email = email
-                self.sex = sex
-                self.ip = ip
-                self.country = country
-                self.dateSignup = dateSignup
-                self.dateLogin = dateLogin
-                self.currentCharacter = currentCharacter
-                self.authorName = authorName
-                self.accessLevel = accessLevel
-                self.characters = characters
-                self.token = token
-            }
-
-            public static func initWithValidation(from dictionary: Entita.Dict, on eventLoop: EventLoop) -> Future<UserSignupResponse> {
-                var validatorFutures: [String: [Future<(String, ValidatorError?)>]] = [
-                    "ID": [],
-                    "username": [],
-                    "email": [],
-                    "sex": [],
-                    "ip": [],
-                    "country": [],
-                    "dateSignup": [],
-                    "dateLogin": [],
-                    "currentCharacter": [],
-                    "authorName": [],
-                    "accessLevel": [],
-                    "characters": [],
-                    "token": [],
-                ]
-
-                var _ID: String = String()
-                var _username: String = String()
-                var _email: String = String()
-                var _sex: String = String()
-                var _ip: String = String()
-                var _country: String = String()
-                var _dateSignup: String = String()
-                var _dateLogin: String = String()
-                var _currentCharacter: String?
-                var _authorName: String = String()
-                var _accessLevel: String = String()
-                var _characters: [String: CharacterInfo] = [String: CharacterInfo]()
-                var _token: String = String()
-
-                do {
-                    do {
-                        _ID = try UserSignupResponse.extract(param: "ID", from: dictionary)
-
-                        if let error = Validation.UUID().validate(input: _ID) {
-                            validatorFutures["ID"]!.append(eventLoop.newSucceededFuture(result: ("ID", error)))
-                        }
-                    } catch Entita.E.ExtractError {
-                        validatorFutures["ID"]!.append(eventLoop.newSucceededFuture(result: ("ID", Validation.Error.MissingValue())))
-                    }
-                    do {
-                        _username = try UserSignupResponse.extract(param: "username", from: dictionary)
-                    } catch Entita.E.ExtractError {
-                        validatorFutures["username"]!.append(eventLoop.newSucceededFuture(result: ("username", Validation.Error.MissingValue())))
-                    }
-                    do {
-                        _email = try UserSignupResponse.extract(param: "email", from: dictionary)
-
-                        if let error = Validation.Regexp(pattern: "^.+@.+\\..+$", message: "Invalid email format").validate(input: _email) {
-                            validatorFutures["email"]!.append(eventLoop.newSucceededFuture(result: ("email", error)))
-                        }
-
-                        if let error = Validation.Length.Min(length: 6).validate(input: _email) {
-                            validatorFutures["email"]!.append(eventLoop.newSucceededFuture(result: ("email", error)))
-                        }
-                    } catch Entita.E.ExtractError {
-                        validatorFutures["email"]!.append(eventLoop.newSucceededFuture(result: ("email", Validation.Error.MissingValue())))
-                    }
-                    do {
-                        _sex = try UserSignupResponse.extract(param: "sex", from: dictionary)
-
-                        if let error = Validation.In(allowedValues: ["Male", "Female", "Attack helicopter"]).validate(input: _sex) {
-                            validatorFutures["sex"]!.append(eventLoop.newSucceededFuture(result: ("sex", error)))
-                        }
-                    } catch Entita.E.ExtractError {
-                        validatorFutures["sex"]!.append(eventLoop.newSucceededFuture(result: ("sex", Validation.Error.MissingValue())))
-                    }
-                    do {
-                        _ip = try UserSignupResponse.extract(param: "ip", from: dictionary)
-                    } catch Entita.E.ExtractError {
-                        validatorFutures["ip"]!.append(eventLoop.newSucceededFuture(result: ("ip", Validation.Error.MissingValue())))
-                    }
-                    do {
-                        _country = try UserSignupResponse.extract(param: "country", from: dictionary)
-                    } catch Entita.E.ExtractError {
-                        validatorFutures["country"]!.append(eventLoop.newSucceededFuture(result: ("country", Validation.Error.MissingValue())))
-                    }
-                    do {
-                        _dateSignup = try UserSignupResponse.extract(param: "dateSignup", from: dictionary)
-
-                        if let error = Validation.Date(format: "yyyy-MM-dd kk:mm:ss.SSSSxxx").validate(input: _dateSignup) {
-                            validatorFutures["dateSignup"]!.append(eventLoop.newSucceededFuture(result: ("dateSignup", error)))
-                        }
-                    } catch Entita.E.ExtractError {
-                        validatorFutures["dateSignup"]!.append(eventLoop.newSucceededFuture(result: ("dateSignup", Validation.Error.MissingValue())))
-                    }
-                    do {
-                        _dateLogin = try UserSignupResponse.extract(param: "dateLogin", from: dictionary)
-
-                        if let error = Validation.Date(format: "yyyy-MM-dd kk:mm:ss.SSSSxxx").validate(input: _dateLogin) {
-                            validatorFutures["dateLogin"]!.append(eventLoop.newSucceededFuture(result: ("dateLogin", error)))
-                        }
-                    } catch Entita.E.ExtractError {
-                        validatorFutures["dateLogin"]!.append(eventLoop.newSucceededFuture(result: ("dateLogin", Validation.Error.MissingValue())))
-                    }
-                    do {
-                        _currentCharacter = try UserSignupResponse.extract(param: "currentCharacter", from: dictionary, isOptional: true)
-                    } catch Entita.E.ExtractError {
-                        validatorFutures["currentCharacter"]!.append(eventLoop.newSucceededFuture(result: ("currentCharacter", Validation.Error.MissingValue())))
-                    }
-                    do {
-                        _authorName = try UserSignupResponse.extract(param: "authorName", from: dictionary)
-                    } catch Entita.E.ExtractError {
-                        validatorFutures["authorName"]!.append(eventLoop.newSucceededFuture(result: ("authorName", Validation.Error.MissingValue())))
-                    }
-                    do {
-                        _accessLevel = try UserSignupResponse.extract(param: "accessLevel", from: dictionary)
-
-                        if let error = Validation.In(allowedValues: ["User", "Moderator", "Admin"]).validate(input: _accessLevel) {
-                            validatorFutures["accessLevel"]!.append(eventLoop.newSucceededFuture(result: ("accessLevel", error)))
-                        }
-                    } catch Entita.E.ExtractError {
-                        validatorFutures["accessLevel"]!.append(eventLoop.newSucceededFuture(result: ("accessLevel", Validation.Error.MissingValue())))
-                    }
-                    do {
-                        _characters = try UserSignupResponse.extract(param: "characters", from: dictionary)
-                    } catch Entita.E.ExtractError {
-                        validatorFutures["characters"]!.append(eventLoop.newSucceededFuture(result: ("characters", Validation.Error.MissingValue())))
-                    }
-                    do {
-                        _token = try UserSignupResponse.extract(param: "token", from: dictionary)
-                    } catch Entita.E.ExtractError {
-                        validatorFutures["token"]!.append(eventLoop.newSucceededFuture(result: ("token", Validation.Error.MissingValue())))
-                    }
-                } catch {
-                    return eventLoop.newFailedFuture(error: error)
-                }
-
-                return self.reduce(
-                    validators: validatorFutures,
-                    on: eventLoop
-                ).thenThrowing { errors in
-                    guard errors.count == 0 else {
-                        throw LGNC.E.DecodeError(errors)
-                    }
-                    return self.init(
-                        ID: _ID,
-                        username: _username,
-                        email: _email,
-                        sex: _sex,
-                        ip: _ip,
-                        country: _country,
-                        dateSignup: _dateSignup,
-                        dateLogin: _dateLogin,
-                        currentCharacter: _currentCharacter,
-                        authorName: _authorName,
-                        accessLevel: _accessLevel,
-                        characters: _characters,
-                        token: _token
-                    )
-                }
-            }
-
-            public convenience init(from dictionary: Entita.Dict) throws {
-                self.init(
-                    ID: try UserSignupResponse.extract(param: "ID", from: dictionary),
-                    username: try UserSignupResponse.extract(param: "username", from: dictionary),
-                    email: try UserSignupResponse.extract(param: "email", from: dictionary),
-                    sex: try UserSignupResponse.extract(param: "sex", from: dictionary),
-                    ip: try UserSignupResponse.extract(param: "ip", from: dictionary),
-                    country: try UserSignupResponse.extract(param: "country", from: dictionary),
-                    dateSignup: try UserSignupResponse.extract(param: "dateSignup", from: dictionary),
-                    dateLogin: try UserSignupResponse.extract(param: "dateLogin", from: dictionary),
-                    currentCharacter: try UserSignupResponse.extract(param: "currentCharacter", from: dictionary, isOptional: true),
-                    authorName: try UserSignupResponse.extract(param: "authorName", from: dictionary),
-                    accessLevel: try UserSignupResponse.extract(param: "accessLevel", from: dictionary),
-                    characters: try UserSignupResponse.extract(param: "characters", from: dictionary),
-                    token: try UserSignupResponse.extract(param: "token", from: dictionary)
-                )
-            }
-
-            public func getDictionary() throws -> Entita.Dict {
-                return [
-                    self.getDictionaryKey("ID"): try self.encode(self.ID),
-                    self.getDictionaryKey("username"): try self.encode(self.username),
-                    self.getDictionaryKey("email"): try self.encode(self.email),
-                    self.getDictionaryKey("sex"): try self.encode(self.sex),
-                    self.getDictionaryKey("ip"): try self.encode(self.ip),
-                    self.getDictionaryKey("country"): try self.encode(self.country),
-                    self.getDictionaryKey("dateSignup"): try self.encode(self.dateSignup),
-                    self.getDictionaryKey("dateLogin"): try self.encode(self.dateLogin),
-                    self.getDictionaryKey("currentCharacter"): try self.encode(self.currentCharacter),
-                    self.getDictionaryKey("authorName"): try self.encode(self.authorName),
-                    self.getDictionaryKey("accessLevel"): try self.encode(self.accessLevel),
-                    self.getDictionaryKey("characters"): try self.encode(self.characters),
-                    self.getDictionaryKey("token"): try self.encode(self.token),
-                ]
             }
         }
 
@@ -1252,24 +1038,24 @@ public struct Services {
         public final class LoginRequest: ContractEntity {
             public static let keyDictionary: [String: String] = [
                 "portal": "b",
-                "login": "c",
+                "email": "c",
                 "password": "d",
                 "recaptchaToken": "e",
             ]
 
             public let portal: String
-            public let login: String
+            public let email: String
             public let password: String
             public let recaptchaToken: String?
 
             public init(
                 portal: String,
-                login: String,
+                email: String,
                 password: String,
                 recaptchaToken: String? = nil
             ) {
                 self.portal = portal
-                self.login = login
+                self.email = email
                 self.password = password
                 self.recaptchaToken = recaptchaToken
             }
@@ -1277,13 +1063,13 @@ public struct Services {
             public static func initWithValidation(from dictionary: Entita.Dict, on eventLoop: EventLoop) -> Future<LoginRequest> {
                 var validatorFutures: [String: [Future<(String, ValidatorError?)>]] = [
                     "portal": [],
-                    "login": [],
+                    "email": [],
                     "password": [],
                     "recaptchaToken": [],
                 ]
 
                 var _portal: String = String()
-                var _login: String = String()
+                var _email: String = String()
                 var _password: String = String()
                 var _recaptchaToken: String?
 
@@ -1294,9 +1080,9 @@ public struct Services {
                         validatorFutures["portal"]!.append(eventLoop.newSucceededFuture(result: ("portal", Validation.Error.MissingValue())))
                     }
                     do {
-                        _login = try LoginRequest.extract(param: "login", from: dictionary)
+                        _email = try LoginRequest.extract(param: "email", from: dictionary)
                     } catch Entita.E.ExtractError {
-                        validatorFutures["login"]!.append(eventLoop.newSucceededFuture(result: ("login", Validation.Error.MissingValue())))
+                        validatorFutures["email"]!.append(eventLoop.newSucceededFuture(result: ("email", Validation.Error.MissingValue())))
                     }
                     do {
                         _password = try LoginRequest.extract(param: "password", from: dictionary)
@@ -1321,7 +1107,7 @@ public struct Services {
                     }
                     return self.init(
                         portal: _portal,
-                        login: _login,
+                        email: _email,
                         password: _password,
                         recaptchaToken: _recaptchaToken
                     )
@@ -1331,7 +1117,7 @@ public struct Services {
             public convenience init(from dictionary: Entita.Dict) throws {
                 self.init(
                     portal: try LoginRequest.extract(param: "portal", from: dictionary),
-                    login: try LoginRequest.extract(param: "login", from: dictionary),
+                    email: try LoginRequest.extract(param: "email", from: dictionary),
                     password: try LoginRequest.extract(param: "password", from: dictionary),
                     recaptchaToken: try LoginRequest.extract(param: "recaptchaToken", from: dictionary, isOptional: true)
                 )
@@ -1340,7 +1126,7 @@ public struct Services {
             public func getDictionary() throws -> Entita.Dict {
                 return [
                     self.getDictionaryKey("portal"): try self.encode(self.portal),
-                    self.getDictionaryKey("login"): try self.encode(self.login),
+                    self.getDictionaryKey("email"): try self.encode(self.email),
                     self.getDictionaryKey("password"): try self.encode(self.password),
                     self.getDictionaryKey("recaptchaToken"): try self.encode(self.recaptchaToken),
                 ]
@@ -1527,7 +1313,6 @@ public struct Services {
             }
 
             public static func await(
-                on eventLoop: EventLoop,
                 ID: Int,
                 IDUser IDUserFuture: Future<String>,
                 userName userNameFuture: Future<String>,
@@ -1540,7 +1325,7 @@ public struct Services {
                 dateCreated: String,
                 dateUpdated: String
             ) -> Future<Comment> {
-                return eventLoop.newSucceededFuture(result: ()).then { () in
+                return likesFuture.eventLoop.newSucceededFuture(result: ()).then { () in
                     IDUserFuture.map { IDUser in IDUser }
                 }
                 .then { IDUser in

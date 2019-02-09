@@ -6,7 +6,7 @@ import LGNC
 import Entita2
 
 public struct CreateController {
-    typealias Contract = Services.Quorum.Contracts.Create
+    typealias Contract = Services.Quorum.Contracts.CreateComment
 
     public static func setup() {
         Contract.Request.validateIdpost { ID, eventLoop in
@@ -54,7 +54,6 @@ public struct CreateController {
             .then { comment, user in Logic.Comment.insert(comment: comment, as: user, on: eventLoop) }
             .then { comment in
                 Contract.Response.await(
-                    on: eventLoop,
                     ID: comment.ID,
                     IDUser: user.map { $0.ID.string },
                     userName: user.map { $0.username },

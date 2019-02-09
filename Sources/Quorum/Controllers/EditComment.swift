@@ -6,7 +6,7 @@ import LGNC
 import Entita2FDB
 
 public struct EditController {
-    typealias Contract = Services.Quorum.Contracts.Edit
+    typealias Contract = Services.Quorum.Contracts.EditComment
 
     public static func setup() {
         Contract.Request.validateIdcomment { ID, eventLoop in
@@ -69,7 +69,6 @@ public struct EditController {
                 }
                 .flatMap { comment in
                     Contract.Response.await(
-                        on: eventLoop,
                         ID: comment.ID,
                         IDUser: userFuture.map { $0.ID.string },
                         userName: userFuture.map { $0.username },

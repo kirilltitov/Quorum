@@ -44,6 +44,7 @@ let COMMENT_LIKEABLE_TIME: TimeInterval = 86400 * 365
 let COMMENT_EDIT_COOLDOWN: TimeInterval = 10
 
 let defaultUser = E2.UUID("00000000-1637-0034-1711-000000000000")!
+let adminUserID = defaultUser
 
 typealias SQuorum = Services.Quorum
 
@@ -54,6 +55,42 @@ let fdb = FDB(cluster: "/opt/foundationdb/fdb.cluster")
 try fdb.connect()
 
 let subspaceMain = Subspace(PORTAL_ID, SERVICE_ID)
+
+//let comm = Models.Comment(
+//    ID: 1,
+//    IDUser: defaultUser,
+//    IDPost: 1,
+//    IDReplyComment: nil,
+//    body: "lul",
+//    dateCreated: .distantFuture,
+//    dateUpdated: .distantPast
+//)
+//
+//print("indexIndexSubspace")
+//dump(comm.indexIndexSubspace._string)
+//print("")
+//
+//print("indexIndexSubspace UNIQUE")
+//dump(comm.getIndexIndexKeyForIndex(Models.Comment.indices["ID"]!, name: "ID", value: "1")._string)
+//print("")
+//
+//print("indexIndexSubspace NON-UNIQUE")
+//dump(comm.getIndexIndexKeyForIndex(Models.Comment.indices["user"]!, name: "user", value: defaultUser)._string)
+//print("")
+//
+//print("indexSubspace")
+//dump(Models.Comment.indexSubspace._string)
+//print("")
+//
+//print("getIndexKeyForUniqueIndex")
+//dump(Models.Comment.getIndexKeyForUniqueIndex(name: "email", value: "kirill@kirilltitov.com")._string)
+//print("")
+//
+//print("getIndexKeyForIndex")
+//dump(comm.getIndexKeyForIndex(Models.Comment.indices["user"]!, name: "user", value: defaultUser)._string)
+//print("")
+//
+//exit(0)
 
 let requiredBitmask: LGNP.Message.ControlBitmask = [.signatureSHA1, /*.encrypted,*/ .contentTypeMsgPack]
 let client = LGNS.Client(cryptor: cryptor, controlBitmask: requiredBitmask, eventLoopGroup: eventLoopGroup)
@@ -70,6 +107,7 @@ UnapprovedCommentsController.setup()
 UndeleteController.setup()
 RefreshUserController.setup()
 RejectCommentController.setup()
+CreatePostController.setup()
 
 let testPostID: Int = 1
 

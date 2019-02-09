@@ -15,8 +15,8 @@ public extension Logic {
                 self.comment = comment
             }
 
-            func incrementLikes() {
-                self.likes += 1
+            func incrementLikes(_ likes: Int = 1) {
+                self.likes += likes
             }
         }
 
@@ -68,31 +68,39 @@ public extension Logic {
             }.then { (post: Models.Post) -> Future<(Models.Post, Transaction)> in
                 fdb.begin(eventLoop: eventLoop).map { (post, $0) }
             }.then { (post, transaction) in
-                transaction
-                    .get(range: Models.Comment._getPostPrefix(post.ID).range)
-                    .map { $0.0 }
-            }.thenThrowing {
-                var result: [CommentWithLikes] = []
-                var currentCommentWithLikes: CommentWithLikes?
-                for record in $0.records {
-                    let tuple = Tuple(from: record.key)
-                    if Models.Comment.doesRelateToThis(tuple: tuple) {
-                        let comment = try Models.Comment(from: record.value)
-                        if let user = user {
-                            if user.isOrdinaryUser && (comment.isDeleted == true || comment.isApproved == false) {
-                                continue
-                            }
-                        } else if comment.isDeleted == true || comment.isApproved == false {
+                Models.Comment.loadAll(
+                    bySubspace: Models.Comment._getPostPrefix(post.ID),
+                    with: transaction,
+                    on: eventLoop
+                ).map { ($0, post, transaction) }
+            }.map { results, post, transaction in
+                var result = [CommentWithLikes]()
+
+                for (_, comment) in results {
+                    if let user = user {
+                        if user.isOrdinaryUser && (comment.isDeleted == true || comment.isApproved == false) {
                             continue
                         }
-                        let instance = CommentWithLikes(comment)
-                        currentCommentWithLikes = instance
-                        result.append(instance)
-                    } else if Models.Like.doesRelateToThis(tuple: tuple) {
-                        currentCommentWithLikes?.incrementLikes()
+                    } else if comment.isDeleted == true || comment.isApproved == false {
+                        continue
+                    }
+                    result.append(CommentWithLikes(comment))
+                }
+
+                return (result, post, transaction)
+            }
+            .then { (commentsWithLikes: [CommentWithLikes], post: Models.Post, transaction: Transaction) in
+                Models.Like
+                    .getLikesForCommentsIn(post: post, with: transaction, on: eventLoop)
+                    .map { (commentsWithLikes, $0) }
+            }
+            .map { (commentsWithLikes: [CommentWithLikes], likesInfo: [Models.Comment.Identifier: Int]) in
+                commentsWithLikes.forEach { commentWithLikes in
+                    if let likes = likesInfo[commentWithLikes.comment.ID] {
+                        commentWithLikes.incrementLikes(likes)
                     }
                 }
-                return result
+                return commentsWithLikes
             }
         }
     }

@@ -50,6 +50,10 @@ public extension Logic {
             as user: Models.User,
             on eventLoop: EventLoop
         ) -> Future<Models.Comment> {
+            if user.isAtLeastModerator {
+                comment.isApproved = true
+            }
+
             return comment
                 .insert(on: eventLoop)
                 .then { _ -> Future<Void> in

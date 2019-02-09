@@ -3,7 +3,7 @@ import Generated
 import LGNC
 
 public struct RejectCommentController {
-    typealias Contract = Services.Quorum.Contracts.Reject
+    typealias Contract = Services.Quorum.Contracts.RejectComment
 
     public static func setup() {
         func contractRoutine(

@@ -9,7 +9,8 @@ public extension Models {
         public static var fullEntityName = false
         
         public static var indices: [String : Entita2.Index<Models.Comment>] = [
-            "ID": E2.Index(\.ID)
+            "ID": E2.Index(\.ID, unique: true),
+            "user": E2.Index(\.IDUser, unique: false),
         ]
 
         public enum CodingKeys: String, CodingKey {
@@ -88,9 +89,9 @@ public extension Models {
                 }
         }
 
-        public func getIndexIndexSubspace() -> Subspace {
-            return Comment.subspace[Comment.entityName][self.ID]["idx"]
-        }
+//        public func getIndexIndexSubspace() -> Subspace {
+//            return Comment.subspace[Comment.entityName][self.ID]["idx"]
+//        }
 
         // this is extracted because logic would like to use it as range
         public static func _getPostPrefix(_ ID: Post.Identifier) -> Subspace {

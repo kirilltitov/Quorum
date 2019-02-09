@@ -4,7 +4,7 @@ import LGNC
 
 class UndeleteController {
     static func setup() {
-        typealias Contract = Services.Quorum.Contracts.Undelete
+        typealias Contract = Services.Quorum.Contracts.UndeleteComment
 
         func contractRoutine(
             request: Contract.Request,

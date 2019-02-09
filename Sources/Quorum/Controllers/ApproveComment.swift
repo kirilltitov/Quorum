@@ -3,7 +3,7 @@ import Generated
 import LGNC
 
 public struct ApproveCommentController {
-    typealias Contact = Services.Quorum.Contracts.Approve
+    typealias Contact = Services.Quorum.Contracts.ApproveComment
 
     public static func setup() {
         func contractRoutine(
@@ -24,7 +24,6 @@ public struct ApproveCommentController {
                 .then { comment in
                     let user = comment.getUser(on: eventLoop)
                     return Contact.Response.await(
-                        on: eventLoop,
                         ID: comment.ID,
                         IDUser: user.map { $0.ID.string },
                         userName: user.map { $0.username },

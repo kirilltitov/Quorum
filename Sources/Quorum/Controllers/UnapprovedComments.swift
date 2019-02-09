@@ -26,7 +26,6 @@ class UnapprovedCommentsController {
                         comments.map { comment in
                             let user = comment.getUser(on: eventLoop)
                             return Services.Shared.Comment.await(
-                                on: eventLoop,
                                 ID: comment.ID,
                                 IDUser: user.map { $0.ID.string },
                                 userName: user.map { $0.username },
