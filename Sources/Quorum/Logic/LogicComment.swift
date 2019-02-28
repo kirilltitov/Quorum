@@ -28,7 +28,7 @@ public extension Logic {
         public static func getThrowingWithTransaction(
             by ID: Models.Comment.Identifier,
             on eventLoop: EventLoop
-        ) -> Future<(Models.Comment, Transaction)> {
+        ) -> Future<(Models.Comment, FDB.Transaction)> {
             return Models.Comment
                 .getUsingRefIDWithTransaction(by: ID, on: eventLoop)
                 .thenThrowing { maybeComment, transaction in
@@ -113,7 +113,7 @@ public extension Logic {
         public static func edit(
             comment: Models.Comment,
             body: String,
-            with transaction: Transaction,
+            with transaction: FDB.Transaction,
             on eventLoop: EventLoop
         ) -> Future<Models.Comment> {
             comment.body = Logic.Comment.getProcessedBody(from: body)

@@ -5,26 +5,23 @@ import FDB
 import NIO
 
 //MARK:- FDB
-public extension Tuple {
+public extension FDB.Tuple {
     public var _string: String {
-        return self.tuple.map {
-            guard let val = $0 else {
-                return "NULL"
-            }
-            return String(describing: val)
-        }.joined(separator: " / ")
+        return self.tuple
+            .map { String(describing: $0) }
+            .joined(separator: " / ")
     }
 }
 
-public extension Subspace {
+public extension FDB.Subspace {
     public var _string: String {
-        return Tuple(from: self.prefix)._string
+        return (try? FDB.Tuple(from: self.prefix)._string) ?? "\(self)"
     }
 }
 
-public extension FDBKey {
+public extension AnyFDBKey {
     public var _string: String {
-        return Tuple(from: self.asFDBKey())._string
+        return (try? FDB.Tuple(from: self.asFDBKey())._string) ?? "\(self)"
     }
 }
 
@@ -83,7 +80,7 @@ public extension EventLoopGroup {
 }
 
 //MARK:- Entita2FDB
-extension E2.ID: TuplePackable where Value == UUID {
+extension E2.ID: FDBTuplePackable where Value == UUID {
     public func pack() -> Bytes {
         return self._bytes.pack()
     }
@@ -94,7 +91,7 @@ public extension E2FDBEntity {
         return fdb
     }
 
-    public static var subspace: Subspace {
+    public static var subspace: FDB.Subspace {
         return subspaceMain
     }
 }
@@ -107,9 +104,7 @@ public extension ModelInt {
         let key = subspaceMain["idx"][Self.entityName]
         return fdb
             .begin(eventLoop: eventLoop)
-            .then { tr in tr.atomic(.Add, key: key, value: Int(1)) }
-            .then { tr in tr.commit() }
-            .then { fdb.begin(eventLoop: eventLoop) }
+            .then { tr in tr.atomic(.add, key: key, value: Int(1)) }
             .then { tr in tr.get(key: key) }
             .map { (bytes, _) in bytes!.cast() }
     }

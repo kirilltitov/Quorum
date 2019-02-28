@@ -79,7 +79,7 @@ public extension Models {
         public static func getUsingRefIDWithTransaction(
             by ID: Comment.Identifier,
             on eventLoop: EventLoop
-        ) -> Future<(Models.Comment?, Transaction)> {
+        ) -> Future<(Models.Comment?, FDB.Transaction)> {
             return fdb
                 .begin(eventLoop: eventLoop)
                 .then { transaction in
@@ -94,11 +94,11 @@ public extension Models {
 //        }
 
         // this is extracted because logic would like to use it as range
-        public static func _getPostPrefix(_ ID: Post.Identifier) -> Subspace {
+        public static func _getPostPrefix(_ ID: Post.Identifier) -> FDB.Subspace {
             return self.subspace[Post.entityName][ID][Comment.entityName]
         }
 
-        public func _getFullPrefix() -> Subspace {
+        public func _getFullPrefix() -> FDB.Subspace {
             return Comment._getPostPrefix(self.IDPost)[self.ID]
         }
 

@@ -51,10 +51,10 @@ typealias SQuorum = Services.Quorum
 let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
 let cryptor = try LGNP.Cryptor(salt: "da kak tak", key: "3858f62230ac3c91")
 
-let fdb = FDB(cluster: "/opt/foundationdb/fdb.cluster")
+let fdb = FDB(clusterFile: "/opt/foundationdb/fdb.cluster")
 try fdb.connect()
 
-let subspaceMain = Subspace(PORTAL_ID, SERVICE_ID)
+let subspaceMain = FDB.Subspace(PORTAL_ID, SERVICE_ID)
 
 //let comm = Models.Comment(
 //    ID: 1,

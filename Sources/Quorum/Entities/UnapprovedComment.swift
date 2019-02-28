@@ -30,12 +30,12 @@ public extension Models {
                 .then { $0.commit() }
         }
 
-        private static func incrementUnapproved(with transaction: Transaction) -> Future<Transaction> {
-            return transaction.atomic(.Add, key: self.counterSubspace, value: Int(1))
+        private static func incrementUnapproved(with transaction: FDB.Transaction) -> Future<FDB.Transaction> {
+            return transaction.atomic(.add, key: self.counterSubspace, value: Int(1))
         }
 
-        private static func decrementUnapproved(with transaction: Transaction) -> Future<Transaction> {
-            return transaction.atomic(.Add, key: self.counterSubspace, value: Int(-1))
+        private static func decrementUnapproved(with transaction: FDB.Transaction) -> Future<FDB.Transaction> {
+            return transaction.atomic(.add, key: self.counterSubspace, value: Int(-1))
         }
 
         public static func getUnapprovedComments(on eventLoop: EventLoop) -> Future<[Models.Comment]> {
@@ -52,7 +52,7 @@ public extension Models {
                 .map { comments in comments.compactMap { $0 } }
         }
 
-        public static func getCommentID(from tuple: Tuple) -> Models.Comment.Identifier? {
+        public static func getCommentID(from tuple: FDB.Tuple) -> Models.Comment.Identifier? {
             guard tuple.tuple.count >= 3 else {
                 return nil
             }

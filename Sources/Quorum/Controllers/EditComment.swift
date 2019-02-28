@@ -29,7 +29,7 @@ public struct EditController {
             let userFuture = Logic.User.authorize(token: request.token, on: eventLoop)
             
             return userFuture
-                .flatMap { (user: Models.User) -> Future<(Models.Comment, Transaction)> in
+                .flatMap { (user: Models.User) -> Future<(Models.Comment, FDB.Transaction)> in
                     Logic.Comment
                         .getThrowingWithTransaction(by: request.IDComment, on: eventLoop)
                         .then { (comment, transaction) in
@@ -83,7 +83,7 @@ public struct EditController {
                     )
                 }
                 .flatMapIfErrorThrowing { error in
-                    if case FDB.Error.TransactionRetry = error {
+                    if case FDB.Error.transactionRetry = error {
                         return contractRoutine(request: request, info: info)
                     }
                     throw error

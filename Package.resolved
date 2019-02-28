@@ -2,30 +2,21 @@
   "object": {
     "pins": [
       {
-        "package": "Signals",
-        "repositoryURL": "https://github.com/IBM-Swift/BlueSignals.git",
-        "state": {
-          "branch": null,
-          "revision": "23f62ec7a38a837e1c14acffc2e963b667a88b46",
-          "version": "1.0.16"
-        }
-      },
-      {
-        "package": "CFDBSwift",
-        "repositoryURL": "https://github.com/kirilltitov/CFDBSwift",
-        "state": {
-          "branch": null,
-          "revision": "34a84e6dfcb5990e01f1076edfd6cc6b51a49fcd",
-          "version": "1.0.3"
-        }
-      },
-      {
         "package": "CryptoSwift",
         "repositoryURL": "https://github.com/krzyzanowskim/CryptoSwift.git",
         "state": {
           "branch": null,
-          "revision": "c5ee516c9616ec7dc2a000007ddb8bf5d9543c74",
-          "version": "0.13.1"
+          "revision": "8b3435bd3236819318cde87c8d9315fb89906df3",
+          "version": "0.14.0"
+        }
+      },
+      {
+        "package": "FDBSwift",
+        "repositoryURL": "https://github.com/kirilltitov/FDBSwift.git",
+        "state": {
+          "branch": null,
+          "revision": "1d366e236f67a2f7ad9b8708e1d52150c515d549",
+          "version": "2.3.0"
         }
       },
       {
@@ -33,17 +24,35 @@
         "repositoryURL": "https://github.com/1024jp/GzipSwift.git",
         "state": {
           "branch": null,
-          "revision": "377e8bff2a7c99fb5a588dec351334efa3fd0b94",
-          "version": "4.0.4"
+          "revision": "eac1da34ec837f501b56d810bdf0fd68b3f91e19",
+          "version": "4.1.0"
+        }
+      },
+      {
+        "package": "LGNKit-Swift",
+        "repositoryURL": "git@bitbucket.org:1711-games/LGNKit-Swift.git",
+        "state": {
+          "branch": "master",
+          "revision": "1dbb78708a0e7bc53da3091782b1ee14e64c889c",
+          "version": null
+        }
+      },
+      {
+        "package": "MessagePack",
+        "repositoryURL": "https://github.com/kirilltitov/MessagePack.git",
+        "state": {
+          "branch": "master",
+          "revision": "aa2e70893b419253a3dfb876dd82b1fb9d9e05f2",
+          "version": null
         }
       },
       {
         "package": "swift-nio",
-        "repositoryURL": "https://github.com/apple/swift-nio",
+        "repositoryURL": "https://github.com/apple/swift-nio.git",
         "state": {
           "branch": null,
-          "revision": "a20e129c22ad00a51c902dca54a5456f90664780",
-          "version": "1.12.0"
+          "revision": "98434c1f1d687ff5a24d2cabfbd19b5c7d2d7a2f",
+          "version": "1.13.0"
         }
       },
       {

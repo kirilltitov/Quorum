@@ -65,7 +65,7 @@ public extension Logic {
                     throw E.PostNotFound
                 }
                 return post
-            }.then { (post: Models.Post) -> Future<(Models.Post, Transaction)> in
+            }.then { (post: Models.Post) -> Future<(Models.Post, FDB.Transaction)> in
                 fdb.begin(eventLoop: eventLoop).map { (post, $0) }
             }.then { (post, transaction) in
                 Models.Comment.loadAll(
@@ -89,7 +89,7 @@ public extension Logic {
 
                 return (result, post, transaction)
             }
-            .then { (commentsWithLikes: [CommentWithLikes], post: Models.Post, transaction: Transaction) in
+            .then { (commentsWithLikes: [CommentWithLikes], post: Models.Post, transaction: FDB.Transaction) in
                 Models.Like
                     .getLikesForCommentsIn(post: post, with: transaction, on: eventLoop)
                     .map { (commentsWithLikes, $0) }

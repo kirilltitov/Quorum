@@ -15,31 +15,31 @@ public extension Models {
             self.ID = ID
         }
 
-        fileprivate static func getRootPrefix(forPostID ID: Post.Identifier) -> Subspace {
+        fileprivate static func getRootPrefix(forPostID ID: Post.Identifier) -> FDB.Subspace {
             return self.subspacePrefix[Post.entityName][ID]
         }
 
-        fileprivate static func getRootCommentsPrefix(forPostID ID: Post.Identifier) -> Subspace {
+        fileprivate static func getRootCommentsPrefix(forPostID ID: Post.Identifier) -> FDB.Subspace {
             return self.getRootPrefix(forPostID: ID)[Comment.entityName]
         }
 
-        fileprivate static func getCommentsLikesPrefix(for comment: Comment) -> Subspace {
+        fileprivate static func getCommentsLikesPrefix(for comment: Comment) -> FDB.Subspace {
             return self.getRootCommentsPrefix(forPostID: comment.IDPost)[comment.ID]
         }
 
-        fileprivate static func getCommentsLikesPrefix(for post: Post) -> Subspace {
+        fileprivate static func getCommentsLikesPrefix(for post: Post) -> FDB.Subspace {
             return self.getRootCommentsPrefix(forPostID: post.ID)
         }
 
-        fileprivate static func getPostLikesPrefix(forPostID ID: Post.Identifier) -> Subspace {
+        fileprivate static func getPostLikesPrefix(forPostID ID: Post.Identifier) -> FDB.Subspace {
             return self.getRootPrefix(forPostID: ID)[Post.entityName]
         }
 
-        fileprivate static func getPostLikesPrefix(for post: Post) -> Subspace {
+        fileprivate static func getPostLikesPrefix(for post: Post) -> FDB.Subspace {
             return self.getPostLikesPrefix(forPostID: post.ID)
         }
 
-        public static func getCommentID(from tuple: Tuple) -> Models.Comment.Identifier? {
+        public static func getCommentID(from tuple: FDB.Tuple) -> Models.Comment.Identifier? {
             guard tuple.tuple.count >= 3 else {
                 return nil
             }
@@ -58,16 +58,19 @@ public extension Models {
 
         public static func getLikesForCommentsIn(
             post: Post,
-            with transaction: Transaction,
+            with transaction: FDB.Transaction,
             on eventLoop: EventLoop
         ) -> Future<[Comment.Identifier: Int]> {
             return transaction
                 .get(range: self.getCommentsLikesPrefix(for: post).range)
-                .map { (results: KeyValuesResult, _: Transaction) -> [Comment.Identifier: Int] in
+                .map { (results: FDB.KeyValuesResult, _: FDB.Transaction) -> [Comment.Identifier: Int] in
                     var result = [Comment.Identifier: Int]()
 
                     for record in results.records {
-                        let tuple = Tuple(from: record.key).tuple.compactMap { $0 }
+                        let tuple: [FDBTuplePackable]
+                        do {
+                            tuple = try FDB.Tuple(from: record.key).tuple.compactMap { $0 }
+                        } catch { continue }
                         guard tuple.count > 2 else {
                             continue
                         }
@@ -103,14 +106,14 @@ public extension Models {
         private static func processLikeTo(
             comment: Comment,
             by user: User,
-            with transaction: Transaction
-        ) -> Future<Transaction> {
+            with transaction: FDB.Transaction
+        ) -> Future<FDB.Transaction> {
             let commentLikeKey = self.getCommentsLikesPrefix(for: comment)[user.ID]
             let userLikeIndexKey = user.getIndexIndexKeyForIndex(name: self.entityName, value: comment.ID)
 
             return transaction
                 .get(key: self.getCommentsLikesPrefix(for: comment)[user.ID])
-                .then { (maybeLike, transaction) -> Future<Transaction> in
+                .then { (maybeLike, transaction) -> Future<FDB.Transaction> in
                     maybeLike == nil
                         ? transaction
                             .set(key: commentLikeKey, value: [])
