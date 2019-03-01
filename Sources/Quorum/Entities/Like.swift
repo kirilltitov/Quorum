@@ -52,7 +52,7 @@ public extension Models {
         public static func getLikesFor(comment: Comment, on eventLoop: EventLoop) -> Future<Int> {
             return fdb
                 .begin(eventLoop: eventLoop)
-                .then { $0.get(range: self.getCommentsLikesPrefix(for: comment).range, commit: true) }
+                .then { $0.get(range: self.getCommentsLikesPrefix(for: comment).range, snapshot: true, commit: true) }
                 .map { $0.0.records.count }
         }
 
@@ -67,16 +67,11 @@ public extension Models {
                     var result = [Comment.Identifier: Int]()
 
                     for record in results.records {
-                        let tuple: [FDBTuplePackable]
-                        do {
-                            tuple = try FDB.Tuple(from: record.key).tuple.compactMap { $0 }
-                        } catch { continue }
-                        guard tuple.count > 2 else {
-                            continue
-                        }
-                        guard let ID = tuple[tuple.count - 2] as? Comment.Identifier else {
-                            continue
-                        }
+                        guard
+                            let tuple = try? FDB.Tuple(from: record.key).tuple.compactMap { $0 },
+                            tuple.count > 2,
+                            let ID = tuple[tuple.count - 2] as? Comment.Identifier
+                        else { continue }
                         result[ID] = (result[ID] ?? 0) + 1
                     }
 

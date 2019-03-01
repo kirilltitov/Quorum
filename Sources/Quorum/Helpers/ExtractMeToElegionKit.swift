@@ -87,6 +87,10 @@ extension E2.ID: FDBTuplePackable where Value == UUID {
 }
 
 public extension E2FDBEntity {
+    public static var format: E2.Format {
+        return .JSON
+    }
+
     public static var storage: FDB {
         return fdb
     }
