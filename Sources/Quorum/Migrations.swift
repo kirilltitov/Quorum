@@ -3,30 +3,6 @@ import LGNCore
 import LGNC
 import Entita2FDB
 
-fileprivate let firstID = try! Models.Comment.getNextID(on: eventLoopGroup.eventLoop).wait()
-fileprivate let comment = Models.Comment(
-    ID: firstID,
-    IDUser: defaultUser,
-    IDPost: 1,
-    IDReplyComment: nil,
-    isDeleted: false,
-    body: "Так!",
-    dateCreated: Date(),
-    dateUpdated: Date.distantPast
-)
-
-let secondID = try! Models.Comment.getNextID(on: eventLoopGroup.eventLoop).wait()
-fileprivate let comment2 = Models.Comment(
-    ID: secondID,
-    IDUser: defaultUser,
-    IDPost: 1,
-    IDReplyComment: firstID,
-    isDeleted: false,
-    body: "Second",
-    dateCreated: Date(),
-    dateUpdated: Date.distantPast
-)
-
 fileprivate let _defaultUser: Models.User! = try! Logic.User.get(by: defaultUser, on: eventLoopGroup.eventLoop).wait()
 
 let migrations: Migrations = [
@@ -47,25 +23,43 @@ let migrations: Migrations = [
         }
     },
     {
+        let firstID = try! Models.Comment.getNextID(on: eventLoopGroup.eventLoop).wait()
+        let comment = Models.Comment(
+            ID: firstID,
+            IDUser: defaultUser,
+            IDPost: 1,
+            IDReplyComment: nil,
+            isDeleted: false,
+            body: "Так!",
+            dateCreated: Date(),
+            dateUpdated: Date.distantPast
+        )
+
+        let secondID = try! Models.Comment.getNextID(on: eventLoopGroup.eventLoop).wait()
+        let comment2 = Models.Comment(
+            ID: secondID,
+            IDUser: defaultUser,
+            IDPost: 1,
+            IDReplyComment: firstID,
+            isDeleted: false,
+            body: "Second",
+            dateCreated: Date(),
+            dateUpdated: Date.distantPast
+        )
+
         let _ = try Logic.Comment.insert(comment: comment, as: _defaultUser, on: eventLoopGroup.eventLoop).wait()
         let _ = try Logic.Comment.approve(comment: comment, on: eventLoopGroup.eventLoop).wait()
         let _ = try Logic.Comment.insert(comment: comment2, as: _defaultUser, on: eventLoopGroup.eventLoop).wait()
-    },
-    {
         let _ = try Logic.Comment.likeOrUnlike(
             comment: comment,
             by: Models.User(ID: defaultUser, username: "Kirill Titov", accessLevel: .Admin),
             on: eventLoopGroup.eventLoop
         ).wait()
-    },
-    {
         let _ = try Logic.Comment.likeOrUnlike(
             comment: comment,
             by: Models.User(ID: E2.UUID(), username: "Kirill Titov", accessLevel: .Admin),
             on: eventLoopGroup.eventLoop
         ).wait()
-    },
-    {
         let _ = try Logic.Comment.likeOrUnlike(
             comment: comment,
             by: Models.User(ID: E2.UUID(), username: "Kirill Titov", accessLevel: .Admin),

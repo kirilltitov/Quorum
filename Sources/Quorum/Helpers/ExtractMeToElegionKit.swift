@@ -109,7 +109,7 @@ public extension ModelInt {
         return fdb
             .begin(eventLoop: eventLoop)
             .then { tr in tr.atomic(.add, key: key, value: Int(1)) }
-            .then { tr in tr.get(key: key) }
+            .then { tr in tr.get(key: key, commit: true) }
             .map { (bytes, _) in bytes!.cast() }
     }
 }

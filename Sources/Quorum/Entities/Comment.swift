@@ -13,17 +13,20 @@ public extension Models {
             "user": E2.Index(\.IDUser, unique: false),
         ]
 
-        public enum CodingKeys: String, CodingKey {
-            case ID = "a"
-            case IDUser = "b"
-            case IDPost = "c"
-            case IDReplyComment = "d"
-            case isDeleted = "e"
-            case isApproved = "f"
-            case body = "g"
-            case dateCreated = "h"
-            case dateUpdated = "i"
-        }
+        #if DEBUG
+        #else
+            public enum CodingKeys: String, CodingKey {
+                case ID = "a"
+                case IDUser = "b"
+                case IDPost = "c"
+                case IDReplyComment = "d"
+                case isDeleted = "e"
+                case isApproved = "f"
+                case body = "g"
+                case dateCreated = "h"
+                case dateUpdated = "i"
+            }
+        #endif
 
         public let ID: Int
         public let IDUser: User.Identifier

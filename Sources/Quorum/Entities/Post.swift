@@ -6,11 +6,14 @@ public extension Models {
 
         public static var fullEntityName = false
 
-        public enum CodingKeys: String, CodingKey {
-            case ID = "a"
-            case IDUser = "b"
-            case isCommentable = "c"
-        }
+        #if DEBUG
+        #else
+            public enum CodingKeys: String, CodingKey {
+                case ID = "a"
+                case IDUser = "b"
+                case isCommentable = "c"
+            }
+        #endif
 
         public let ID: Int
         public let IDUser: E2.UUID
