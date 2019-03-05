@@ -105,11 +105,16 @@ public protocol ModelInt: E2FDBEntity where Identifier == Int {}
 
 public extension ModelInt {
     public static func getNextID(on eventLoop: EventLoop) -> Future<Self.Identifier> {
-        let key = subspaceMain["idx"][Self.entityName]
-        return fdb
-            .begin(eventLoop: eventLoop)
-            .then { tr in tr.atomic(.add, key: key, value: Int(1)) }
-            .then { tr in tr.get(key: key, commit: true) }
+        return Self.storage.withTransaction(on: eventLoop) { transaction in
+            return Self.getNextID(on: transaction)
+        }
+    }
+
+    public static func getNextID(on transaction: FDB.Transaction) -> Future<Self.Identifier> {
+        let key = Self.subspace["idx"][Self.entityName]
+        return transaction
+            .atomic(.add, key: key, value: Int(1))
+            .then { $0.get(key: key, commit: true) }
             .map { (bytes, _) in bytes!.cast() }
     }
 }

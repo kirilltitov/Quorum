@@ -51,7 +51,7 @@ public extension Models {
 
         public static func getLikesFor(comment: Comment, on eventLoop: EventLoop) -> Future<Int> {
             return fdb
-                .begin(eventLoop: eventLoop)
+                .begin(on: eventLoop)
                 .then { $0.get(range: self.getCommentsLikesPrefix(for: comment).range, snapshot: true, commit: true) }
                 .map { $0.0.records.count }
         }
@@ -90,12 +90,17 @@ public extension Models {
         }
 
         public static func likeOrUnlike(comment: Comment, by user: User, on eventLoop: EventLoop) -> Future<Int> {
-            let subspace = self.getCommentsLikesPrefix(for: comment)
-            return fdb
-                .begin(eventLoop: eventLoop)
-                .then { self.processLikeTo(comment: comment, by: user, with: $0) }
-                .then { transaction in transaction.get(range: subspace.range, commit: true) }
-                .map { $0.0.records.count }
+            return fdb.withTransaction(on: eventLoop) { transaction in
+                self.processLikeTo(comment: comment, by: user, with: transaction)
+                    .then { transaction in
+                        transaction.get(
+                            range: self.getCommentsLikesPrefix(for: comment).range,
+                            snapshot: true,
+                            commit: true
+                        )
+                    }
+                    .map { $0.0.records.count }
+            }
         }
 
         private static func processLikeTo(

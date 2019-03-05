@@ -83,13 +83,11 @@ public extension Models {
             by ID: Comment.Identifier,
             on eventLoop: EventLoop
         ) -> Future<(Models.Comment?, FDB.Transaction)> {
-            return fdb
-                .begin(eventLoop: eventLoop)
-                .then { transaction in
-                    self
-                        .loadByIndex(name: "ID", value: ID, with: transaction, on: eventLoop)
-                        .map { maybeComment in (maybeComment, transaction) }
-                }
+            return fdb.withTransaction(on: eventLoop) { transaction in
+                self
+                    .loadByIndex(name: "ID", value: ID, with: transaction, on: eventLoop)
+                    .map { maybeComment in (maybeComment, transaction) }
+            }
         }
 
 //        public func getIndexIndexSubspace() -> Subspace {

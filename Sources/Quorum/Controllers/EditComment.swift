@@ -34,7 +34,7 @@ public struct EditController {
                         .getThrowingWithTransaction(by: request.IDComment, on: eventLoop)
                         .then { (comment, transaction) in
                             Logic.Post
-                                .getThrowing(by: comment.IDPost, on: eventLoop)
+                                .getThrowing(by: comment.IDPost, snapshot: false, on: eventLoop)
                                 .map { post in (post, comment, transaction) }
                         }
                         .thenThrowing { post, comment, transaction in

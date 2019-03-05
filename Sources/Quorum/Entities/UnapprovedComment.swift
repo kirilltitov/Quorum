@@ -17,17 +17,21 @@ public extension Models {
         }
 
         public static func saveUnapproved(comment: Models.Comment, on eventLoop: EventLoop) -> Future<Void> {
-            return self.storage.begin(eventLoop: eventLoop)
-                .then { $0.set(key: self.IDAsKey(ID: comment.ID), value: comment.getIDAsKey()) }
-                .then { self.incrementUnapproved(with: $0) }
-                .then { $0.commit() }
+            return self.storage.withTransaction(on: eventLoop) { transaction in
+                transaction
+                    .set(key: self.IDAsKey(ID: comment.ID), value: comment.getIDAsKey())
+                    .then { self.incrementUnapproved(with: $0) }
+                    .then { $0.commit() }
+            }
         }
 
         public static func clearRoutine(comment: Models.Comment, on eventLoop: EventLoop) -> Future<Void> {
-            return self.storage.begin(eventLoop: eventLoop)
-                .then { $0.clear(key: self.IDAsKey(ID: comment.ID)) }
-                .then { self.decrementUnapproved(with: $0) }
-                .then { $0.commit() }
+            return self.storage.withTransaction(on: eventLoop) { transaction in
+                transaction
+                    .clear(key: self.IDAsKey(ID: comment.ID))
+                    .then { self.decrementUnapproved(with: $0) }
+                    .then { $0.commit() }
+            }
         }
 
         private static func incrementUnapproved(with transaction: FDB.Transaction) -> Future<FDB.Transaction> {
@@ -39,17 +43,18 @@ public extension Models {
         }
 
         public static func getUnapprovedComments(on eventLoop: EventLoop) -> Future<[Models.Comment]> {
-            return self.storage
-                .begin(eventLoop: eventLoop)
-                .then { $0.get(range: self.subspacePrefix.range) }
-                .then { (results, _) -> Future<[Models.Comment?]> in
-                    Future.reduce(
-                        into: [],
-                        results.records.map { kv in Models.Comment.loadByRaw(IDBytes: kv.value, on: eventLoop) },
-                        eventLoop: eventLoop
-                    ) { $0.append($1) }
-                }
-                .map { comments in comments.compactMap { $0 } }
+            return self.storage.withTransaction(on: eventLoop) { transaction in
+                transaction
+                    .get(range: self.subspacePrefix.range)
+                    .then { (results, _) -> Future<[Models.Comment?]> in
+                        Future.reduce(
+                            into: [],
+                            results.records.map { kv in Models.Comment.loadByRaw(IDBytes: kv.value, on: eventLoop) },
+                            eventLoop: eventLoop
+                        ) { $0.append($1) }
+                    }
+                    .map { comments in comments.compactMap { $0 } }
+            }
         }
 
         public static func getCommentID(from tuple: FDB.Tuple) -> Models.Comment.Identifier? {

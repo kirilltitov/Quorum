@@ -9,6 +9,23 @@ import Entita2FDB
 import NIO
 import MessagePack
 
+@available(*, deprecated, renamed: "FDB.Transaction")
+public typealias Transaction = FDB.Transaction
+@available(*, deprecated, renamed: "FDB.Tuple")
+public typealias Tuple = FDB.Tuple
+@available(*, deprecated, renamed: "FDB.Subspace")
+public typealias Subspace = FDB.Subspace
+@available(*, deprecated, renamed: "FDBTuplePackable")
+public typealias TuplePackable = FDBTuplePackable
+@available(*, deprecated, renamed: "AnyFDBKey")
+public typealias FDBKey = AnyFDBKey
+public extension FDB {
+    @available(*, deprecated, renamed: "begin(on:)")
+    public func begin(eventLoop: EventLoop) -> EventLoopFuture<FDB.Transaction> {
+        return self.begin(on: eventLoop)
+    }
+}
+
 public struct Models {}
 public struct Logic {}
 

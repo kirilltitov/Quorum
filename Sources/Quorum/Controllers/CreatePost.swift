@@ -17,7 +17,7 @@ class CreatePostController {
                 }
                 .then { (user: Models.User) in
                     Logic.Post
-                        .get(by: request.IDPost, on: info.eventLoop)
+                        .get(by: request.IDPost, snapshot: true, on: info.eventLoop)
                         .map { (user, $0) }
                 }
                 .thenThrowing { user, maybePost in

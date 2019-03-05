@@ -11,7 +11,7 @@ public struct CreateController {
     public static func setup() {
         Contract.Request.validateIdpost { ID, eventLoop in
             Logic.Post
-                .get(by: ID, on: eventLoop)
+                .get(by: ID, snapshot: true, on: eventLoop)
                 .map { post in
                     guard let post = post else {
                         return .PostNotFound
