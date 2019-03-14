@@ -33,22 +33,28 @@ LGNP.verbose = false
 Entita.KEY_DICTIONARIES_ENABLED = false
 LGNC.ALLOW_ALL_TRANSPORTS = true
 
-// portal id 0 = dev.kirilltitov.com
-// portal id 1 = kirilltitov.com
+let APP_ENV = AppEnv.detect()
 
-let env = LGNCore.Env.validateAndUnpack(
-    params: [
-        "PORTAL_ID",
-    ],
-    defaultParams: [
-        "PORTAL_ID": "Inner-Mongolia",
+public enum ConfigKeys: String, AnyConfigKey {
+    case salt
+    case aes_key
+    case portal_id
+}
+
+let config = try LGNCore.Config<ConfigKeys>(
+    env: APP_ENV,
+    rawConfig: ProcessInfo.processInfo.environment,
+    defaultConfig: [
+        .salt: "da kak tak",
+        .aes_key: "3858f62230ac3c91",
+        .portal_id: "Inner-Mongolia",
     ]
 )
 
 let SERVICE_ID = "Quorum"
 let POST_KEY = "Post"
 let COMMENT_KEY = "Comment"
-let PORTAL_ID = env["PORTAL_ID"]
+let PORTAL_ID = config[.portal_id]
 
 public extension LGNS.Address {
     public static func node(service: String, name: String, realm: String, port: Int) -> LGNS.Address {
@@ -66,48 +72,12 @@ let adminUserID = defaultUser
 typealias SQuorum = Services.Quorum
 
 let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
-let cryptor = try LGNP.Cryptor(salt: "da kak tak", key: "3858f62230ac3c91")
+let cryptor = try LGNP.Cryptor(salt: config[.salt], key: config[.aes_key])
 
 let fdb = FDB(clusterFile: "/opt/foundationdb/fdb.cluster")
 try fdb.connect()
 
 let subspaceMain = FDB.Subspace(PORTAL_ID, SERVICE_ID)
-
-//let comm = Models.Comment(
-//    ID: 1,
-//    IDUser: defaultUser,
-//    IDPost: 1,
-//    IDReplyComment: nil,
-//    body: "lul",
-//    dateCreated: .distantFuture,
-//    dateUpdated: .distantPast
-//)
-//
-//print("indexIndexSubspace")
-//dump(comm.indexIndexSubspace._string)
-//print("")
-//
-//print("indexIndexSubspace UNIQUE")
-//dump(comm.getIndexIndexKeyForIndex(Models.Comment.indices["ID"]!, name: "ID", value: "1")._string)
-//print("")
-//
-//print("indexIndexSubspace NON-UNIQUE")
-//dump(comm.getIndexIndexKeyForIndex(Models.Comment.indices["user"]!, name: "user", value: defaultUser)._string)
-//print("")
-//
-//print("indexSubspace")
-//dump(Models.Comment.indexSubspace._string)
-//print("")
-//
-//print("getIndexKeyForUniqueIndex")
-//dump(Models.Comment.getIndexKeyForUniqueIndex(name: "email", value: "kirill@kirilltitov.com")._string)
-//print("")
-//
-//print("getIndexKeyForIndex")
-//dump(comm.getIndexKeyForIndex(Models.Comment.indices["user"]!, name: "user", value: defaultUser)._string)
-//print("")
-//
-//exit(0)
 
 let requiredBitmask: LGNP.Message.ControlBitmask = [.signatureSHA1, /*.encrypted,*/ .contentTypeMsgPack]
 let client = LGNS.Client(cryptor: cryptor, controlBitmask: requiredBitmask, eventLoopGroup: eventLoopGroup)
@@ -118,26 +88,15 @@ CreateController.setup()
 CommentsController.setup()
 EditController.setup()
 DeleteController.setup()
+UndeleteController.setup()
+HideController.setup()
+UnhideController.setup()
 LikeController.setup()
 ApproveCommentController.setup()
 UnapprovedCommentsController.setup()
-UndeleteController.setup()
 RefreshUserController.setup()
 RejectCommentController.setup()
 CreatePostController.setup()
-
-let testPostID: Int = 1
-
-let comment1 = Models.Comment(
-    ID: 1,
-    IDUser: defaultUser,
-    IDPost: 1,
-    IDReplyComment: nil,
-    isDeleted: false,
-    body: "Так!",
-    dateCreated: Date(),
-    dateUpdated: Date.distantPast
-)
 
 let dispatchGroup = DispatchGroup()
 

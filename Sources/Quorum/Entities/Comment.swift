@@ -5,6 +5,36 @@ import NIO
 
 public extension Models {
     final public class Comment: ModelInt, Entita2FDBIndexedEntity {
+        public enum Status: String, Codable {
+            /// Freshly posted comment, awaits moderation
+            case pending
+
+            /// Published but deleted comment, displayed as "Comment has been deleted"
+            case deleted
+
+            /// Published but deleted comment, isn't displayed at all.
+            /// All subcomments must be in `.hidden` status as well.
+            case hidden
+
+            /// Published comment
+            case published
+        }
+
+        #if DEBUG
+        #else
+        public enum CodingKeys: String, CodingKey {
+            case ID = "a"
+            case IDUser = "b"
+            case IDPost = "c"
+            case IDReplyComment = "d"
+            case isDeleted = "e"
+            case isApproved = "f"
+            case body = "g"
+            case dateCreated = "h"
+            case dateUpdated = "i"
+        }
+        #endif
+
         public static let IDKey: KeyPath<Comment, Int> = \.ID
         public static var fullEntityName = false
         
@@ -13,27 +43,11 @@ public extension Models {
             "user": E2.Index(\.IDUser, unique: false),
         ]
 
-        #if DEBUG
-        #else
-            public enum CodingKeys: String, CodingKey {
-                case ID = "a"
-                case IDUser = "b"
-                case IDPost = "c"
-                case IDReplyComment = "d"
-                case isDeleted = "e"
-                case isApproved = "f"
-                case body = "g"
-                case dateCreated = "h"
-                case dateUpdated = "i"
-            }
-        #endif
-
         public let ID: Int
         public let IDUser: User.Identifier
         public let IDPost: Post.Identifier
         public let IDReplyComment: Int?
-        public var isDeleted: Bool
-        public var isApproved: Bool
+        public var status: Status
         public var body: String
         public let dateCreated: Date
         public var dateUpdated: Date
@@ -43,21 +57,16 @@ public extension Models {
             IDUser: User.Identifier,
             IDPost: Post.Identifier,
             IDReplyComment: Int?,
-            isDeleted: Bool = false,
-            isApproved: Bool = false,
-            body: String,
-            dateCreated: Date,
-            dateUpdated: Date
+            body: String
         ) {
             self.ID = ID
             self.IDUser = IDUser
             self.IDPost = IDPost
             self.IDReplyComment = IDReplyComment
-            self.isDeleted = isDeleted
-            self.isApproved = isApproved
+            self.status = .pending
             self.body = body
-            self.dateCreated = dateCreated
-            self.dateUpdated = dateUpdated
+            self.dateCreated = Date()
+            self.dateUpdated = .distantPast
         }
 
         public func getUser(on eventLoop: EventLoop) -> Future<User> {
@@ -109,15 +118,11 @@ public extension Models {
 
         public static func await(
             on eventLoop: EventLoop,
-            ID IDFuture: Future<Int>,
+            ID IDFuture: Future<Models.Comment.Identifier>,
             IDUser IDUserFuture: Future<User.Identifier>,
             IDPost: Post.Identifier,
             IDReplyComment: Int?,
-            isDeleted: Bool,
-            isApproved isApprovedFuture: Future<Bool>,
-            body: String,
-            dateCreated: Date,
-            dateUpdated: Date
+            body: String
         ) -> Future<Comment> {
             return eventLoop.newSucceededFuture(result: ())
                 .then { () in
@@ -126,20 +131,13 @@ public extension Models {
                 .then { (ID) in
                     IDUserFuture.map { IDUser in (ID, IDUser) }
                 }
-                .then { (ID, IDUser) in
-                    isApprovedFuture.map { isApproved in (ID, IDUser, isApproved) }
-                }
-                .map { (ID, IDUser, isApproved) -> (Models.Comment) in
+                .map { (ID, IDUser) -> (Models.Comment) in
                     Comment(
                         ID: ID,
                         IDUser: IDUser,
                         IDPost: IDPost,
                         IDReplyComment: IDReplyComment,
-                        isDeleted: isDeleted,
-                        isApproved: isApproved,
-                        body: body,
-                        dateCreated: dateCreated,
-                        dateUpdated: dateUpdated
+                        body: body
                     )
                 }
         }

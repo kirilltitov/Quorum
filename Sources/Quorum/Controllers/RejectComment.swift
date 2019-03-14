@@ -17,7 +17,7 @@ public struct RejectCommentController {
                     guard user.accessLevel == .Admin || user.accessLevel == .Moderator else {
                         throw LGNC.ContractError.GeneralError("Not authorized", 403)
                     }
-                    return ()
+                    return
                 }
                 .then { Logic.Comment.getThrowing(by: request.IDComment, on: eventLoop) }
                 .then { comment in Logic.Comment.reject(comment: comment, on: eventLoop) }

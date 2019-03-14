@@ -4,7 +4,7 @@ import LGNC
 
 class UnapprovedCommentsController {
     public static func setup() {
-        typealias CommentsContract = Services.Quorum.Contracts.UnapprovedComments
+        typealias CommentsContract = Services.Quorum.Contracts.PendingComments
 
         func contractRoutine(
             request: CommentsContract.Request,
@@ -17,9 +17,9 @@ class UnapprovedCommentsController {
                     guard user.isAtLeastModerator else {
                         throw LGNC.ContractError.GeneralError("Not authorized", 403)
                     }
-                    return ()
+                    return
                 }
-                .then { Models.UnapprovedComment.getUnapprovedComments(on: eventLoop) }
+                .then { Models.PendingComment.getUnapprovedComments(on: eventLoop) }
                 .then { comments in
                     Future<[Services.Shared.Comment]>.reduce(
                         into: [],
@@ -31,8 +31,7 @@ class UnapprovedCommentsController {
                                 userName: user.map { $0.username },
                                 IDPost: comment.IDPost,
                                 IDReplyComment: comment.IDReplyComment,
-                                isDeleted: comment.isDeleted,
-                                isApproved: false,
+                                status: comment.status.rawValue,
                                 body: comment.body,
                                 likes: eventLoop.newSucceededFuture(result: 0),
                                 dateCreated: comment.dateCreated.formatted,

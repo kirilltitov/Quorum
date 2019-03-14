@@ -16,9 +16,9 @@ public struct Services {
                     visibility: Services.Quorum.Contracts.Comments.visibility,
                     transports: Services.Quorum.Contracts.Comments.transports
                 ),
-                "UnapprovedComments": (
-                    visibility: Services.Quorum.Contracts.UnapprovedComments.visibility,
-                    transports: Services.Quorum.Contracts.UnapprovedComments.transports
+                "PendingComments": (
+                    visibility: Services.Quorum.Contracts.PendingComments.visibility,
+                    transports: Services.Quorum.Contracts.PendingComments.transports
                 ),
                 "CreatePost": (
                     visibility: Services.Quorum.Contracts.CreatePost.visibility,
@@ -39,6 +39,14 @@ public struct Services {
                 "UndeleteComment": (
                     visibility: Services.Quorum.Contracts.UndeleteComment.visibility,
                     transports: Services.Quorum.Contracts.UndeleteComment.transports
+                ),
+                "HideComment": (
+                    visibility: Services.Quorum.Contracts.HideComment.visibility,
+                    transports: Services.Quorum.Contracts.HideComment.transports
+                ),
+                "UnhideComment": (
+                    visibility: Services.Quorum.Contracts.UnhideComment.visibility,
+                    transports: Services.Quorum.Contracts.UnhideComment.transports
                 ),
                 "LikeComment": (
                     visibility: Services.Quorum.Contracts.LikeComment.visibility,
@@ -1266,12 +1274,11 @@ public struct Services {
                 "userName": "d",
                 "IDPost": "e",
                 "IDReplyComment": "f",
-                "isDeleted": "g",
-                "isApproved": "h",
-                "body": "i",
-                "likes": "j",
-                "dateCreated": "k",
-                "dateUpdated": "l",
+                "status": "g",
+                "body": "h",
+                "likes": "i",
+                "dateCreated": "j",
+                "dateUpdated": "k",
             ]
 
             public let ID: Int
@@ -1279,8 +1286,7 @@ public struct Services {
             public let userName: String
             public let IDPost: Int
             public let IDReplyComment: Int?
-            public let isDeleted: Bool
-            public let isApproved: Bool
+            public let status: String
             public let body: String
             public let likes: Int
             public let dateCreated: String
@@ -1292,8 +1298,7 @@ public struct Services {
                 userName: String,
                 IDPost: Int,
                 IDReplyComment: Int? = nil,
-                isDeleted: Bool,
-                isApproved: Bool,
+                status: String,
                 body: String,
                 likes: Int,
                 dateCreated: String,
@@ -1304,8 +1309,7 @@ public struct Services {
                 self.userName = userName
                 self.IDPost = IDPost
                 self.IDReplyComment = IDReplyComment
-                self.isDeleted = isDeleted
-                self.isApproved = isApproved
+                self.status = status
                 self.body = body
                 self.likes = likes
                 self.dateCreated = dateCreated
@@ -1318,8 +1322,7 @@ public struct Services {
                 userName userNameFuture: Future<String>,
                 IDPost: Int,
                 IDReplyComment: Int?,
-                isDeleted: Bool,
-                isApproved: Bool,
+                status: String,
                 body: String,
                 likes likesFuture: Future<Int>,
                 dateCreated: String,
@@ -1341,8 +1344,7 @@ public struct Services {
                         userName: userName,
                         IDPost: IDPost,
                         IDReplyComment: IDReplyComment,
-                        isDeleted: isDeleted,
-                        isApproved: isApproved,
+                        status: status,
                         body: body,
                         likes: likes,
                         dateCreated: dateCreated,
@@ -1358,8 +1360,7 @@ public struct Services {
                     "userName": [],
                     "IDPost": [],
                     "IDReplyComment": [],
-                    "isDeleted": [],
-                    "isApproved": [],
+                    "status": [],
                     "body": [],
                     "likes": [],
                     "dateCreated": [],
@@ -1371,8 +1372,7 @@ public struct Services {
                 var _userName: String = String()
                 var _IDPost: Int = Int()
                 var _IDReplyComment: Int?
-                var _isDeleted: Bool = Bool()
-                var _isApproved: Bool = Bool()
+                var _status: String = String()
                 var _body: String = String()
                 var _likes: Int = Int()
                 var _dateCreated: String = String()
@@ -1409,14 +1409,13 @@ public struct Services {
                         validatorFutures["IDReplyComment"]!.append(eventLoop.newSucceededFuture(result: ("IDReplyComment", Validation.Error.MissingValue())))
                     }
                     do {
-                        _isDeleted = try Comment.extract(param: "isDeleted", from: dictionary)
+                        _status = try Comment.extract(param: "status", from: dictionary)
+
+                        if let error = Validation.In(allowedValues: ["pending", "deleted", "hidden", "published"]).validate(input: _status) {
+                            validatorFutures["status"]!.append(eventLoop.newSucceededFuture(result: ("status", error)))
+                        }
                     } catch Entita.E.ExtractError {
-                        validatorFutures["isDeleted"]!.append(eventLoop.newSucceededFuture(result: ("isDeleted", Validation.Error.MissingValue())))
-                    }
-                    do {
-                        _isApproved = try Comment.extract(param: "isApproved", from: dictionary)
-                    } catch Entita.E.ExtractError {
-                        validatorFutures["isApproved"]!.append(eventLoop.newSucceededFuture(result: ("isApproved", Validation.Error.MissingValue())))
+                        validatorFutures["status"]!.append(eventLoop.newSucceededFuture(result: ("status", Validation.Error.MissingValue())))
                     }
                     do {
                         _body = try Comment.extract(param: "body", from: dictionary)
@@ -1463,8 +1462,7 @@ public struct Services {
                         userName: _userName,
                         IDPost: _IDPost,
                         IDReplyComment: _IDReplyComment,
-                        isDeleted: _isDeleted,
-                        isApproved: _isApproved,
+                        status: _status,
                         body: _body,
                         likes: _likes,
                         dateCreated: _dateCreated,
@@ -1480,8 +1478,7 @@ public struct Services {
                     userName: try Comment.extract(param: "userName", from: dictionary),
                     IDPost: try Comment.extract(param: "IDPost", from: dictionary),
                     IDReplyComment: try Comment.extract(param: "IDReplyComment", from: dictionary, isOptional: true),
-                    isDeleted: try Comment.extract(param: "isDeleted", from: dictionary),
-                    isApproved: try Comment.extract(param: "isApproved", from: dictionary),
+                    status: try Comment.extract(param: "status", from: dictionary),
                     body: try Comment.extract(param: "body", from: dictionary),
                     likes: try Comment.extract(param: "likes", from: dictionary),
                     dateCreated: try Comment.extract(param: "dateCreated", from: dictionary),
@@ -1496,8 +1493,7 @@ public struct Services {
                     self.getDictionaryKey("userName"): try self.encode(self.userName),
                     self.getDictionaryKey("IDPost"): try self.encode(self.IDPost),
                     self.getDictionaryKey("IDReplyComment"): try self.encode(self.IDReplyComment),
-                    self.getDictionaryKey("isDeleted"): try self.encode(self.isDeleted),
-                    self.getDictionaryKey("isApproved"): try self.encode(self.isApproved),
+                    self.getDictionaryKey("status"): try self.encode(self.status),
                     self.getDictionaryKey("body"): try self.encode(self.body),
                     self.getDictionaryKey("likes"): try self.encode(self.likes),
                     self.getDictionaryKey("dateCreated"): try self.encode(self.dateCreated),

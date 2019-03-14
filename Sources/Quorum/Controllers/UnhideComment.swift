@@ -5,8 +5,8 @@ import LGNS
 import LGNC
 import Entita2
 
-public struct DeleteController {
-    typealias Contract = Services.Quorum.Contracts.DeleteComment
+public struct UnhideController {
+    typealias Contract = Services.Quorum.Contracts.UnhideComment
 
     public static func setup() {
         Contract.Request.validateIdcomment { ID, eventLoop in
@@ -17,7 +17,7 @@ public struct DeleteController {
                         return .CommentNotFound
                     }
                     return nil
-            }
+                }
         }
 
         Contract.guarantee { (request: Contract.Request, info: LGNC.RequestInfo) -> Future<Contract.Response> in
@@ -31,13 +31,13 @@ public struct DeleteController {
                         .map { comment in (user, comment) }
                 }
                 .flatMapThrowing { (user: Models.User, comment: Models.Comment) throws -> Future<Void> in
-                    guard comment.IDUser == user.ID || user.isAtLeastModerator else {
-                        throw LGNC.ContractError.GeneralError("You have no authority to delete this comment", 403)
+                    guard user.isAtLeastModerator else {
+                        throw LGNC.ContractError.GeneralError("You have no authority to hide this comment", 403)
                     }
-                    guard comment.status == .published else {
-                        throw LGNC.ContractError.GeneralError("Comment is not in deleteable status", 400)
+                    guard comment.status == .hidden else {
+                        throw LGNC.ContractError.GeneralError("Comment is not in hideable status", 400)
                     }
-                    return Logic.Comment.delete(comment: comment, on: eventLoop)
+                    return Logic.Comment.hide(comment: comment, on: eventLoop)
                 }
                 .map { _ in Contract.Response() }
         }

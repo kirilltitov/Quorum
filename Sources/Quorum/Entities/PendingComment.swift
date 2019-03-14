@@ -3,8 +3,8 @@ import Entita2FDB
 
 // not to be created at all
 public extension Models {
-    final public class UnapprovedComment: ModelInt {
-        public static var IDKey: KeyPath<UnapprovedComment, Int> = \.ID
+    final public class PendingComment: ModelInt {
+        public static var IDKey: KeyPath<PendingComment, Int> = \.ID
 
         public static var fullEntityName = false
 
@@ -16,7 +16,7 @@ public extension Models {
             self.ID = ID
         }
 
-        public static func saveUnapproved(comment: Models.Comment, on eventLoop: EventLoop) -> Future<Void> {
+        public static func savePending(comment: Models.Comment, on eventLoop: EventLoop) -> Future<Void> {
             return self.storage.withTransaction(on: eventLoop) { transaction in
                 transaction
                     .set(key: self.IDAsKey(ID: comment.ID), value: comment.getIDAsKey())

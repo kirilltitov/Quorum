@@ -13,17 +13,15 @@ public extension Logic {
         
         private static let usersLRU: CacheLRU<E2.UUID, Models.User> = CacheLRU(capacity: 1000)
         //private static let usersLRU = CacheLRU<E2.UUID, Models.User>()
+        private static let errorNotAuthorized = LGNC.ContractError.GeneralError("Not authorized", 403)
         
         public static func authorize(token: String, on eventLoop: EventLoop) -> Future<Models.User> {
-            let generalError = LGNC.ContractError.GeneralError("Not authorized", 403)
-
             let exploded = token.split(separator: ".", maxSplits: 2).map { String($0) }
             guard exploded.count == 3 else {
-                return eventLoop.newFailedFuture(error: generalError)
+                return eventLoop.newFailedFuture(error: self.errorNotAuthorized)
             }
-            
-            typealias Contract = Services.Author.Contracts.Authenticate
-            return Contract
+
+            return Services.Author.Contracts.Authenticate
                 .execute(
                     at: .node(
                         service: "Author",
@@ -42,7 +40,7 @@ public extension Logic {
                 }
                 .flatMapThrowing { response in
                     guard let rawIDUser = response.IDUser else {
-                        throw generalError
+                        throw self.errorNotAuthorized
                     }
                     guard let IDUser = Models.User.Identifier(rawIDUser) else {
                         throw LGNC.ContractError.GeneralError("Invalid ID User \(rawIDUser)", 403)
@@ -74,10 +72,8 @@ public extension Logic {
         }
         
         public static func get(by ID: Models.User.Identifier, on eventLoop: EventLoop) -> Future<Models.User?> {
-            typealias Contract = Services.Author.Contracts.UserInfo
-
             return self.usersLRU.getOrSet(by: ID, on: eventLoop) {
-                Contract
+                Services.Author.Contracts.UserInfo
                     .execute(at: .port(1700), with: .init(ID: ID.string), using: client)
                     .map {
                         Models.User(

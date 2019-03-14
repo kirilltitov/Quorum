@@ -51,7 +51,7 @@ public extension Logic {
             on eventLoop: EventLoop
         ) -> Future<Models.Comment> {
             if user.isAtLeastModerator {
-                comment.isApproved = true
+                comment.status = .published
             }
 
             return comment
@@ -60,7 +60,7 @@ public extension Logic {
                     if user.isAtLeastModerator {
                         return eventLoop.newSucceededFuture(result: ())
                     }
-                    return Models.UnapprovedComment.saveUnapproved(comment: comment, on: eventLoop)
+                    return Models.PendingComment.savePending(comment: comment, on: eventLoop)
                 }
                 .map { _ in comment }
         }
@@ -75,28 +75,41 @@ public extension Logic {
             return string
         }
         
-        public static func delete(
-            commentID: Models.Comment.Identifier,
-            on eventLoop: EventLoop
-        ) -> Future<Void> {
-            return self
-                .getThrowing(by: commentID, on: eventLoop)
-                .then { comment in
-                    comment.isDeleted = true
+        public static func delete(comment: Models.Comment, on eventLoop: EventLoop) -> Future<Void> {
+            comment.status = .deleted
+
+            return comment.save(on: eventLoop)
+        }
+
+        public static func hide(comment: Models.Comment, on eventLoop: EventLoop) -> Future<Void> {
+            return eventLoop.newSucceededFuture(result: ())
+                .then { () -> EventLoopFuture<Models.Comment?> in
+                    guard let IDReplyComment = comment.IDReplyComment else {
+                        return eventLoop.newSucceededFuture(result: nil)
+                    }
+                    return self.get(by: IDReplyComment, on: eventLoop)
+                }
+                .flatMapThrowing { (maybeParentComment: Models.Comment?) in
+                    if let parentComment = maybeParentComment, parentComment.status == .published {
+                        throw LGNC.ContractError.GeneralError(
+                            "Cannot hide comment, it has parent published comment",
+                            401
+                        )
+                    }
+
+                    comment.status = .hidden
+
                     return comment.save(on: eventLoop)
                 }
         }
 
         public static func undelete(
-            commentID: Models.Comment.Identifier,
+            comment: Models.Comment,
             on eventLoop: EventLoop
         ) -> Future<Void> {
-            return self
-                .getThrowing(by: commentID, on: eventLoop)
-                .then { comment in
-                    comment.isDeleted = false
-                    return comment.save(on: eventLoop)
-                }
+            comment.status = .published
+
+            return comment.save(on: eventLoop)
         }
         
         public static func likeOrUnlike(
@@ -104,7 +117,7 @@ public extension Logic {
             by user: Models.User,
             on eventLoop: EventLoop
         ) -> Future<Int> {
-            guard comment.isDeleted == false && comment.isApproved == true else {
+            guard comment.status == .published else {
                 return eventLoop.newSucceededFuture(result: 0)
             }
             return Models.Like.likeOrUnlike(comment: comment, by: user, on: eventLoop)
@@ -125,26 +138,26 @@ public extension Logic {
         }
 
         public static func approve(comment: Models.Comment, on eventLoop: EventLoop) -> Future<Models.Comment> {
-            guard !comment.isApproved else {
+            guard comment.status == .pending else {
                 return eventLoop.newSucceededFuture(result: comment)
             }
 
-            comment.isApproved = true
+            comment.status = .published
 
             return comment
                 .save(on: eventLoop)
-                .then { Models.UnapprovedComment.clearRoutine(comment: comment, on: eventLoop) }
+                .then { Models.PendingComment.clearRoutine(comment: comment, on: eventLoop) }
                 .map { _ in comment }
         }
 
         public static func reject(comment: Models.Comment, on eventLoop: EventLoop) -> Future<Void> {
-            guard !comment.isApproved else {
+            guard comment.status == .pending else {
                 return eventLoop.newSucceededFuture(result: ())
             }
 
             return comment
                 .delete(on: eventLoop)
-                .then { Models.UnapprovedComment.clearRoutine(comment: comment, on: eventLoop) }
+                .then { Models.PendingComment.clearRoutine(comment: comment, on: eventLoop) }
         }
     }
 }

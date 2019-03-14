@@ -82,12 +82,13 @@ public extension Logic {
                         var result = [CommentWithLikes]()
 
                         for (_, comment) in results {
-                            if let user = user {
-                                if user.isOrdinaryUser && (comment.isDeleted == true || comment.isApproved == false) {
+                            if user?.isAtLeastModerator == false {
+                                if comment.status == .hidden || comment.status == .pending {
                                     continue
                                 }
-                            } else if comment.isDeleted == true || comment.isApproved == false {
-                                continue
+                                if comment.status == .deleted {
+                                    comment.body = ""
+                                }
                             }
                             result.append(CommentWithLikes(comment))
                         }

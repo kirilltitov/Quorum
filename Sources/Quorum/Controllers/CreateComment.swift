@@ -41,14 +41,10 @@ public struct CreateController {
             return Models.Comment.await(
                 on: eventLoop,
                 ID: Models.Comment.getNextID(on: eventLoop),
-                IDUser: user.map { $0.ID },
+                IDUser: user.map(\.ID),
                 IDPost: request.IDPost,
                 IDReplyComment: request.IDReplyComment,
-                isDeleted: false,
-                isApproved: user.map { $0.accessLevel == .Admin || $0.accessLevel == .Moderator },
-                body: Logic.Comment.getProcessedBody(from: request.body),
-                dateCreated: Date(),
-                dateUpdated: Date.distantPast
+                body: Logic.Comment.getProcessedBody(from: request.body)
             )
             .then { comment in user.map { (comment, $0) } }
             .then { comment, user in Logic.Comment.insert(comment: comment, as: user, on: eventLoop) }
@@ -59,8 +55,7 @@ public struct CreateController {
                     userName: user.map { $0.username },
                     IDPost: comment.IDPost,
                     IDReplyComment: comment.IDReplyComment,
-                    isDeleted: comment.isDeleted,
-                    isApproved: comment.isApproved,
+                    status: comment.status.rawValue,
                     body: comment.body,
                     likes: Models.Like.getLikesFor(comment: comment, on: eventLoop),
                     dateCreated: comment.dateCreated.formatted,

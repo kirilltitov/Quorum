@@ -44,7 +44,7 @@ public struct EditController {
                             guard post.isCommentable else {
                                 throw LGNC.ContractError.GeneralError("Comment is not aditable anymore", 403)
                             }
-                            guard comment.isApproved else {
+                            guard comment.status == .published else {
                                 throw LGNC.ContractError.GeneralError("Comment is not approved yet", 403)
                             }
                             guard user.ID == comment.IDUser else {
@@ -74,8 +74,7 @@ public struct EditController {
                         userName: userFuture.map { $0.username },
                         IDPost: comment.IDPost,
                         IDReplyComment: comment.IDReplyComment,
-                        isDeleted: comment.isDeleted,
-                        isApproved: comment.isApproved,
+                        status: comment.status.rawValue,
                         body: comment.body,
                         likes: Models.Like.getLikesFor(comment: comment, on: eventLoop),
                         dateCreated: comment.dateCreated.formatted,

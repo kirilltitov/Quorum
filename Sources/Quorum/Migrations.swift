@@ -29,10 +29,7 @@ let migrations: Migrations = [
             IDUser: defaultUser,
             IDPost: 1,
             IDReplyComment: nil,
-            isDeleted: false,
-            body: "Так!",
-            dateCreated: Date(),
-            dateUpdated: Date.distantPast
+            body: "Так!"
         )
 
         let secondID = try! Models.Comment.getNextID(on: eventLoopGroup.eventLoop).wait()
@@ -41,10 +38,7 @@ let migrations: Migrations = [
             IDUser: defaultUser,
             IDPost: 1,
             IDReplyComment: firstID,
-            isDeleted: false,
-            body: "Second",
-            dateCreated: Date(),
-            dateUpdated: Date.distantPast
+            body: "Second"
         )
 
         let _ = try Logic.Comment.insert(comment: comment, as: _defaultUser, on: eventLoopGroup.eventLoop).wait()
