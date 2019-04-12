@@ -6,7 +6,7 @@ import NIO
 
 //MARK:- FDB
 public extension FDB.Tuple {
-    public var _string: String {
+    var _string: String {
         return self.tuple
             .map { String(describing: $0) }
             .joined(separator: " / ")
@@ -14,67 +14,71 @@ public extension FDB.Tuple {
 }
 
 public extension FDB.Subspace {
-    public var _string: String {
+    var _string: String {
         return (try? FDB.Tuple(from: self.prefix)._string) ?? "\(self)"
     }
 }
 
 public extension AnyFDBKey {
-    public var _string: String {
+    var _string: String {
         return (try? FDB.Tuple(from: self.asFDBKey())._string) ?? "\(self)"
     }
 }
 
 //MARK:- EventLoopFuture
 public extension Future {
-    public func flatMapThrowing<U>(
+    func flatMapThrowing<NewValue>(
         file: StaticString = #file,
         line: UInt = #line,
-        _ callback: @escaping (T) throws -> Future<U>
-    ) -> Future<U> {
-        return self.then(file: file, line: line) {
+        _ callback: @escaping (Value) throws -> Future<NewValue>
+    ) -> Future<NewValue> {
+        return self.flatMap(file: file, line: line) {
             do {
                 return try callback($0)
             } catch {
-                return self.eventLoop.newFailedFuture(error: error)
+                return self.eventLoop.makeFailedFuture(error)
             }
         }
     }
-    
-    public func mapThrowing<U>(
+
+    func mapThrowing<NewValue>(
         file: StaticString = #file,
         line: UInt = #line,
-        _ callback: @escaping (T) throws -> U
-    ) -> Future<U> {
-        return self.thenThrowing(file: file, line: line, callback)
+        _ callback: @escaping (Value) throws -> NewValue
+    ) -> Future<NewValue> {
+        return self.flatMapThrowing(file: file, line: line, callback)
     }
 
-    public func flatMap<U>(
+    func flatMapIfErrorThrowing(
         file: StaticString = #file,
         line: UInt = #line,
-        _ callback: @escaping (T) -> Future<U>
-    ) -> Future<U> {
-        return self.then(file: file, line: line, callback)
-    }
-
-    public func flatMapIfErrorThrowing(
-        file: StaticString = #file,
-        line: UInt = #line,
-        _ callback: @escaping (Error) throws -> Future<T>
-    ) -> Future<T> {
-        return self.thenIfError(file: file, line: line) {
+        _ callback: @escaping (Error) throws -> Future<Value>
+    ) -> Future<Value> {
+        return self.flatMapError(file: file, line: line) {
             do {
                 return try callback($0)
             } catch {
-                return self.eventLoop.newFailedFuture(error: error)
+                return self.eventLoop.makeFailedFuture(error)
             }
         }
     }
 }
 
+public extension EventLoop {
+    /// Creates and returns a new void `EventLoopFuture` that is already marked as success.
+    /// Notifications will be done using this `EventLoop` as execution `NIOThread`.
+    ///
+    /// - parameters:
+    ///     - result: the value that is used by the `EventLoopFuture`.
+    /// - returns: a succeeded `EventLoopFuture`.
+    func makeSucceededFuture(file: StaticString = #file, line: UInt = #line) -> EventLoopFuture<Void> {
+        return self.makeSucceededFuture((), file: file, line: line)
+    }
+}
+
 //MARK:- General
 public extension EventLoopGroup {
-    public var eventLoop: EventLoop {
+    var eventLoop: EventLoop {
         return self.next()
     }
 }
@@ -87,15 +91,15 @@ extension E2.ID: FDBTuplePackable where Value == UUID {
 }
 
 public extension E2FDBEntity {
-    public static var format: E2.Format {
+    static var format: E2.Format {
         return .JSON
     }
 
-    public static var storage: FDB {
+    static var storage: FDB {
         return fdb
     }
 
-    public static var subspace: FDB.Subspace {
+    static var subspace: FDB.Subspace {
         return subspaceMain
     }
 }
@@ -104,17 +108,17 @@ public protocol Model: E2FDBEntity where Identifier == E2.UUID {}
 public protocol ModelInt: E2FDBEntity where Identifier == Int {}
 
 public extension ModelInt {
-    public static func getNextID(on eventLoop: EventLoop) -> Future<Self.Identifier> {
+    static func getNextID(on eventLoop: EventLoop) -> Future<Self.Identifier> {
         return Self.storage.withTransaction(on: eventLoop) { transaction in
             return Self.getNextID(on: transaction)
         }
     }
 
-    public static func getNextID(on transaction: FDB.Transaction) -> Future<Self.Identifier> {
+    static func getNextID(on transaction: FDB.Transaction) -> Future<Self.Identifier> {
         let key = Self.subspace["idx"][Self.entityName]
         return transaction
             .atomic(.add, key: key, value: Int(1))
-            .then { $0.get(key: key, commit: true) }
+            .flatMap { $0.get(key: key, commit: true) }
             .map { (bytes, _) in bytes!.cast() }
     }
 }
@@ -124,6 +128,7 @@ public extension ModelInt {
 public typealias Migrations = [() throws -> Void]
 
 func runMigrations(_ migrations: Migrations, on fdb: FDB) {
+    let logger = Logger(label: "Quorum.Migrations")
     let key = subspaceMain["migration"]
     var lastState: Int
     do {
@@ -139,19 +144,20 @@ func runMigrations(_ migrations: Migrations, on fdb: FDB) {
         fatalError("Could not read migration state from fdb: \(error)")
     }
     guard migrations.count > lastState else {
-        LGNCore.log("DB state is up to date, no need to perform migrations")
+        logger.info("DB state is up to date, no need to perform migrations")
         return
     }
-    LGNCore.log("Performing migrations")
+    logger.info("Performing migrations")
     for idx in lastState..<migrations.count {
         let migration = migrations[idx]
         do {
-            LGNCore.log("Trying to apply migration #\(idx)")
+            logger.info("Trying to apply migration #\(idx)")
             try migration()
             try fdb.set(key: key, value: LGNCore.getBytes(idx + 1))
-            LGNCore.log("Successfully applied migration #\(idx)")
+            logger.info("Successfully applied migration #\(idx)")
         } catch {
-            fatalError("Could not run migration #\(idx): \(error)")
+            logger.critical("Could not run migration #\(idx): \(error)")
+            exit(1)
         }
     }
 }

@@ -1,12 +1,17 @@
 import Foundation
 import Generated
 import LGNC
+import LGNCore
 import Entita2
 import FDB
 import NIO
 
 public extension Logic {
-    public class Post {
+    enum Post {
+        public enum Status: String {
+            case OK, NotFound, NotCommentable
+        }
+
         public class CommentWithLikes {
             public let comment: Models.Comment
             private(set) var likes: Int = 0
@@ -24,37 +29,26 @@ public extension Logic {
             case PostNotFound
         }
 
-        private static let postsLRU: CacheLRU<Int, Models.Post> = CacheLRU(capacity: 1000)
+        public static func getPostStatus(_ ID: Int, on eventLoop: EventLoop) -> Future<Status> {
+            let url = "\(config[.website_base_url])/post/exists/\(ID)"
 
-        public static func get(by ID: Int, snapshot: Bool, on eventLoop: EventLoop) -> Future<Models.Post?> {
-            return self.postsLRU.getOrSet(by: ID, on: eventLoop) {
-                Models.Post.loadWithTransaction(
-                    by: ID,
-                    snapshot: snapshot,
+            return HTTPRequester
+                .requestJSON(
+                    method: .GET,
+                    url: url,
                     on: eventLoop
-                ).map { $0.0 }
-            }
-        }
-
-        public static func getThrowing(
-            by ID: Int,
-            snapshot: Bool,
-            on eventLoop: EventLoop
-        ) -> Future<Models.Post> {
-            return self
-                .get(by: ID, snapshot: snapshot, on: eventLoop)
-                .thenThrowing { maybePost in
-                    guard let post = maybePost else {
-                        throw LGNC.ContractError.GeneralError("Post not found", 404)
+                )
+                .map { maybeData, _, error in
+                    if let error = error {
+                        defaultLogger.error("Could not execute remote service API at '\(url)': \(error)")
+                        return .NotFound
                     }
-                    return post
-                }
-        }
+                    guard maybeData?[json: "data", "result"] == true else {
+                        return .NotFound
+                    }
 
-        public static func isExistingAndCommentable(_ ID: Int, on eventLoop: EventLoop) -> Future<Bool> {
-            return self
-                .get(by: ID, snapshot: false, on: eventLoop)
-                .map { $0?.isCommentable ?? false }
+                    return .OK
+                }
         }
 
         public static func getCommentsFor(
@@ -62,52 +56,69 @@ public extension Logic {
             as user: Models.User? = nil,
             on eventLoop: EventLoop
         ) -> Future<[CommentWithLikes]> {
-            return self.get(
-                by: ID,
-                snapshot: true,
-                on: eventLoop
-            ).thenThrowing {
-                guard let post = $0 else {
-                    throw E.PostNotFound
-                }
-                return post
-            }.then { (post: Models.Post) in
-                fdb.withTransaction(on: eventLoop) { transaction in
-                    Models.Comment.loadAll(
-                        bySubspace: Models.Comment._getPostPrefix(post.ID),
-                        with: transaction,
-                        snapshot: true,
-                        on: eventLoop
-                    ).map { results in
-                        var result = [CommentWithLikes]()
+            return fdb.withTransaction(on: eventLoop) { transaction in
+                Models.Comment.loadAll(
+                    bySubspace: Models.Comment._getPostPrefix(ID),
+                    with: transaction,
+                    snapshot: true,
+                    on: eventLoop
+                ).map { results in
+                    var result = [CommentWithLikes]()
 
-                        for (_, comment) in results {
-                            if user?.isAtLeastModerator == false {
-                                if comment.status == .hidden || comment.status == .pending {
-                                    continue
-                                }
-                                if comment.status == .deleted {
-                                    comment.body = ""
-                                }
+                    for (_, comment) in results {
+                        if user?.isAtLeastModerator == false {
+                            if comment.status == .hidden || comment.status == .pending {
+                                continue
                             }
-                            result.append(CommentWithLikes(comment))
-                        }
-
-                        return result
-                    }.then { commentsWithLikes in
-                        Models.Like
-                            .getLikesForCommentsIn(post: post, with: transaction, on: eventLoop)
-                            .map { (commentsWithLikes, $0) }
-                    }.map { (commentsWithLikes: [CommentWithLikes], likesInfo: [Models.Comment.Identifier: Int]) in
-                        commentsWithLikes.forEach { commentWithLikes in
-                            if let likes = likesInfo[commentWithLikes.comment.ID] {
-                                commentWithLikes.incrementLikes(likes)
+                            if comment.status == .deleted {
+                                comment.body = ""
                             }
                         }
-                        return commentsWithLikes
+                        result.append(CommentWithLikes(comment))
                     }
+
+                    return result
+                }.flatMap { commentsWithLikes in
+                    Models.Like
+                        .getLikesForCommentsIn(postID: ID, with: transaction, on: eventLoop)
+                        .map { (commentsWithLikes, $0) }
+                }.map { (commentsWithLikes: [CommentWithLikes], likesInfo: [Models.Comment.Identifier: Int]) in
+                    commentsWithLikes.forEach { commentWithLikes in
+                        if let likes = likesInfo[commentWithLikes.comment.ID] {
+                            commentWithLikes.incrementLikes(likes)
+                        }
+                    }
+                    return commentsWithLikes
                 }
             }
+
+//        private static let postsLRU: CacheLRU<Int, Models.Post> = CacheLRU(capacity: 1000)
+//
+//        public static func get(by ID: Int, snapshot: Bool, on eventLoop: EventLoop) -> Future<Models.Post?> {
+//            return self.postsLRU.getOrSet(by: ID, on: eventLoop) {
+//                Models.Post.loadWithTransaction(
+//                    by: ID,
+//                    snapshot: snapshot,
+//                    on: eventLoop
+//                ).map { $0.0 }
+//            }
+//        }
+//
+//        public static func getThrowing(
+//            by ID: Int,
+//            snapshot: Bool,
+//            on eventLoop: EventLoop
+//        ) -> Future<Models.Post> {
+//            return self
+//                .get(by: ID, snapshot: snapshot, on: eventLoop)
+//                .thenThrowing { maybePost in
+//                    guard let post = maybePost else {
+//                        throw LGNC.ContractError.GeneralError("Post not found", 404)
+//                    }
+//                    return post
+//                }
+//        }
+//
         }
     }
 }

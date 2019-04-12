@@ -8,12 +8,12 @@ class UndeleteController {
 
         func contractRoutine(
             request: Contract.Request,
-            info: LGNC.RequestInfo
+            info: LGNCore.RequestInfo
         ) -> Future<Contract.Response> {
             let eventLoop = info.eventLoop
             return Logic.User
                 .authorize(token: request.token, on: eventLoop)
-                .then { user in
+                .flatMap { user in
                     Logic.Comment
                         .getThrowing(by: request.IDComment, on: eventLoop)
                         .map { comment in (user, comment) }

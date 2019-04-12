@@ -23,12 +23,12 @@ public class LikeController {
 
             return Logic.User
                 .authorize(token: request.token, on: eventLoop)
-                .then { user in
+                .flatMap { user in
                     Logic.Comment
                         .getThrowing(by: request.IDComment, on: eventLoop)
                         .map { comment in (user, comment) }
                 }
-                .then { user, comment in
+                .flatMap { user, comment in
                     Contract.Response.await(
                         likes: Logic.Comment.likeOrUnlike(comment: comment, by: user, on: eventLoop)
                     )

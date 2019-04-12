@@ -6,8 +6,8 @@
         "repositoryURL": "https://github.com/krzyzanowskim/CryptoSwift.git",
         "state": {
           "branch": null,
-          "revision": "8b3435bd3236819318cde87c8d9315fb89906df3",
-          "version": "0.14.0"
+          "revision": "5da70ba744d58d772201f03600eb16c53197652d",
+          "version": "0.15.0"
         }
       },
       {
@@ -15,8 +15,8 @@
         "repositoryURL": "https://github.com/kirilltitov/FDBSwift.git",
         "state": {
           "branch": null,
-          "revision": "1d366e236f67a2f7ad9b8708e1d52150c515d549",
-          "version": "2.3.0"
+          "revision": "7fcda0957ff968a2c01813ce15d35cf896da1157",
+          "version": "3.0.0"
         }
       },
       {
@@ -33,7 +33,7 @@
         "repositoryURL": "git@bitbucket.org:1711-games/LGNKit-Swift.git",
         "state": {
           "branch": "master",
-          "revision": "1dbb78708a0e7bc53da3091782b1ee14e64c889c",
+          "revision": "05b6098bf0aca2b75c678f8678ff4c4191b422ae",
           "version": null
         }
       },
@@ -41,9 +41,18 @@
         "package": "MessagePack",
         "repositoryURL": "https://github.com/kirilltitov/MessagePack.git",
         "state": {
-          "branch": "master",
-          "revision": "aa2e70893b419253a3dfb876dd82b1fb9d9e05f2",
-          "version": null
+          "branch": null,
+          "revision": "8a60c6424904c32fbbafe4e81afadd15627a20f1",
+          "version": "2.0.0"
+        }
+      },
+      {
+        "package": "swift-log",
+        "repositoryURL": "https://github.com/apple/swift-log.git",
+        "state": {
+          "branch": null,
+          "revision": "a64dd7dafc06bcecc43ec4dff0d71ef797247456",
+          "version": "1.0.0"
         }
       },
       {
@@ -51,26 +60,17 @@
         "repositoryURL": "https://github.com/apple/swift-nio.git",
         "state": {
           "branch": null,
-          "revision": "98434c1f1d687ff5a24d2cabfbd19b5c7d2d7a2f",
-          "version": "1.13.0"
-        }
-      },
-      {
-        "package": "swift-nio-zlib-support",
-        "repositoryURL": "https://github.com/apple/swift-nio-zlib-support.git",
-        "state": {
-          "branch": null,
-          "revision": "37760e9a52030bb9011972c5213c3350fa9d41fd",
-          "version": "1.0.0"
+          "revision": "b8368b6e09b7993896c42a6199103a73ecc1dbf9",
+          "version": "2.0.0"
         }
       },
       {
         "package": "SwiftMsgPack",
         "repositoryURL": "https://github.com/kirilltitov/SwiftMsgPack.git",
         "state": {
-          "branch": "master",
-          "revision": "3323bf501859277767afd78b163e7ee4fd529bf3",
-          "version": null
+          "branch": null,
+          "revision": "0efcdf2d35684d9181df45e6399339ae297667ca",
+          "version": "2.0.0"
         }
       }
     ]

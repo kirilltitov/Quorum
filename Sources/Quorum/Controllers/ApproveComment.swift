@@ -8,20 +8,20 @@ public struct ApproveCommentController {
     public static func setup() {
         func contractRoutine(
             request: Contact.Request,
-            info: LGNC.RequestInfo
+            info: LGNCore.RequestInfo
         ) -> Future<Contact.Response> {
             let eventLoop = info.eventLoop
             return Logic.User
                 .authorize(token: request.token, on: eventLoop)
-                .thenThrowing { user in
+                .mapThrowing { user in
                     guard user.accessLevel == .Admin || user.accessLevel == .Moderator else {
                         throw LGNC.ContractError.GeneralError("Not authorized", 403)
                     }
                     return ()
                 }
-                .then { Logic.Comment.getThrowing(by: request.IDComment, on: eventLoop) }
-                .then { comment in Logic.Comment.approve(comment: comment, on: eventLoop) }
-                .then { comment in
+                .flatMap { Logic.Comment.getThrowing(by: request.IDComment, on: eventLoop) }
+                .flatMap { comment in Logic.Comment.approve(comment: comment, on: eventLoop) }
+                .flatMap { comment in
                     let user = comment.getUser(on: eventLoop)
                     return Contact.Response.await(
                         ID: comment.ID,

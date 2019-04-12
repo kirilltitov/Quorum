@@ -11,12 +11,12 @@ public struct CreateController {
     public static func setup() {
         Contract.Request.validateIdpost { ID, eventLoop in
             Logic.Post
-                .get(by: ID, snapshot: true, on: eventLoop)
-                .map { post in
-                    guard let post = post else {
+                .getPostStatus(ID, on: eventLoop)
+                .map { status in
+                    if status == .NotFound {
                         return .PostNotFound
                     }
-                    guard post.isCommentable else {
+                    if status == .NotCommentable {
                         return .PostIsReadOnly
                     }
                     return nil
@@ -34,7 +34,7 @@ public struct CreateController {
                 }
         }
 
-        Contract.guarantee { (request: Contract.Request, info: LGNC.RequestInfo) -> Future<Contract.Response> in
+        Contract.guarantee { (request: Contract.Request, info: LGNCore.RequestInfo) -> Future<Contract.Response> in
             let eventLoop = info.eventLoop
             let user = Logic.User.authorize(token: request.token, on: eventLoop)
 
@@ -46,9 +46,9 @@ public struct CreateController {
                 IDReplyComment: request.IDReplyComment,
                 body: Logic.Comment.getProcessedBody(from: request.body)
             )
-            .then { comment in user.map { (comment, $0) } }
-            .then { comment, user in Logic.Comment.insert(comment: comment, as: user, on: eventLoop) }
-            .then { comment in
+            .flatMap { comment in user.map { (comment, $0) } }
+            .flatMap { comment, user in Logic.Comment.insert(comment: comment, as: user, on: eventLoop) }
+            .flatMap { comment in
                 Contract.Response.await(
                     ID: comment.ID,
                     IDUser: user.map { $0.ID.string },

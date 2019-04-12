@@ -4,7 +4,7 @@ import Entita2FDB
 
 // not to be created at all
 public extension Models {
-    final public class Like: ModelInt {
+    final class Like: ModelInt {
         public static var IDKey: KeyPath<Like, Int> = \.ID
 
         public static var fullEntityName = false
@@ -27,16 +27,8 @@ public extension Models {
             return self.getRootCommentsPrefix(forPostID: comment.IDPost)[comment.ID]
         }
 
-        fileprivate static func getCommentsLikesPrefix(for post: Post) -> FDB.Subspace {
-            return self.getRootCommentsPrefix(forPostID: post.ID)
-        }
-
         fileprivate static func getPostLikesPrefix(forPostID ID: Post.Identifier) -> FDB.Subspace {
             return self.getRootPrefix(forPostID: ID)[Post.entityName]
-        }
-
-        fileprivate static func getPostLikesPrefix(for post: Post) -> FDB.Subspace {
-            return self.getPostLikesPrefix(forPostID: post.ID)
         }
 
         public static func getCommentID(from tuple: FDB.Tuple) -> Models.Comment.Identifier? {
@@ -52,17 +44,17 @@ public extension Models {
         public static func getLikesFor(comment: Comment, on eventLoop: EventLoop) -> Future<Int> {
             return fdb
                 .begin(on: eventLoop)
-                .then { $0.get(range: self.getCommentsLikesPrefix(for: comment).range, snapshot: true, commit: true) }
+                .flatMap { $0.get(range: self.getCommentsLikesPrefix(for: comment).range, snapshot: true, commit: true) }
                 .map { $0.0.records.count }
         }
 
         public static func getLikesForCommentsIn(
-            post: Post,
+            postID: Int,
             with transaction: FDB.Transaction,
             on eventLoop: EventLoop
         ) -> Future<[Comment.Identifier: Int]> {
             return transaction
-                .get(range: self.getCommentsLikesPrefix(for: post).range)
+                .get(range: self.getRootCommentsPrefix(forPostID: postID).range)
                 .map { (results: FDB.KeyValuesResult, _: FDB.Transaction) -> [Comment.Identifier: Int] in
                     var result = [Comment.Identifier: Int]()
 
@@ -92,7 +84,7 @@ public extension Models {
         public static func likeOrUnlike(comment: Comment, by user: User, on eventLoop: EventLoop) -> Future<Int> {
             return fdb.withTransaction(on: eventLoop) { transaction in
                 self.processLikeTo(comment: comment, by: user, with: transaction)
-                    .then { transaction in
+                    .flatMap { transaction in
                         transaction.get(
                             range: self.getCommentsLikesPrefix(for: comment).range,
                             snapshot: true,
@@ -113,14 +105,14 @@ public extension Models {
 
             return transaction
                 .get(key: self.getCommentsLikesPrefix(for: comment)[user.ID])
-                .then { (maybeLike, transaction) -> Future<FDB.Transaction> in
+                .flatMap { (maybeLike, transaction) -> Future<FDB.Transaction> in
                     maybeLike == nil
                         ? transaction
                             .set(key: commentLikeKey, value: [])
-                            .then { $0.set(key: userLikeIndexKey, value: []) }
+                            .flatMap { $0.set(key: userLikeIndexKey, value: []) }
                         : transaction
                             .clear(key: commentLikeKey)
-                            .then { $0.clear(key: userLikeIndexKey) }
+                            .flatMap { $0.clear(key: userLikeIndexKey) }
                 }
         }
     }

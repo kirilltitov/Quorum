@@ -20,12 +20,12 @@ public struct DeleteController {
             }
         }
 
-        Contract.guarantee { (request: Contract.Request, info: LGNC.RequestInfo) -> Future<Contract.Response> in
+        Contract.guarantee { (request: Contract.Request, info: LGNCore.RequestInfo) -> Future<Contract.Response> in
             let eventLoop = info.eventLoop
 
             return Logic.User
                 .authorize(token: request.token, on: eventLoop)
-                .then { user in
+                .flatMap { user in
                     Logic.Comment
                         .getThrowing(by: request.IDComment, on: eventLoop)
                         .map { comment in (user, comment) }

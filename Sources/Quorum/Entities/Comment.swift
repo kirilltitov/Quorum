@@ -4,7 +4,7 @@ import Entita2FDB
 import NIO
 
 public extension Models {
-    final public class Comment: ModelInt, Entita2FDBIndexedEntity {
+    final class Comment: ModelInt, Entita2FDBIndexedEntity {
         public enum Status: String, Codable {
             /// Freshly posted comment, awaits moderation
             case pending
@@ -15,6 +15,9 @@ public extension Models {
             /// Published but deleted comment, isn't displayed at all.
             /// All subcomments must be in `.hidden` status as well.
             case hidden
+
+            /// Published but deleted comment because of user ban, should be moved to published after unban
+            case banHidden
 
             /// Published comment
             case published
@@ -70,15 +73,14 @@ public extension Models {
         }
 
         public func getUser(on eventLoop: EventLoop) -> Future<User> {
-            return Logic.User.get(
-                by: self.IDUser,
-                on: eventLoop
-            ).map {
-                guard let user = $0 else {
-                    return User.unknown
+            return Logic.User
+                .get(by: self.IDUser, on: eventLoop)
+                .map {
+                    guard let user = $0 else {
+                        return User.unknown
+                    }
+                    return user
                 }
-                return user
-            }
         }
 
         public static func getUsingRefID(
@@ -124,11 +126,11 @@ public extension Models {
             IDReplyComment: Int?,
             body: String
         ) -> Future<Comment> {
-            return eventLoop.newSucceededFuture(result: ())
-                .then { () in
+            return eventLoop.makeSucceededFuture(())
+                .flatMap { () in
                     IDFuture.map { ID in (ID) }
                 }
-                .then { (ID) in
+                .flatMap { (ID) in
                     IDUserFuture.map { IDUser in (ID, IDUser) }
                 }
                 .map { (ID, IDUser) -> (Models.Comment) in
@@ -145,7 +147,7 @@ public extension Models {
         public func beforeSave(with transaction: AnyTransaction?, on eventLoop: EventLoop) -> EventLoopFuture<Void> {
             self.dateUpdated = Date()
 
-            return eventLoop.newSucceededFuture(result: ())
+            return eventLoop.makeSucceededFuture(())
         }
     }
 }

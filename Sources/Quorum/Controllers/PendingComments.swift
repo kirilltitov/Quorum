@@ -8,19 +8,19 @@ class UnapprovedCommentsController {
 
         func contractRoutine(
             request: CommentsContract.Request,
-            info: LGNC.RequestInfo
+            info: LGNCore.RequestInfo
         ) -> Future<CommentsContract.Response> {
             let eventLoop = info.eventLoop
             return Logic.User
                 .authorize(token: request.token, on: eventLoop)
-                .thenThrowing { user in
+                .mapThrowing { user in
                     guard user.isAtLeastModerator else {
                         throw LGNC.ContractError.GeneralError("Not authorized", 403)
                     }
                     return
                 }
-                .then { Models.PendingComment.getUnapprovedComments(on: eventLoop) }
-                .then { comments in
+                .flatMap { Models.PendingComment.getUnapprovedComments(on: eventLoop) }
+                .flatMap { comments in
                     Future<[Services.Shared.Comment]>.reduce(
                         into: [],
                         comments.map { comment in
@@ -33,12 +33,12 @@ class UnapprovedCommentsController {
                                 IDReplyComment: comment.IDReplyComment,
                                 status: comment.status.rawValue,
                                 body: comment.body,
-                                likes: eventLoop.newSucceededFuture(result: 0),
+                                likes: eventLoop.makeSucceededFuture(0),
                                 dateCreated: comment.dateCreated.formatted,
                                 dateUpdated: comment.dateUpdated.formatted
                             )
                         },
-                        eventLoop: eventLoop
+                        on: eventLoop
                     ) { $0.append($1) }
                 }
                 .map { CommentsContract.Response(comments: $0) }

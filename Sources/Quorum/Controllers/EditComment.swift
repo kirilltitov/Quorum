@@ -22,7 +22,7 @@ public struct EditController {
         
         func contractRoutine(
             request: Contract.Request,
-            info: LGNC.RequestInfo
+            info: LGNCore.RequestInfo
         ) -> Future<Contract.Response> {
             let eventLoop = info.eventLoop
             
@@ -32,16 +32,16 @@ public struct EditController {
                 .flatMap { (user: Models.User) -> Future<(Models.Comment, FDB.Transaction)> in
                     Logic.Comment
                         .getThrowingWithTransaction(by: request.IDComment, on: eventLoop)
-                        .then { (comment, transaction) in
+                        .flatMap { (comment, transaction) in
                             Logic.Post
-                                .getThrowing(by: comment.IDPost, snapshot: false, on: eventLoop)
-                                .map { post in (post, comment, transaction) }
+                                .getPostStatus(comment.IDPost, on: eventLoop)
+                                .map { status in (status, comment, transaction) }
                         }
-                        .thenThrowing { post, comment, transaction in
+                        .mapThrowing { status, comment, transaction in
                             if user.isAtLeastModerator {
                                 return (comment, transaction)
                             }
-                            guard post.isCommentable else {
+                            guard status != .NotCommentable else {
                                 throw LGNC.ContractError.GeneralError("Comment is not aditable anymore", 403)
                             }
                             guard comment.status == .published else {

@@ -39,31 +39,31 @@ extension SyncStorage {
     }
 
     public func has(key: Key, on eventLoop: EventLoop) -> Future<Bool> {
-        let promise: Promise<Bool> = eventLoop.newPromise()
+        let promise: Promise<Bool> = eventLoop.makePromise()
 
         self.queue.async {
-            promise.succeed(result: self.has0(key: key))
+            promise.succeed(self.has0(key: key))
         }
 
         return promise.futureResult
     }
 
     public func get(by key: Key, on eventLoop: EventLoop) -> Future<Value?> {
-        let promise: Promise<Value?> = eventLoop.newPromise()
+        let promise: Promise<Value?> = eventLoop.makePromise()
 
         self.queue.async {
-            promise.succeed(result: self.get0(by: key))
+            promise.succeed(self.get0(by: key))
         }
 
         return promise.futureResult
     }
 
     public func set(by key: Key, value: Value, on eventLoop: EventLoop) -> Future<Void> {
-        let promise: Promise<Void> = eventLoop.newPromise()
+        let promise: Promise<Void> = eventLoop.makePromise()
 
         self.queue.async(flags: .barrier) {
             self.set0(by: key, value: value)
-            promise.succeed(result: ())
+            promise.succeed(())
         }
 
         return promise.futureResult
@@ -74,11 +74,11 @@ extension SyncStorage {
         on eventLoop: EventLoop,
         _ getter: @escaping () -> EventLoopFuture<Value?>
     ) -> EventLoopFuture<Value?> {
-        let promise: Promise<Value?> = eventLoop.newPromise()
+        let promise: Promise<Value?> = eventLoop.makePromise()
 
         self.queue.async(flags: .barrier) {
             if let value = self.get0(by: key) {
-                promise.succeed(result: value)
+                promise.succeed(value)
                 return
             }
 
@@ -87,9 +87,9 @@ extension SyncStorage {
                 if let result = result {
                     self.set0(by: key, value: result)
                 }
-                promise.succeed(result: result)
+                promise.succeed(result)
             } catch {
-                promise.fail(error: error)
+                promise.fail(error)
             }
         }
 
@@ -97,10 +97,10 @@ extension SyncStorage {
     }
 
     @discardableResult public func remove(by key: Key, on eventLoop: EventLoop) -> Future<Value?> {
-        let promise: Promise<Value?> = eventLoop.newPromise()
+        let promise: Promise<Value?> = eventLoop.makePromise()
 
         self.queue.async(flags: .barrier) {
-            promise.succeed(result: self.remove0(by: key))
+            promise.succeed(self.remove0(by: key))
         }
 
         return promise.futureResult

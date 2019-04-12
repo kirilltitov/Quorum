@@ -3,7 +3,7 @@ import Entita2FDB
 
 // not to be created at all
 public extension Models {
-    final public class PendingComment: ModelInt {
+    final class PendingComment: ModelInt {
         public static var IDKey: KeyPath<PendingComment, Int> = \.ID
 
         public static var fullEntityName = false
@@ -20,8 +20,8 @@ public extension Models {
             return self.storage.withTransaction(on: eventLoop) { transaction in
                 transaction
                     .set(key: self.IDAsKey(ID: comment.ID), value: comment.getIDAsKey())
-                    .then { self.incrementUnapproved(with: $0) }
-                    .then { $0.commit() }
+                    .flatMap { self.incrementUnapproved(with: $0) }
+                    .flatMap { $0.commit() }
             }
         }
 
@@ -29,8 +29,8 @@ public extension Models {
             return self.storage.withTransaction(on: eventLoop) { transaction in
                 transaction
                     .clear(key: self.IDAsKey(ID: comment.ID))
-                    .then { self.decrementUnapproved(with: $0) }
-                    .then { $0.commit() }
+                    .flatMap { self.decrementUnapproved(with: $0) }
+                    .flatMap { $0.commit() }
             }
         }
 
@@ -46,11 +46,11 @@ public extension Models {
             return self.storage.withTransaction(on: eventLoop) { transaction in
                 transaction
                     .get(range: self.subspacePrefix.range)
-                    .then { (results, _) -> Future<[Models.Comment?]> in
+                    .flatMap { (results, _) -> Future<[Models.Comment?]> in
                         Future.reduce(
                             into: [],
                             results.records.map { kv in Models.Comment.loadByRaw(IDBytes: kv.value, on: eventLoop) },
-                            eventLoop: eventLoop
+                            on: eventLoop
                         ) { $0.append($1) }
                     }
                     .map { comments in comments.compactMap { $0 } }

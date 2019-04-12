@@ -1,6 +1,11 @@
 import Entita2FDB
 
 public extension Models {
+    enum Post {
+        public typealias Identifier = Int
+
+        public static let entityName = "post"
+    }
 //    final public class Post: ModelInt {
 //        public static var IDKey: KeyPath<Models.Post, Int> = \.ID
 //

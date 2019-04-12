@@ -6,11 +6,11 @@ import FDB
 import NIO
 
 public extension Logic {
-    public class Comment {
+    class Comment {
         public static func get(by ID: Models.Comment.Identifier, on eventLoop: EventLoop) -> Future<Models.Comment?> {
             return Models.Comment.getUsingRefID(by: ID, on: eventLoop)
         }
-        
+
         public static func getThrowing(
             by ID: Models.Comment.Identifier,
             on eventLoop: EventLoop
@@ -24,27 +24,27 @@ public extension Logic {
                     return comment
                 }
         }
-        
+
         public static func getThrowingWithTransaction(
             by ID: Models.Comment.Identifier,
             on eventLoop: EventLoop
         ) -> Future<(Models.Comment, FDB.Transaction)> {
             return Models.Comment
                 .getUsingRefIDWithTransaction(by: ID, on: eventLoop)
-                .thenThrowing { maybeComment, transaction in
+                .mapThrowing { maybeComment, transaction in
                     guard let comment = maybeComment else {
                         throw LGNC.ContractError.GeneralError("Comment not found (it should)", 404)
                     }
                     return (comment, transaction)
-            }
+                }
         }
-        
+
         public static func doExists(ID: Int, on eventLoop: EventLoop) -> Future<Bool> {
             return self
                 .get(by: ID, on: eventLoop)
                 .map { $0 != nil }
         }
-        
+
         public static func insert(
             comment: Models.Comment,
             as user: Models.User,
@@ -56,25 +56,25 @@ public extension Logic {
 
             return comment
                 .insert(on: eventLoop)
-                .then { _ -> Future<Void> in
+                .flatMap { _ -> Future<Void> in
                     if user.isAtLeastModerator {
-                        return eventLoop.newSucceededFuture(result: ())
+                        return eventLoop.makeSucceededFuture(())
                     }
                     return Models.PendingComment.savePending(comment: comment, on: eventLoop)
                 }
                 .map { _ in comment }
         }
-        
+
         public static func save(comment: Models.Comment, on eventLoop: EventLoop) -> Future<Models.Comment> {
             return comment
                 .save(on: eventLoop)
                 .map { _ in comment }
         }
-        
+
         public static func getProcessedBody(from string: String) -> String {
             return string
         }
-        
+
         public static func delete(comment: Models.Comment, on eventLoop: EventLoop) -> Future<Void> {
             comment.status = .deleted
 
@@ -82,10 +82,10 @@ public extension Logic {
         }
 
         public static func hide(comment: Models.Comment, on eventLoop: EventLoop) -> Future<Void> {
-            return eventLoop.newSucceededFuture(result: ())
-                .then { () -> EventLoopFuture<Models.Comment?> in
+            return eventLoop.makeSucceededFuture(())
+                .flatMap { () -> EventLoopFuture<Models.Comment?> in
                     guard let IDReplyComment = comment.IDReplyComment else {
-                        return eventLoop.newSucceededFuture(result: nil)
+                        return eventLoop.makeSucceededFuture(nil)
                     }
                     return self.get(by: IDReplyComment, on: eventLoop)
                 }
@@ -111,18 +111,18 @@ public extension Logic {
 
             return comment.save(on: eventLoop)
         }
-        
+
         public static func likeOrUnlike(
             comment: Models.Comment,
             by user: Models.User,
             on eventLoop: EventLoop
         ) -> Future<Int> {
             guard comment.status == .published else {
-                return eventLoop.newSucceededFuture(result: 0)
+                return eventLoop.makeSucceededFuture(0)
             }
             return Models.Like.likeOrUnlike(comment: comment, by: user, on: eventLoop)
         }
-        
+
         public static func edit(
             comment: Models.Comment,
             body: String,
@@ -133,31 +133,31 @@ public extension Logic {
 
             return comment
                 .save(with: transaction, on: eventLoop)
-                .then { transaction in transaction.commit() }
+                .flatMap { transaction in transaction.commit() }
                 .map { _ in comment }
         }
 
         public static func approve(comment: Models.Comment, on eventLoop: EventLoop) -> Future<Models.Comment> {
             guard comment.status == .pending else {
-                return eventLoop.newSucceededFuture(result: comment)
+                return eventLoop.makeSucceededFuture(comment)
             }
 
             comment.status = .published
 
             return comment
                 .save(on: eventLoop)
-                .then { Models.PendingComment.clearRoutine(comment: comment, on: eventLoop) }
+                .flatMap { Models.PendingComment.clearRoutine(comment: comment, on: eventLoop) }
                 .map { _ in comment }
         }
 
         public static func reject(comment: Models.Comment, on eventLoop: EventLoop) -> Future<Void> {
             guard comment.status == .pending else {
-                return eventLoop.newSucceededFuture(result: ())
+                return eventLoop.makeSucceededFuture(())
             }
 
             return comment
                 .delete(on: eventLoop)
-                .then { Models.PendingComment.clearRoutine(comment: comment, on: eventLoop) }
+                .flatMap { Models.PendingComment.clearRoutine(comment: comment, on: eventLoop) }
         }
     }
 }

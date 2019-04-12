@@ -2,7 +2,7 @@ import Foundation
 import Entita2FDB
 
 public extension Models {
-    final public class User: Model, Entita2FDBIndexedEntity {
+    final class User: Model, Entita2FDBIndexedEntity {
         public enum AccessLevel: String, Codable {
             case User, Moderator, Admin
         }
@@ -23,8 +23,8 @@ public extension Models {
         public var username: String
         public var accessLevel: AccessLevel
 
-        public var mutedUntil: Date? = nil
-        public var color: String = "default"
+        public var mutedUntil: Date?
+        public var color: String
 
         public var isAtLeastModerator: Bool {
             return self.accessLevel == .Moderator || self.accessLevel == .Admin
@@ -42,6 +42,9 @@ public extension Models {
             self.ID = ID
             self.username = username
             self.accessLevel = accessLevel
+
+            self.mutedUntil = nil
+            self.color = "default"
         }
     }
 }

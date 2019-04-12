@@ -8,7 +8,7 @@ class RefreshUserController {
 
         func contractRoutine(
             request: Contract.Request,
-            info: LGNC.RequestInfo
+            info: LGNCore.RequestInfo
         ) -> Future<Contract.Response> {
             let eventLoop = info.eventLoop
             return Logic.User

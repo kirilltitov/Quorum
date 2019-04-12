@@ -9,25 +9,11 @@ import Entita2FDB
 import NIO
 import MessagePack
 
-@available(*, deprecated, renamed: "FDB.Transaction")
-public typealias Transaction = FDB.Transaction
-@available(*, deprecated, renamed: "FDB.Tuple")
-public typealias Tuple = FDB.Tuple
-@available(*, deprecated, renamed: "FDB.Subspace")
-public typealias Subspace = FDB.Subspace
-@available(*, deprecated, renamed: "FDBTuplePackable")
-public typealias TuplePackable = FDBTuplePackable
-@available(*, deprecated, renamed: "AnyFDBKey")
-public typealias FDBKey = AnyFDBKey
-public extension FDB {
-    @available(*, deprecated, renamed: "begin(on:)")
-    public func begin(eventLoop: EventLoop) -> EventLoopFuture<FDB.Transaction> {
-        return self.begin(on: eventLoop)
-    }
-}
-
 public struct Models {}
 public struct Logic {}
+
+LoggingSystem.bootstrap(LGNCore.Logger.init)
+LGNCore.Logger.logLevel = .trace
 
 LGNP.verbose = false
 Entita.KEY_DICTIONARIES_ENABLED = false
@@ -36,28 +22,45 @@ LGNC.ALLOW_ALL_TRANSPORTS = true
 let APP_ENV = AppEnv.detect()
 
 public enum ConfigKeys: String, AnyConfigKey {
+    /// Salt used for all encryptions
     case salt
+
+    /// AES encryption key
     case aes_key
+
+    /// Portal ID (used for separation FDB paths within one cluster)
     case portal_id
+
+    /// Website address (it's pretty much always https://kirilltitov.com)
+    case website_base_url
+
+    case author_port
 }
 
 let config = try LGNCore.Config<ConfigKeys>(
     env: APP_ENV,
     rawConfig: ProcessInfo.processInfo.environment,
-    defaultConfig: [
+    localConfig: [
         .salt: "da kak tak",
         .aes_key: "3858f62230ac3c91",
         .portal_id: "Inner-Mongolia",
+        .website_base_url: "https://kirilltitov.com",
+        .author_port: "1711",
     ]
 )
+
+let defaultLogger = Logger(label: "Quorum.Default")
+
+defaultLogger.trace("lul", metadata: ["foo": .string("bar")])
 
 let SERVICE_ID = "Quorum"
 let POST_KEY = "Post"
 let COMMENT_KEY = "Comment"
 let PORTAL_ID = config[.portal_id]
+let AUTHOR_PORT = Int(config[.author_port])!
 
 public extension LGNS.Address {
-    public static func node(service: String, name: String, realm: String, port: Int) -> LGNS.Address {
+    static func node(service: String, name: String, realm: String, port: Int) -> LGNS.Address {
         return .ip(host: "\(name).\(service).\(realm).playelegion.com", port: port)
     }
 }
@@ -96,17 +99,16 @@ ApproveCommentController.setup()
 UnapprovedCommentsController.setup()
 RefreshUserController.setup()
 RejectCommentController.setup()
-CreatePostController.setup()
 
 let dispatchGroup = DispatchGroup()
 
 let host = "127.0.0.1"
 
 DispatchQueue(label: "games.1711.server.http", qos: .userInitiated, attributes: .concurrent).async(group: dispatchGroup) {
-    let address: LGNC.HTTP.Server.BindTo = .ip(host: "127.0.0.1", port: 8080)
-    let promise: Promise<Void> = eventLoopGroup.eventLoop.newPromise()
-    promise.futureResult.whenComplete {
-        LGNCore.log("Quorum HTTP service on portal ID \(PORTAL_ID) started at \(address)")
+    let address: LGNC.HTTP.Server.BindTo = .ip(host: "127.0.0.1", port: 8081)
+    let promise: Promise<Void> = eventLoopGroup.eventLoop.makePromise()
+    promise.futureResult.whenComplete { _ in
+        defaultLogger.info("Quorum HTTP service on portal ID \(PORTAL_ID) started at \(address)")
     }
     try! SQuorum.serveHTTP(
         at: address,
@@ -116,10 +118,10 @@ DispatchQueue(label: "games.1711.server.http", qos: .userInitiated, attributes: 
 }
 
 DispatchQueue(label: "games.1711.server.lgns", qos: .userInitiated, attributes: .concurrent).async(group: dispatchGroup) {
-    let address: LGNS.Address = .ip(host: host, port: 1711)
-    let promise: Promise<Void> = eventLoopGroup.eventLoop.newPromise()
-    promise.futureResult.whenComplete {
-        LGNCore.log("Quorum LGNS service on portal ID \(PORTAL_ID) started at \(address)")
+    let address: LGNS.Address = .ip(host: host, port: 1712)
+    let promise: Promise<Void> = eventLoopGroup.eventLoop.makePromise()
+    promise.futureResult.whenComplete { _ in
+        defaultLogger.info("Quorum LGNS service on portal ID \(PORTAL_ID) started at \(address)")
     }
 
     try! Services.Quorum.serveLGNS(
@@ -134,9 +136,9 @@ DispatchQueue(label: "games.1711.server.lgns", qos: .userInitiated, attributes: 
 }
 
 let trap: @convention(c) (Int32) -> Void = { s in
-    LGNCore.log("Received signal \(s)")
+    print("Received signal \(s)")
     _  = try! SignalObserver.fire(signal: s).wait()
-    LGNCore.log("Shutdown routines done")
+    print("Shutdown routines done")
 }
 
 signal(SIGINT, trap)
@@ -144,4 +146,4 @@ signal(SIGTERM, trap)
 
 dispatchGroup.wait()
 
-print("Bye")
+defaultLogger.info("Bye")
