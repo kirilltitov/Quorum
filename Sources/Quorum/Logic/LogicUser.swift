@@ -75,7 +75,16 @@ public extension Logic {
         public static func get(by ID: Models.User.Identifier, on eventLoop: EventLoop) -> Future<Models.User?> {
             return self.usersLRU.getOrSet(by: ID, on: eventLoop) {
                 Services.Author.Contracts.UserInfo
-                    .execute(at: .port(AUTHOR_PORT), with: .init(ID: ID.string), using: client)
+                    .execute(
+                        at: .node(
+                            service: "author",
+                            name: "viktor",
+                            realm: config[.REALM],
+                            port: Int(config[.AUTHOR_LGNS_PORT])!
+                        ),
+                        with: .init(ID: ID.string),
+                        using: client
+                    )
                     .flatMap { (user: Services.Author.Contracts.UserInfo.Response) in
                         Models.User
                             .load(by: ID, on: eventLoop)
