@@ -83,7 +83,8 @@ public extension Models {
 
         public static func likeOrUnlike(comment: Comment, by user: User, on eventLoop: EventLoop) -> Future<Int> {
             return fdb.withTransaction(on: eventLoop) { transaction in
-                self.processLikeTo(comment: comment, by: user, with: transaction)
+                self
+                    .processLikeTo(comment: comment, by: user, with: transaction)
                     .flatMap { transaction in
                         transaction.get(
                             range: self.getCommentsLikesPrefix(for: comment).range,

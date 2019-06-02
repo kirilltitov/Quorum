@@ -30,7 +30,7 @@ public extension Logic {
         }
 
         public static func getPostStatus(_ ID: Int, on eventLoop: EventLoop) -> Future<Status> {
-            let url = "\(config[.website_base_url])/post/exists/\(ID)"
+            let url = "\(config[.WEBSITE_DOMAIN])/post/exists/\(ID)"
 
             return HTTPRequester
                 .requestJSON(

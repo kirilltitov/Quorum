@@ -23,41 +23,39 @@ let APP_ENV = AppEnv.detect()
 
 public enum ConfigKeys: String, AnyConfigKey {
     /// Salt used for all encryptions
-    case salt
+    case SALT
 
     /// AES encryption key
-    case aes_key
+    case AES_KEY
 
     /// Portal ID (used for separation FDB paths within one cluster)
-    case portal_id
+    case REALM
 
     /// Website address (it's pretty much always https://kirilltitov.com)
-    case website_base_url
+    case WEBSITE_DOMAIN
 
-    case author_port
+    case AUTHOR_LGNS_PORT
 }
 
 let config = try LGNCore.Config<ConfigKeys>(
     env: APP_ENV,
     rawConfig: ProcessInfo.processInfo.environment,
     localConfig: [
-        .salt: "da kak tak",
-        .aes_key: "3858f62230ac3c91",
-        .portal_id: "Inner-Mongolia",
-        .website_base_url: "https://kirilltitov.com",
-        .author_port: "1711",
+        .SALT: "da kak tak",
+        .AES_KEY: "3858f62230ac3c91",
+        .REALM: "Inner-Mongolia",
+        .WEBSITE_DOMAIN: "https://kirilltitov.com",
+        .AUTHOR_LGNS_PORT: "1711",
     ]
 )
 
 let defaultLogger = Logger(label: "Quorum.Default")
 
-defaultLogger.trace("lul", metadata: ["foo": .string("bar")])
-
 let SERVICE_ID = "Quorum"
 let POST_KEY = "Post"
 let COMMENT_KEY = "Comment"
-let PORTAL_ID = config[.portal_id]
-let AUTHOR_PORT = Int(config[.author_port])!
+let PORTAL_ID = config[.REALM]
+let AUTHOR_PORT = Int(config[.AUTHOR_LGNS_PORT])!
 
 public extension LGNS.Address {
     static func node(service: String, name: String, realm: String, port: Int) -> LGNS.Address {
@@ -75,7 +73,7 @@ let adminUserID = defaultUser
 typealias SQuorum = Services.Quorum
 
 let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
-let cryptor = try LGNP.Cryptor(salt: config[.salt], key: config[.aes_key])
+let cryptor = try LGNP.Cryptor(salt: config[.SALT], key: config[.AES_KEY])
 
 let fdb = FDB(clusterFile: "/opt/foundationdb/fdb.cluster")
 try fdb.connect()
