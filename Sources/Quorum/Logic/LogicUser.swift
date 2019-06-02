@@ -14,7 +14,7 @@ public extension Logic {
         private static let usersLRU: CacheLRU<E2.UUID, Models.User> = CacheLRU(capacity: 1000)
         //private static let usersLRU = CacheLRU<E2.UUID, Models.User>()
         private static let errorNotAuthorized = LGNC.ContractError.GeneralError("Not authorized", 403)
-        
+
         public static func authorize(token: String, on eventLoop: EventLoop) -> Future<Models.User> {
             let exploded = token.split(separator: ".", maxSplits: 2).map { String($0) }
             guard exploded.count == 3 else {
