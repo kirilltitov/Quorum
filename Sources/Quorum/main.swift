@@ -17,7 +17,6 @@ LGNCore.Logger.logLevel = .trace
 
 LGNP.verbose = false
 Entita.KEY_DICTIONARIES_ENABLED = false
-LGNC.ALLOW_ALL_TRANSPORTS = true
 
 let APP_ENV = AppEnv.detect()
 
@@ -26,7 +25,7 @@ public enum ConfigKeys: String, AnyConfigKey {
     case SALT
 
     /// AES encryption key
-    case AES_KEY
+    case KEY
 
     /// Portal ID (used for separation FDB paths within one cluster)
     case REALM
@@ -35,6 +34,7 @@ public enum ConfigKeys: String, AnyConfigKey {
     case WEBSITE_DOMAIN
 
     case AUTHOR_LGNS_PORT
+    case LOG_LEVEL
 }
 
 let config = try LGNCore.Config<ConfigKeys>(
@@ -42,14 +42,23 @@ let config = try LGNCore.Config<ConfigKeys>(
     rawConfig: ProcessInfo.processInfo.environment,
     localConfig: [
         .SALT: "da kak tak",
-        .AES_KEY: "3858f62230ac3c91",
+        .KEY: "3858f62230ac3c91",
         .REALM: "Inner-Mongolia",
         .WEBSITE_DOMAIN: "https://kirilltitov.com",
         .AUTHOR_LGNS_PORT: "1711",
+        .LOG_LEVEL: "trace",
     ]
 )
 
 let defaultLogger = Logger(label: "Quorum.Default")
+
+guard let logLevel = Logger.Level(string: config[.LOG_LEVEL]) else {
+    defaultLogger.critical("Invalid LOG_LEVEL value: \(config[.LOG_LEVEL])")
+    fatalError()
+}
+
+LGNCore.Logger.logLevel = logLevel
+defaultLogger.notice("Log level set to '\(logLevel)'")
 
 let SERVICE_ID = "Quorum"
 let POST_KEY = "Post"
@@ -73,7 +82,7 @@ let adminUserID = defaultUser
 typealias SQuorum = Services.Quorum
 
 let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
-let cryptor = try LGNP.Cryptor(salt: config[.SALT], key: config[.AES_KEY])
+let cryptor = try LGNP.Cryptor(salt: config[.SALT], key: config[.KEY])
 
 let fdb = FDB(clusterFile: "/opt/foundationdb/fdb.cluster")
 try fdb.connect()
@@ -99,10 +108,10 @@ RejectCommentController.setup()
 
 let dispatchGroup = DispatchGroup()
 
-let host = "127.0.0.1"
+let host = "0.0.0.0"
 
 DispatchQueue(label: "games.1711.server.http", qos: .userInitiated, attributes: .concurrent).async(group: dispatchGroup) {
-    let address: LGNC.HTTP.Server.BindTo = .ip(host: "127.0.0.1", port: 8081)
+    let address: LGNC.HTTP.Server.BindTo = .ip(host: host, port: 8081)
     let promise: Promise<Void> = eventLoopGroup.eventLoop.makePromise()
     promise.futureResult.whenComplete { _ in
         defaultLogger.info("Quorum HTTP service on portal ID \(PORTAL_ID) started at \(address)")

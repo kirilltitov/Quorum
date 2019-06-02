@@ -79,8 +79,8 @@ public extension Logic {
                         at: .node(
                             service: "author",
                             name: "viktor",
-                            realm: config[.REALM],
-                            port: Int(config[.AUTHOR_LGNS_PORT])!
+                            realm: PORTAL_ID,
+                            port: AUTHOR_PORT
                         ),
                         with: .init(ID: ID.string),
                         using: client
