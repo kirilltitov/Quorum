@@ -74,7 +74,7 @@ public extension Logic {
         
         public static func get(by ID: Models.User.Identifier, on eventLoop: EventLoop) -> Future<Models.User?> {
             return self.usersLRU.getOrSet(by: ID, on: eventLoop) {
-                Services.Author.Contracts.UserInfo
+                Services.Author.Contracts.UserInfoInternal
                     .execute(
                         at: .node(
                             service: "author",
@@ -85,7 +85,7 @@ public extension Logic {
                         with: .init(ID: ID.string),
                         using: client
                     )
-                    .flatMap { (user: Services.Author.Contracts.UserInfo.Response) in
+                    .flatMap { (user: Services.Author.Contracts.UserInfoInternal.Response) in
                         Models.User
                             .load(by: ID, on: eventLoop)
                             .flatMap { maybeInnerUser in
