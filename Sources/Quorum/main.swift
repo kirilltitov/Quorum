@@ -59,7 +59,7 @@ let AUTHOR_PORT = Int(config[.AUTHOR_LGNS_PORT])!
 
 public extension LGNS.Address {
     static func node(service: String, name: String, realm: String, port: Int) -> LGNS.Address {
-        return .ip(host: "\(name).\(service).\(realm).playelegion.com", port: port)
+        return .ip(host: "\(name).\(service).\(realm).i.playelegion.com", port: port)
     }
 }
 
@@ -95,7 +95,6 @@ UnhideController.setup()
 LikeController.setup()
 ApproveCommentController.setup()
 UnapprovedCommentsController.setup()
-RefreshUserController.setup()
 RejectCommentController.setup()
 
 let dispatchGroup = DispatchGroup()
