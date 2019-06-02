@@ -23,21 +23,6 @@ public extension Models {
             case published
         }
 
-        #if DEBUG
-        #else
-        public enum CodingKeys: String, CodingKey {
-            case ID = "a"
-            case IDUser = "b"
-            case IDPost = "c"
-            case IDReplyComment = "d"
-            case isDeleted = "e"
-            case isApproved = "f"
-            case body = "g"
-            case dateCreated = "h"
-            case dateUpdated = "i"
-        }
-        #endif
-
         public static let IDKey: KeyPath<Comment, Int> = \.ID
         public static var fullEntityName = false
         
