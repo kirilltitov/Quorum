@@ -14,6 +14,8 @@ public struct CommentsController {
             request: Contract.Request,
             info: LGNCore.RequestInfo
         ) -> Future<Contract.Response> in
+            mark("entered contract")
+
             let eventLoop = info.eventLoop
             return Logic.User
                 .maybeAuthorize(token: request.token, on: eventLoop)
@@ -43,7 +45,7 @@ public struct CommentsController {
                 }
                 .map { commentsWithLikes, users -> Contract.Response in
                     mark("creating response")
-                    return Contract.Response(
+                    let result = Contract.Response(
                         comments: commentsWithLikes.map { commentWithLikes in
                             let comment = commentWithLikes.comment
                             return .init(
@@ -60,6 +62,10 @@ public struct CommentsController {
                             )
                         }
                     )
+
+                    mark("response done")
+
+                    return result
                 }
         }
     }
