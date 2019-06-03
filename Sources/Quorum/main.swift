@@ -93,6 +93,10 @@ extension Int {
     }
 }
 
+func mark(_ name: String, file: String = #file, line: UInt = #line) {
+    defaultLogger.info("[Mark] \(name): \(Date().timeIntervalSince1970)", file: file, line: line)
+}
+
 let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount.clamped(min: 4))
 let cryptor = try LGNP.Cryptor(salt: config[.SALT], key: config[.KEY])
 

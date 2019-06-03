@@ -17,9 +17,13 @@ public struct CommentsController {
             let eventLoop = info.eventLoop
             return Logic.User
                 .maybeAuthorize(token: request.token, on: eventLoop)
-                .flatMap { maybeUser in Logic.Post.getCommentsFor(ID: request.IDPost, as: maybeUser, on: eventLoop) }
-                .flatMap { commentsWithLikes in
-                    EventLoopFuture<[Models.User.Identifier: Models.User]>.reduce(
+                .flatMap { maybeUser in
+                    mark("authorized")
+                    return Logic.Post.getCommentsFor(ID: request.IDPost, as: maybeUser, on: eventLoop)
+                }
+                .flatMap { (commentsWithLikes: [Logic.Post.CommentWithLikes]) -> Future<([Logic.Post.CommentWithLikes], [Models.User.Identifier: Models.User])> in
+                    mark("got comments with likes")
+                    return EventLoopFuture<[Models.User.Identifier: Models.User]>.reduce(
                         into: [:],
                         Set(commentsWithLikes.map { $0.comment.IDUser }).map {
                             Logic.User.get(by: $0, on: eventLoop)
@@ -32,11 +36,14 @@ public struct CommentsController {
                     ).map { users -> (
                             [Logic.Post.CommentWithLikes],
                             [Models.User.Identifier: Models.User]
-                        ) in (commentsWithLikes, users)
+                        ) in
+                        mark("got comments with likes and users")
+                        return (commentsWithLikes, users)
                     }
                 }
                 .map { commentsWithLikes, users -> Contract.Response in
-                    Contract.Response(
+                    mark("creating response")
+                    return Contract.Response(
                         comments: commentsWithLikes.map { commentWithLikes in
                             let comment = commentWithLikes.comment
                             return .init(
