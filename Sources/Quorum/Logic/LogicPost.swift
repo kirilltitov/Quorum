@@ -57,12 +57,19 @@ public extension Logic {
             on eventLoop: EventLoop
         ) -> Future<[CommentWithLikes]> {
             return fdb.withTransaction(on: eventLoop) { transaction in
-                Models.Comment.loadAll(
+                let rawCommentsProfiler = LGNCore.Profiler.begin()
+                let commentsFuture = Models.Comment.loadAll(
                     bySubspace: Models.Comment._getPostPrefix(ID),
                     with: transaction,
                     snapshot: true,
                     on: eventLoop
-                ).map { results in
+                )
+
+                commentsFuture.whenComplete { _ in
+                    defaultLogger.info("Raw comments loaded in \(rawCommentsProfiler.end().rounded(toPlaces: 4))s")
+                }
+
+                return commentsFuture.map { results in
                     var result = [CommentWithLikes]()
 
                     for (_, comment) in results {

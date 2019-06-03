@@ -81,7 +81,19 @@ let adminUserID = defaultUser
 
 typealias SQuorum = Services.Quorum
 
-let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
+extension Int {
+    func clamped(min: Int? = nil, max: Int? = nil) -> Int {
+        if let min = min, self < min {
+            return min
+        }
+        if let max = max, self > max {
+            return max
+        }
+        return self
+    }
+}
+
+let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount.clamped(min: 4))
 let cryptor = try LGNP.Cryptor(salt: config[.SALT], key: config[.KEY])
 
 let fdb = FDB(clusterFile: "/opt/foundationdb/fdb.cluster")
