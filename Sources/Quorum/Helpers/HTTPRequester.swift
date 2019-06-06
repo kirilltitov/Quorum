@@ -4,7 +4,7 @@ import NIO
 
 public class HTTPRequester {
     public enum Method: String {
-        case GET, POST
+        case GET, POST, PUT
     }
 
     public enum ContentType: String {

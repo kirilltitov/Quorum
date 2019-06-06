@@ -1,0 +1,22 @@
+version: "3"
+
+networks:
+  default:
+    external:
+      name: elegion
+
+services:
+  consul:
+    image: consul:1.5
+    command: "agent -join consul.service.elegion -client 0.0.0.0"
+
+  quorum:
+    image: kirilltitov/elegion:quorum_latest
+    tty: true
+    env_file: .env
+    ports:
+      - ${LGNS_HOST}:${LGNS_PORT}:${LGNS_PORT}
+      - ${HTTP_HOST}:${HTTP_PORT}:${HTTP_PORT}
+    volumes:
+      - /etc/foundationdb/fdb.cluster:/opt/foundationdb/fdb.cluster
+

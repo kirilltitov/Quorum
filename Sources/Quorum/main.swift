@@ -20,6 +20,10 @@ Entita.KEY_DICTIONARIES_ENABLED = false
 
 let APP_ENV = AppEnv.detect()
 
+public enum E: Error {
+    case Consul(String)
+}
+
 public enum ConfigKeys: String, AnyConfigKey {
     /// Salt used for all encryptions
     case SALT
@@ -35,6 +39,9 @@ public enum ConfigKeys: String, AnyConfigKey {
 
     case AUTHOR_LGNS_PORT
     case LOG_LEVEL
+    case LGNS_PORT
+    case HTTP_PORT
+    case PRIVATE_IP
 }
 
 let config = try LGNCore.Config<ConfigKeys>(
@@ -47,6 +54,9 @@ let config = try LGNCore.Config<ConfigKeys>(
         .WEBSITE_DOMAIN: "https://kirilltitov.com",
         .AUTHOR_LGNS_PORT: "1711",
         .LOG_LEVEL: "trace",
+        .LGNS_PORT: "1712",
+        .HTTP_PORT: "8081",
+        .PRIVATE_IP: "127.0.0.1",
     ]
 )
 
@@ -68,7 +78,7 @@ let AUTHOR_PORT = Int(config[.AUTHOR_LGNS_PORT])!
 
 public extension LGNS.Address {
     static func node(service: String, name: String, realm: String, port: Int) -> LGNS.Address {
-        return .ip(host: "\(name).\(service).\(realm).i.playelegion.com", port: port)
+        return .ip(host: "\(name).\(service)-\(realm).service.elegion", port: port)
     }
 }
 
@@ -124,10 +134,12 @@ RejectCommentController.setup()
 
 let dispatchGroup = DispatchGroup()
 
-let host = "0.0.0.0"
+let HOST = "0.0.0.0"
+let LGNS_PORT = Int(config[.LGNS_PORT])!
+let HTTP_PORT = Int(config[.HTTP_PORT])!
 
 DispatchQueue(label: "games.1711.server.http", qos: .userInitiated, attributes: .concurrent).async(group: dispatchGroup) {
-    let address: LGNC.HTTP.Server.BindTo = .ip(host: host, port: 8081)
+    let address: LGNC.HTTP.Server.BindTo = .ip(host: HOST, port: HTTP_PORT)
     let promise: Promise<Void> = eventLoopGroup.eventLoop.makePromise()
     promise.futureResult.whenComplete { _ in
         defaultLogger.info("Quorum HTTP service on portal ID \(PORTAL_ID) started at \(address)")
@@ -140,7 +152,7 @@ DispatchQueue(label: "games.1711.server.http", qos: .userInitiated, attributes: 
 }
 
 DispatchQueue(label: "games.1711.server.lgns", qos: .userInitiated, attributes: .concurrent).async(group: dispatchGroup) {
-    let address: LGNS.Address = .ip(host: host, port: 1712)
+    let address: LGNS.Address = .ip(host: HOST, port: LGNS_PORT)
     let promise: Promise<Void> = eventLoopGroup.eventLoop.makePromise()
     promise.futureResult.whenComplete { _ in
         defaultLogger.info("Quorum LGNS service on portal ID \(PORTAL_ID) started at \(address)")
@@ -156,6 +168,8 @@ DispatchQueue(label: "games.1711.server.lgns", qos: .userInitiated, attributes: 
         promise: promise
     )
 }
+
+try registerToConsul()
 
 let trap: @convention(c) (Int32) -> Void = { s in
     print("Received signal \(s)")

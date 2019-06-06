@@ -24,7 +24,7 @@ public extension Logic {
             return Services.Author.Contracts.Authenticate
                 .execute(
                     at: .node(
-                        service: "Author",
+                        service: "author",
                         name: exploded[1],
                         realm: PORTAL_ID,
                         port: AUTHOR_PORT
