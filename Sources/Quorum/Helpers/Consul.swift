@@ -5,7 +5,8 @@ func registerToConsul() throws {
     do {
         let tags: [String] = ["main"]
         let params: [String: Any] = [
-            "Name": "\(SERVICE_ID.lowercased())-\(PORTAL_ID.lowercased())",
+            "ID": "main",
+            "Name": "\(SERVICE_ID)-\(PORTAL_ID.lowercased())",
             "Address": "\(config[.PRIVATE_IP])",
             "Port": LGNS_PORT,
             "Tags": tags,
