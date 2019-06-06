@@ -10,6 +10,6 @@ export HTTP_PORT=8081
 
 docker pull kirilltitov/elegion:quorum_latest
 
-docker-compose -f $DOCKER_COMPOSE_FILE stop quorum
-docker-compose -f $DOCKER_COMPOSE_FILE rm -f quorum
+docker-compose -f $DOCKER_COMPOSE_FILE stop service
+docker-compose -f $DOCKER_COMPOSE_FILE rm -f service
 docker-compose -f $DOCKER_COMPOSE_FILE up -d

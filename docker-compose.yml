@@ -10,7 +10,7 @@ services:
     image: consul:1.5
     command: "agent -join consul.service.elegion -client 0.0.0.0"
 
-  quorum:
+  service:
     image: kirilltitov/elegion:quorum_latest
     tty: true
     env_file: .env
