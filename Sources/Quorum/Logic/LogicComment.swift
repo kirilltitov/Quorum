@@ -120,6 +120,10 @@ public extension Logic {
             guard comment.status == .published else {
                 return eventLoop.makeSucceededFuture(0)
             }
+            guard comment.IDUser != user.ID else {
+                return Models.Like.getLikesFor(comment: comment, on: eventLoop)
+            }
+
             return Models.Like.likeOrUnlike(comment: comment, by: user, on: eventLoop)
         }
 
