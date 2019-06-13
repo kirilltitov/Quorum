@@ -2,7 +2,7 @@ import Generated
 import LGNCore
 import LGNC
 
-/// Moves comment from `deleted` status to `published` status (when user is unbanned)
+/// Moves comment from `deleted` status to `published` status
 class UndeleteController {
     static func setup() {
         typealias Contract = Services.Quorum.Contracts.UndeleteComment

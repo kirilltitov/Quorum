@@ -53,7 +53,7 @@ public extension Logic {
 
         public static func getCommentsFor(
             ID: Int,
-            as user: Models.User? = nil,
+            as maybeUser: Models.User? = nil,
             on eventLoop: EventLoop
         ) -> Future<[CommentWithLikes]> {
             return fdb.withTransaction(on: eventLoop) { transaction in
@@ -70,21 +70,28 @@ public extension Logic {
                 }
 
                 return commentsFuture.map { results in
-                    var result = [CommentWithLikes]()
-
-                    for (_, comment) in results {
-                        if user?.isAtLeastModerator == false {
-                            if comment.status == .hidden || comment.status == .pending {
-                                continue
+                    results
+                        .filter { ID, comment in
+                            // moderators can see all comments
+                            if maybeUser?.isAtLeastModerator == true {
+                                return true
                             }
+                            // users can see their own comments
+                            if comment.IDUser == maybeUser?.ID {
+                                return true
+                            }
+                            // if comment isn't published or hidden, don't show it
+                            if comment.status == .hidden || comment.status == .pending {
+                                return false
+                            }
+                            return true
+                        }
+                        .map { ID, comment in
                             if comment.status == .deleted {
                                 comment.body = ""
                             }
+                            return CommentWithLikes(comment)
                         }
-                        result.append(CommentWithLikes(comment))
-                    }
-
-                    return result
                 }.flatMap { commentsWithLikes in
                     Models.Like
                         .getLikesForCommentsIn(postID: ID, with: transaction, on: eventLoop)

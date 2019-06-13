@@ -5,7 +5,7 @@ import LGNS
 import LGNC
 import Entita2
 
-/// Moves comment from `published` status to `deleted` status (like, when user is banned)
+/// Moves comment from `published` status to `deleted` status (when displayed, body should be empty)
 public struct DeleteController {
     typealias Contract = Services.Quorum.Contracts.DeleteComment
 
