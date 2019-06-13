@@ -41,18 +41,24 @@ public struct EditController {
                             if user.isAtLeastModerator {
                                 return (comment, transaction)
                             }
+
                             guard status != .NotCommentable else {
                                 throw LGNC.ContractError.GeneralError("Comment is not editable anymore", 403)
                             }
+
                             guard user.ID == comment.IDUser else {
                                 throw LGNC.ContractError.GeneralError("It's not your comment", 403)
                             }
+
                             guard comment.isEditable else {
                                 throw LGNC.ContractError.GeneralError("This comment is not editable anymore", 408)
                             }
-                            guard comment.dateUpdated.timeIntervalSince > COMMENT_EDIT_COOLDOWN else {
+
+                            let editDiff = Date().timeIntervalSince1970 - comment.dateUpdated.timeIntervalSince
+                            guard editDiff > COMMENT_EDIT_COOLDOWN else {
                                 throw LGNC.ContractError.GeneralError("You're editing too often", 429)
                             }
+
                             return (comment, transaction)
                     }
                 }
