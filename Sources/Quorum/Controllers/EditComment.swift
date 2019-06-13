@@ -44,9 +44,6 @@ public struct EditController {
                             guard status != .NotCommentable else {
                                 throw LGNC.ContractError.GeneralError("Comment is not editable anymore", 403)
                             }
-                            guard comment.status == .published else {
-                                throw LGNC.ContractError.GeneralError("Comment is not approved yet", 403)
-                            }
                             guard user.ID == comment.IDUser else {
                                 throw LGNC.ContractError.GeneralError("It's not your comment", 403)
                             }
