@@ -82,7 +82,8 @@ public extension Logic {
         }
 
         public static func hide(comment: Models.Comment, on eventLoop: EventLoop) -> Future<Void> {
-            return eventLoop.makeSucceededFuture(())
+            return eventLoop
+                .makeSucceededFuture()
                 .flatMap { () -> EventLoopFuture<Models.Comment?> in
                     guard let IDReplyComment = comment.IDReplyComment else {
                         return eventLoop.makeSucceededFuture(nil)
@@ -99,6 +100,23 @@ public extension Logic {
 
                     comment.status = .hidden
 
+                    return comment.save(on: eventLoop)
+                }
+        }
+
+        public static func unhide(comment: Models.Comment, on eventLoop: EventLoop) -> Future<Void> {
+            return eventLoop
+                .makeSucceededFuture()
+                .flatMapThrowing {
+                    guard comment.status == .hidden else {
+                        throw LGNC.ContractError.GeneralError(
+                            "Cannot unhide comment, it should be in 'hidden' state",
+                            401
+                        )
+                    }
+                    
+                    comment.status = .published
+                    
                     return comment.save(on: eventLoop)
                 }
         }
