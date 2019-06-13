@@ -48,21 +48,7 @@ public struct CreateController {
             )
             .flatMap { comment in user.map { (comment, $0) } }
             .flatMap { comment, user in Logic.Comment.insert(comment: comment, as: user, on: eventLoop) }
-            .flatMap { comment in
-                Contract.Response.await(
-                    ID: comment.ID,
-                    IDUser: user.map { $0.ID.string },
-                    userName: user.map { $0.username },
-                    IDPost: comment.IDPost,
-                    IDReplyComment: comment.IDReplyComment,
-                    isEditable: comment.isEditable,
-                    status: comment.status.rawValue,
-                    body: comment.body,
-                    likes: Models.Like.getLikesFor(comment: comment, on: eventLoop),
-                    dateCreated: comment.dateCreated.formatted,
-                    dateUpdated: comment.dateUpdated.formatted
-                )
-            }
+            .flatMap { comment in comment.getContractComment(on: eventLoop) }
         }
     }
 }

@@ -124,10 +124,12 @@ public extension Logic {
         public static func undelete(
             comment: Models.Comment,
             on eventLoop: EventLoop
-        ) -> Future<Void> {
+        ) -> Future<Models.Comment> {
             comment.status = .published
 
-            return comment.save(on: eventLoop)
+            return comment
+                .save(on: eventLoop)
+                .map { _ in comment }
         }
 
         public static func likeOrUnlike(

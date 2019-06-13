@@ -12,6 +12,7 @@ class UndeleteController {
             info: LGNCore.RequestInfo
         ) -> Future<Contract.Response> {
             let eventLoop = info.eventLoop
+
             return Logic.User
                 .authorize(token: request.token, on: eventLoop)
                 .flatMap { user in
@@ -19,7 +20,7 @@ class UndeleteController {
                         .getThrowing(by: request.IDComment, on: eventLoop)
                         .map { comment in (user, comment) }
                 }
-                .flatMapThrowing { (user: Models.User, comment: Models.Comment) throws -> Future<Void> in
+                .flatMapThrowing { (user: Models.User, comment: Models.Comment) throws -> Future<Models.Comment> in
                     guard user.isAtLeastModerator else {
                         throw LGNC.ContractError.GeneralError("Not authorized", 403)
                     }
@@ -31,7 +32,7 @@ class UndeleteController {
                     }
                     return Logic.Comment.undelete(comment: comment, on: eventLoop)
                 }
-                .map { _ in .init() }
+                .flatMap { comment in comment.getContractComment(on: eventLoop) }
         }
 
         Contract.guarantee(contractRoutine)

@@ -12,6 +12,7 @@ public struct ApproveCommentController {
             info: LGNCore.RequestInfo
         ) -> Future<Contact.Response> {
             let eventLoop = info.eventLoop
+
             return Logic.User
                 .authorize(token: request.token, on: eventLoop)
                 .mapThrowing { user in
@@ -22,22 +23,7 @@ public struct ApproveCommentController {
                 }
                 .flatMap { Logic.Comment.getThrowing(by: request.IDComment, on: eventLoop) }
                 .flatMap { comment in Logic.Comment.approve(comment: comment, on: eventLoop) }
-                .flatMap { comment in
-                    let user = comment.getUser(on: eventLoop)
-                    return Contact.Response.await(
-                        ID: comment.ID,
-                        IDUser: user.map { $0.ID.string },
-                        userName: user.map { $0.username },
-                        IDPost: comment.IDPost,
-                        IDReplyComment: comment.IDReplyComment,
-                        isEditable: comment.isEditable,
-                        status: comment.status.rawValue,
-                        body: comment.body,
-                        likes: Models.Like.getLikesFor(comment: comment, on: eventLoop),
-                        dateCreated: comment.dateCreated.formatted,
-                        dateUpdated: comment.dateUpdated.formatted
-                    )
-                }
+                .flatMap { comment in comment.getContractComment(on: eventLoop)}
         }
 
         Contact.guarantee(contractRoutine)

@@ -64,21 +64,7 @@ public struct EditController {
                         on: eventLoop
                     )
                 }
-                .flatMap { comment in
-                    Contract.Response.await(
-                        ID: comment.ID,
-                        IDUser: userFuture.map { $0.ID.string },
-                        userName: userFuture.map { $0.username },
-                        IDPost: comment.IDPost,
-                        IDReplyComment: comment.IDReplyComment,
-                        isEditable: comment.isEditable,
-                        status: comment.status.rawValue,
-                        body: comment.body,
-                        likes: Models.Like.getLikesFor(comment: comment, on: eventLoop),
-                        dateCreated: comment.dateCreated.formatted,
-                        dateUpdated: comment.dateUpdated.formatted
-                    )
-                }
+                .flatMap { comment in comment.getContractComment(on: eventLoop) }
                 .flatMapIfErrorThrowing { error in
                     if case FDB.Error.transactionRetry = error {
                         return contractRoutine(request: request, info: info)

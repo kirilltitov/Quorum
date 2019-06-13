@@ -2,6 +2,7 @@ import Foundation
 import LGNCore
 import Entita2FDB
 import NIO
+import Generated
 
 public extension Models {
     final class Comment: ModelInt, Entita2FDBIndexedEntity {
@@ -25,7 +26,7 @@ public extension Models {
 
         public static let IDKey: KeyPath<Comment, Int> = \.ID
         public static var fullEntityName = false
-        
+
         public static var indices: [String : Entita2.Index<Models.Comment>] = [
             "ID": E2.Index(\.ID, unique: true),
             "user": E2.Index(\.IDUser, unique: false),
@@ -70,6 +71,27 @@ public extension Models {
                     }
                     return user
                 }
+        }
+
+        public func getContractComment(
+            on eventLoop: EventLoop,
+            loadLikes: Bool = true
+        ) -> Future<Services.Shared.Comment> {
+            let user = self.getUser(on: eventLoop)
+
+            return Services.Shared.Comment.await(
+                ID: self.ID,
+                IDUser: user.map(\.ID.string),
+                userName: user.map(\.username),
+                IDPost: self.IDPost,
+                IDReplyComment: self.IDReplyComment,
+                isEditable: self.isEditable,
+                status: self.status.rawValue,
+                body: self.status == .deleted ? "" : self.body,
+                likes: loadLikes ? Like.getLikesFor(comment: self, on: eventLoop) : eventLoop.makeSucceededFuture(0),
+                dateCreated: self.dateCreated.formatted,
+                dateUpdated: self.dateUpdated.formatted
+            )
         }
 
         public static func getUsingRefID(

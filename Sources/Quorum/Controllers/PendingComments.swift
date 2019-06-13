@@ -23,22 +23,7 @@ class UnapprovedCommentsController {
                 .flatMap { comments in
                     Future<[Services.Shared.Comment]>.reduce(
                         into: [],
-                        comments.map { comment in
-                            let user = comment.getUser(on: eventLoop)
-                            return Services.Shared.Comment.await(
-                                ID: comment.ID,
-                                IDUser: user.map { $0.ID.string },
-                                userName: user.map { $0.username },
-                                IDPost: comment.IDPost,
-                                IDReplyComment: comment.IDReplyComment,
-                                isEditable: comment.isEditable,
-                                status: comment.status.rawValue,
-                                body: comment.body,
-                                likes: eventLoop.makeSucceededFuture(0),
-                                dateCreated: comment.dateCreated.formatted,
-                                dateUpdated: comment.dateUpdated.formatted
-                            )
-                        },
+                        comments.map { comment in comment.getContractComment(on: eventLoop) },
                         on: eventLoop
                     ) { $0.append($1) }
                 }
