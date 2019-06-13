@@ -2,6 +2,7 @@ import LGNCore
 import Generated
 import LGNC
 
+/// Rejects and DELETES the comment from storage (rejected premoderation)
 public struct RejectCommentController {
     typealias Contract = Services.Quorum.Contracts.RejectComment
 

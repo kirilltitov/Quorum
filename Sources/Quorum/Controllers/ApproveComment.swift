@@ -2,6 +2,7 @@ import LGNCore
 import Generated
 import LGNC
 
+/// Moves comment from `pending` status to `published` status (premoderation)
 public struct ApproveCommentController {
     typealias Contact = Services.Quorum.Contracts.ApproveComment
 

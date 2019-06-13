@@ -5,6 +5,7 @@ import LGNS
 import LGNC
 import Entita2
 
+/// Moves comment from `published` status to `hidden` status (hides the comment)
 public struct HideController {
     typealias Contract = Services.Quorum.Contracts.HideComment
 

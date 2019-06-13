@@ -5,6 +5,7 @@ import LGNS
 import LGNC
 import Entita2
 
+/// Moves comment from `hidden` status to `published` status (restores the comment)
 public struct UnhideController {
     typealias Contract = Services.Quorum.Contracts.UnhideComment
 
