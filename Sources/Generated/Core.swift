@@ -1364,6 +1364,46 @@ public struct Services {
             }
         }
 
+        public final class Empty: ContractEntity {
+            public static let keyDictionary: [String: String] = [
+                :
+            ]
+
+            public init(
+            ) {
+            }
+
+            public static func initWithValidation(from _: Entita.Dict, requestInfo: LGNCore.RequestInfo) -> Future<Empty> {
+                let eventLoop = requestInfo.eventLoop
+
+                var validatorFutures: [String: [Future<(String, ValidatorError?)>]] = [
+                    :
+                ]
+
+                do {
+                } catch {
+                    return eventLoop.makeFailedFuture(error)
+                }
+
+                return self
+                    .reduce(validators: validatorFutures, on: eventLoop)
+                    .flatMapThrowing { errors in
+                        guard errors.count == 0 else {
+                            throw LGNC.E.DecodeError(errors)
+                        }
+                        return self.init()
+                    }
+            }
+
+            public convenience init(from _: Entita.Dict) throws {
+                self.init()
+            }
+
+            public func getDictionary() throws -> Entita.Dict {
+                return [:]
+            }
+        }
+
         public final class Comment: ContractEntity {
             public static let keyDictionary: [String: String] = [
                 "ID": "a",
@@ -1371,11 +1411,12 @@ public struct Services {
                 "userName": "d",
                 "IDPost": "e",
                 "IDReplyComment": "f",
-                "status": "g",
-                "body": "h",
-                "likes": "i",
-                "dateCreated": "j",
-                "dateUpdated": "k",
+                "isEditable": "g",
+                "status": "h",
+                "body": "i",
+                "likes": "j",
+                "dateCreated": "k",
+                "dateUpdated": "l",
             ]
 
             public let ID: Int
@@ -1383,6 +1424,7 @@ public struct Services {
             public let userName: String
             public let IDPost: Int
             public let IDReplyComment: Int?
+            public let isEditable: Bool
             public let status: String
             public let body: String
             public let likes: Int
@@ -1395,6 +1437,7 @@ public struct Services {
                 userName: String,
                 IDPost: Int,
                 IDReplyComment: Int? = nil,
+                isEditable: Bool,
                 status: String,
                 body: String,
                 likes: Int,
@@ -1406,6 +1449,7 @@ public struct Services {
                 self.userName = userName
                 self.IDPost = IDPost
                 self.IDReplyComment = IDReplyComment
+                self.isEditable = isEditable
                 self.status = status
                 self.body = body
                 self.likes = likes
@@ -1419,6 +1463,7 @@ public struct Services {
                 userName userNameFuture: Future<String>,
                 IDPost: Int,
                 IDReplyComment: Int?,
+                isEditable: Bool,
                 status: String,
                 body: String,
                 likes likesFuture: Future<Int>,
@@ -1441,6 +1486,7 @@ public struct Services {
                         userName: userName,
                         IDPost: IDPost,
                         IDReplyComment: IDReplyComment,
+                        isEditable: isEditable,
                         status: status,
                         body: body,
                         likes: likes,
@@ -1459,6 +1505,7 @@ public struct Services {
                     "userName": [],
                     "IDPost": [],
                     "IDReplyComment": [],
+                    "isEditable": [],
                     "status": [],
                     "body": [],
                     "likes": [],
@@ -1471,6 +1518,7 @@ public struct Services {
                 var _userName: String = String()
                 var _IDPost: Int = Int()
                 var _IDReplyComment: Int?
+                var _isEditable: Bool = Bool()
                 var _status: String = String()
                 var _body: String = String()
                 var _likes: Int = Int()
@@ -1506,6 +1554,11 @@ public struct Services {
                         _IDReplyComment = try Comment.extract(param: "IDReplyComment", from: dictionary, isOptional: true)
                     } catch Entita.E.ExtractError {
                         validatorFutures["IDReplyComment"]!.append(eventLoop.makeSucceededFuture(("IDReplyComment", Validation.Error.MissingValue(requestInfo.locale))))
+                    }
+                    do {
+                        _isEditable = try Comment.extract(param: "isEditable", from: dictionary)
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["isEditable"]!.append(eventLoop.makeSucceededFuture(("isEditable", Validation.Error.MissingValue(requestInfo.locale))))
                     }
                     do {
                         _status = try Comment.extract(param: "status", from: dictionary)
@@ -1560,6 +1613,7 @@ public struct Services {
                             userName: _userName,
                             IDPost: _IDPost,
                             IDReplyComment: _IDReplyComment,
+                            isEditable: _isEditable,
                             status: _status,
                             body: _body,
                             likes: _likes,
@@ -1576,6 +1630,7 @@ public struct Services {
                     userName: try Comment.extract(param: "userName", from: dictionary),
                     IDPost: try Comment.extract(param: "IDPost", from: dictionary),
                     IDReplyComment: try Comment.extract(param: "IDReplyComment", from: dictionary, isOptional: true),
+                    isEditable: try Comment.extract(param: "isEditable", from: dictionary),
                     status: try Comment.extract(param: "status", from: dictionary),
                     body: try Comment.extract(param: "body", from: dictionary),
                     likes: try Comment.extract(param: "likes", from: dictionary),
@@ -1591,52 +1646,13 @@ public struct Services {
                     self.getDictionaryKey("userName"): try self.encode(self.userName),
                     self.getDictionaryKey("IDPost"): try self.encode(self.IDPost),
                     self.getDictionaryKey("IDReplyComment"): try self.encode(self.IDReplyComment),
+                    self.getDictionaryKey("isEditable"): try self.encode(self.isEditable),
                     self.getDictionaryKey("status"): try self.encode(self.status),
                     self.getDictionaryKey("body"): try self.encode(self.body),
                     self.getDictionaryKey("likes"): try self.encode(self.likes),
                     self.getDictionaryKey("dateCreated"): try self.encode(self.dateCreated),
                     self.getDictionaryKey("dateUpdated"): try self.encode(self.dateUpdated),
                 ]
-            }
-        }
-
-        public final class Empty: ContractEntity {
-            public static let keyDictionary: [String: String] = [
-                :
-            ]
-
-            public init(
-            ) {
-            }
-
-            public static func initWithValidation(from _: Entita.Dict, requestInfo: LGNCore.RequestInfo) -> Future<Empty> {
-                let eventLoop = requestInfo.eventLoop
-
-                var validatorFutures: [String: [Future<(String, ValidatorError?)>]] = [
-                    :
-                ]
-
-                do {
-                } catch {
-                    return eventLoop.makeFailedFuture(error)
-                }
-
-                return self
-                    .reduce(validators: validatorFutures, on: eventLoop)
-                    .flatMapThrowing { errors in
-                        guard errors.count == 0 else {
-                            throw LGNC.E.DecodeError(errors)
-                        }
-                        return self.init()
-                    }
-            }
-
-            public convenience init(from _: Entita.Dict) throws {
-                self.init()
-            }
-
-            public func getDictionary() throws -> Entita.Dict {
-                return [:]
             }
         }
 

@@ -55,6 +55,7 @@ public struct CreateController {
                     userName: user.map { $0.username },
                     IDPost: comment.IDPost,
                     IDReplyComment: comment.IDReplyComment,
+                    isEditable: comment.isEditable,
                     status: comment.status.rawValue,
                     body: comment.body,
                     likes: Models.Like.getLikesFor(comment: comment, on: eventLoop),

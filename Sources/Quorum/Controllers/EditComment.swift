@@ -42,7 +42,7 @@ public struct EditController {
                                 return (comment, transaction)
                             }
                             guard status != .NotCommentable else {
-                                throw LGNC.ContractError.GeneralError("Comment is not aditable anymore", 403)
+                                throw LGNC.ContractError.GeneralError("Comment is not editable anymore", 403)
                             }
                             guard comment.status == .published else {
                                 throw LGNC.ContractError.GeneralError("Comment is not approved yet", 403)
@@ -50,7 +50,7 @@ public struct EditController {
                             guard user.ID == comment.IDUser else {
                                 throw LGNC.ContractError.GeneralError("It's not your comment", 403)
                             }
-                            guard comment.dateCreated.timeIntervalSince < COMMENT_EDITABLE_TIME else {
+                            guard comment.isEditable else {
                                 throw LGNC.ContractError.GeneralError("This comment is not editable anymore", 408)
                             }
                             guard comment.dateUpdated.timeIntervalSince > COMMENT_EDIT_COOLDOWN else {
@@ -74,6 +74,7 @@ public struct EditController {
                         userName: userFuture.map { $0.username },
                         IDPost: comment.IDPost,
                         IDReplyComment: comment.IDReplyComment,
+                        isEditable: comment.isEditable,
                         status: comment.status.rawValue,
                         body: comment.body,
                         likes: Models.Like.getLikesFor(comment: comment, on: eventLoop),

@@ -40,6 +40,10 @@ public extension Models {
         public let dateCreated: Date
         public var dateUpdated: Date
 
+        public var isEditable: Bool {
+            return self.dateCreated.timeIntervalSince < COMMENT_EDITABLE_TIME
+        }
+
         public init(
             ID: Int,
             IDUser: User.Identifier,
