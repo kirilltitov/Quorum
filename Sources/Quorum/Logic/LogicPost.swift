@@ -81,7 +81,7 @@ public extension Logic {
                                 return true
                             }
                             // if comment isn't published or hidden, don't show it
-                            if comment.status == .hidden || comment.status == .pending {
+                            if comment.status => [.pending, .hidden, .banHidden] {
                                 return false
                             }
                             return true

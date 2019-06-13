@@ -83,6 +83,11 @@ public extension EventLoopGroup {
     }
 }
 
+infix operator =>
+public func =><T: RawRepresentable & Equatable>(lhs: T, rhs: [T]) -> Bool {
+    return rhs.contains(lhs)
+}
+
 //MARK:- Entita2FDB
 extension E2.ID: FDBTuplePackable where Value == UUID {
     public func pack() -> Bytes {
