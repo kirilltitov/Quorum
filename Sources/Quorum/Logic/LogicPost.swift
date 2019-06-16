@@ -80,6 +80,10 @@ public extension Logic {
                             if comment.IDUser == maybeUser?.ID {
                                 return true
                             }
+                            // author should see own hidden comments as published
+                            if comment.status == .hidden && comment.IDUser == maybeUser?.ID {
+                                return true
+                            }
                             // if comment isn't published or hidden, don't show it
                             if comment.status => [.pending, .hidden, .banHidden] {
                                 return false
@@ -87,6 +91,10 @@ public extension Logic {
                             return true
                         }
                         .map { ID, comment in
+                            // author should see own hidden comments as published
+                            if comment.status == .hidden && comment.IDUser == maybeUser?.ID {
+                                comment.status = .published
+                            }
                             if comment.status == .deleted {
                                 comment.body = ""
                             }

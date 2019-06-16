@@ -13,7 +13,7 @@ public extension Models {
             /// Published but deleted comment, displayed as "Comment has been deleted"
             case deleted
 
-            /// Published but deleted comment, isn't displayed at all.
+            /// Published but deleted comment, isn't displayed at all for everyone except author
             /// All subcomments must be in `.hidden` status as well.
             case hidden
 

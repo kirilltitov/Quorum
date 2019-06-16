@@ -21,12 +21,12 @@ public struct CommentsController {
                 .flatMap { maybeUser in
                     Logic.Post.getCommentsFor(ID: request.IDPost, as: maybeUser, on: eventLoop)
                 }
-                .flatMap { (commentsWithLikes: [Logic.Post.CommentWithLikes]) -> Future<([Logic.Post.CommentWithLikes], [Models.User.Identifier: Models.User])> in
+                .flatMap {
+                    (commentsWithLikes: [Logic.Post.CommentWithLikes])
+                    -> Future<([Logic.Post.CommentWithLikes], [Models.User.Identifier: Models.User])> in
                     EventLoopFuture<[Models.User.Identifier: Models.User]>.reduce(
                         into: [:],
-                        Set(commentsWithLikes.map { $0.comment.IDUser }).map {
-                            Logic.User.get(by: $0, on: eventLoop)
-                        },
+                        Set(commentsWithLikes.map { $0.comment.IDUser }).map { Logic.User.get(by: $0, on: eventLoop) },
                         on: eventLoop,
                         { users, _user in
                             let user = _user ?? Models.User.unknown
