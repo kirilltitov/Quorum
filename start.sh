@@ -14,6 +14,8 @@ docker-compose -f $DOCKER_COMPOSE_FILE stop service
 docker-compose -f $DOCKER_COMPOSE_FILE rm -f service
 docker-compose -f $DOCKER_COMPOSE_FILE up -d
 
+echo "Waiting 2 seconds for service to warmup"
+
 sleep 2
 
 if [ -z `docker ps -q --no-trunc | grep $(docker-compose ps -q service)` ]; then

@@ -95,7 +95,7 @@ public extension Logic {
                             if comment.status == .hidden && comment.IDUser == maybeUser?.ID {
                                 comment.status = .published
                             }
-                            if comment.status == .deleted {
+                            if comment.status == .deleted && maybeUser?.isAtLeastModerator == false {
                                 comment.body = ""
                             }
                             return CommentWithLikes(comment)
