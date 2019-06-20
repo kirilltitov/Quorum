@@ -52,6 +52,10 @@ public struct Services {
                     visibility: Services.Quorum.Contracts.PendingComments.visibility,
                     transports: Services.Quorum.Contracts.PendingComments.transports
                 ),
+                "PendingCommentsCount": (
+                    visibility: Services.Quorum.Contracts.PendingCommentsCount.visibility,
+                    transports: Services.Quorum.Contracts.PendingCommentsCount.transports
+                ),
                 "RejectComment": (
                     visibility: Services.Quorum.Contracts.RejectComment.visibility,
                     transports: Services.Quorum.Contracts.RejectComment.transports

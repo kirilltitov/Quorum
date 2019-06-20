@@ -176,7 +176,7 @@ public extension Logic {
 
         public static func reject(comment: Models.Comment, on eventLoop: EventLoop) -> Future<Void> {
             guard comment.status == .pending else {
-                return eventLoop.makeSucceededFuture(())
+                return eventLoop.makeFuture()
             }
 
             return comment

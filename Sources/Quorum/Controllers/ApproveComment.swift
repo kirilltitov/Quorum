@@ -19,7 +19,7 @@ public struct ApproveCommentController {
                     guard user.accessLevel == .Admin || user.accessLevel == .Moderator else {
                         throw LGNC.ContractError.GeneralError("Not authorized", 403)
                     }
-                    return ()
+                    return
                 }
                 .flatMap { Logic.Comment.getThrowing(by: request.IDComment, on: eventLoop) }
                 .flatMap { comment in Logic.Comment.approve(comment: comment, on: eventLoop) }
