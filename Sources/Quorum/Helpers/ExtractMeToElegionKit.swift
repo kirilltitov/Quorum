@@ -93,6 +93,12 @@ public extension EventLoopGroup {
     }
 }
 
+public extension String {
+    @inlinable var bool: Bool {
+        return self == "yes" || self == "true" || self == "1" || self == "YES" || self == "TRUE"
+    }
+}
+
 infix operator =>
 public func =><T: RawRepresentable & Equatable>(lhs: T, rhs: [T]) -> Bool {
     return rhs.contains(lhs)

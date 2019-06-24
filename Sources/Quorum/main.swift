@@ -42,6 +42,7 @@ public enum ConfigKeys: String, AnyConfigKey {
     case LGNS_PORT
     case HTTP_PORT
     case PRIVATE_IP
+    case REGISTER_TO_CONSUL
 }
 
 let config = try LGNCore.Config<ConfigKeys>(
@@ -57,6 +58,7 @@ let config = try LGNCore.Config<ConfigKeys>(
         .LGNS_PORT: "1712",
         .HTTP_PORT: "8081",
         .PRIVATE_IP: "127.0.0.1",
+        .REGISTER_TO_CONSUL: "false",
     ]
 )
 
@@ -76,8 +78,8 @@ let COMMENT_KEY = "Comment"
 let PORTAL_ID = config[.REALM]
 let AUTHOR_PORT = Int(config[.AUTHOR_LGNS_PORT])!
 
-public extension LGNS.Address {
-    static func node(service: String, name: String, realm: String, port: Int) -> LGNS.Address {
+public extension LGNCore.Address {
+    static func node(service: String, name: String, realm: String, port: Int) -> LGNCore.Address {
         return .ip(host: "\(name).\(service)-\(realm).service.elegion", port: port)
     }
 }
@@ -116,7 +118,38 @@ try fdb.connect()
 let subspaceMain = FDB.Subspace(PORTAL_ID, SERVICE_ID)
 
 let requiredBitmask: LGNP.Message.ControlBitmask = [.signatureSHA1, /*.encrypted,*/ .contentTypeMsgPack]
-let client = LGNS.Client(cryptor: cryptor, controlBitmask: requiredBitmask, eventLoopGroup: eventLoopGroup)
+
+let client: LGNCClient
+if APP_ENV == .local {
+    client = LGNC.Client.Loopback(eventLoopGroup: eventLoopGroup)
+
+    Services.Author.Contracts.UserInfoInternal.guarantee { (request, requestInfo) throws -> Services.Shared.User in
+        Services.Shared.User(
+            ID: defaultUser.string,
+            username: "teonoman",
+            email: "teo.noman@gmail.com",
+            password: "sdfdfg",
+            sex: "Male",
+            isBanned: false,
+            ip: "195.248.161.225",
+            country: "RU",
+            dateUnsuccessfulLogin: Date.distantPast.formatted,
+            dateSignup: Date().formatted,
+            dateLogin: Date().formatted,
+            authorName: "viktor",
+            accessLevel: "Admin"
+        )
+    }
+} else {
+    client = LGNC.Client.Dynamic(
+        eventLoopGroup: eventLoopGroup,
+        clientLGNS: LGNS.Client(
+            cryptor: cryptor,
+            controlBitmask: requiredBitmask,
+            eventLoopGroup: eventLoopGroup
+        )
+    )
+}
 
 runMigrations(migrations, on: fdb)
 
@@ -140,7 +173,7 @@ let LGNS_PORT = Int(config[.LGNS_PORT])!
 let HTTP_PORT = Int(config[.HTTP_PORT])!
 
 DispatchQueue(label: "games.1711.server.http", qos: .userInitiated, attributes: .concurrent).async(group: dispatchGroup) {
-    let address: LGNC.HTTP.Server.BindTo = .ip(host: HOST, port: HTTP_PORT)
+    let address: LGNCore.Address = .ip(host: HOST, port: HTTP_PORT)
     let promise: Promise<Void> = eventLoopGroup.eventLoop.makePromise()
     promise.futureResult.whenComplete { _ in
         defaultLogger.info("Quorum HTTP service on portal ID \(PORTAL_ID) started at \(address)")
@@ -153,7 +186,7 @@ DispatchQueue(label: "games.1711.server.http", qos: .userInitiated, attributes: 
 }
 
 DispatchQueue(label: "games.1711.server.lgns", qos: .userInitiated, attributes: .concurrent).async(group: dispatchGroup) {
-    let address: LGNS.Address = .ip(host: HOST, port: LGNS_PORT)
+    let address: LGNCore.Address = .ip(host: HOST, port: LGNS_PORT)
     let promise: Promise<Void> = eventLoopGroup.eventLoop.makePromise()
     promise.futureResult.whenComplete { _ in
         defaultLogger.info("Quorum LGNS service on portal ID \(PORTAL_ID) started at \(address)")
@@ -170,7 +203,9 @@ DispatchQueue(label: "games.1711.server.lgns", qos: .userInitiated, attributes: 
     )
 }
 
-try registerToConsul()
+if config[.REGISTER_TO_CONSUL].bool == true {
+    try registerToConsul()
+}
 
 let trap: @convention(c) (Int32) -> Void = { s in
     print("Received signal \(s)")
