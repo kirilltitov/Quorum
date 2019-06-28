@@ -109,7 +109,9 @@ func mark(_ name: String, file: String = #file, line: UInt = #line) {
     defaultLogger.info("[Mark] \(name): \(Date().timeIntervalSince1970)", file: file, line: line)
 }
 
-let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount.clamped(min: 4))
+let eventLoopCount = System.coreCount.clamped(min: 4)
+let eventLoopGroup: EventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: eventLoopCount)
+
 let cryptor = try LGNP.Cryptor(salt: config[.SALT], key: config[.KEY])
 
 let fdb = FDB(clusterFile: "/opt/foundationdb/fdb.cluster")
@@ -172,7 +174,7 @@ let HOST = "0.0.0.0"
 let LGNS_PORT = Int(config[.LGNS_PORT])!
 let HTTP_PORT = Int(config[.HTTP_PORT])!
 
-DispatchQueue(label: "games.1711.server.http", qos: .userInitiated, attributes: .concurrent).async(group: dispatchGroup) {
+DispatchQueue(label: "games.1711.server.http", qos: .userInteractive, attributes: .concurrent).async(group: dispatchGroup) {
     let address: LGNCore.Address = .ip(host: HOST, port: HTTP_PORT)
     let promise: Promise<Void> = eventLoopGroup.eventLoop.makePromise()
     promise.futureResult.whenComplete { _ in
@@ -185,7 +187,7 @@ DispatchQueue(label: "games.1711.server.http", qos: .userInitiated, attributes: 
     )
 }
 
-DispatchQueue(label: "games.1711.server.lgns", qos: .userInitiated, attributes: .concurrent).async(group: dispatchGroup) {
+DispatchQueue(label: "games.1711.server.lgns", qos: .userInteractive, attributes: .concurrent).async(group: dispatchGroup) {
     let address: LGNCore.Address = .ip(host: HOST, port: LGNS_PORT)
     let promise: Promise<Void> = eventLoopGroup.eventLoop.makePromise()
     promise.futureResult.whenComplete { _ in

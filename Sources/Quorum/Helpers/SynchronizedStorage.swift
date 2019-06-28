@@ -6,7 +6,7 @@ public protocol SyncStorage {
     associatedtype Key: Hashable
     associatedtype Value
 
-    var queue: DispatchQueue { get }
+    var eventLoops: [EventLoop] { get }
 
     func getOrSet(
         by key: Key,
@@ -25,95 +25,80 @@ public protocol SyncStorage {
     func remove0(by key: Key) -> Value?
 }
 
-extension SyncStorage {
-    public static func getQueue() -> DispatchQueue {
-        return DispatchQueue(
-            label: "games.1711.SyncStorage.\(Self.self)",
-            qos: .userInitiated,
-            attributes: .concurrent
-        )
+fileprivate func initEventLoops(from eventLoopGroup: EventLoopGroup, eventLoopCount: Int) -> [EventLoop] {
+    return (0 ..< eventLoopCount).map { _ in eventLoopGroup.next() }
+}
+
+public extension SyncStorage {
+    func getEventLoop(key: Key) -> EventLoop {
+        return self.eventLoops[Int(key.hashValue.magnitude % UInt(self.eventLoops.count))]
     }
 
-    public func has0(key: Key) -> Bool {
+    func has0(key: Key) -> Bool {
         return self.get0(by: key) != nil
     }
 
-    public func has(key: Key, on eventLoop: EventLoop) -> Future<Bool> {
-        let promise: Promise<Bool> = eventLoop.makePromise()
-
-        self.queue.async {
-            promise.succeed(self.has0(key: key))
-        }
-
-        return promise.futureResult
+    func has(key: Key, on eventLoop: EventLoop) -> Future<Bool> {
+        return self
+            .getEventLoop(key: key)
+            .makeFuture()
+            .map { self.has0(key: key) }
+            .hop(to: eventLoop)
     }
 
-    public func get(by key: Key, on eventLoop: EventLoop) -> Future<Value?> {
-        let promise: Promise<Value?> = eventLoop.makePromise()
-
-        self.queue.async {
-            promise.succeed(self.get0(by: key))
-        }
-
-        return promise.futureResult
+    func get(by key: Key, on eventLoop: EventLoop) -> Future<Value?> {
+        return self
+            .getEventLoop(key: key)
+            .makeFuture()
+            .map { self.get0(by: key) }
+            .hop(to: eventLoop)
     }
 
-    public func set(by key: Key, value: Value, on eventLoop: EventLoop) -> Future<Void> {
-        let promise: Promise<Void> = eventLoop.makePromise()
-
-        self.queue.async(flags: .barrier) {
-            self.set0(by: key, value: value)
-            promise.succeed(())
-        }
-
-        return promise.futureResult
+    func set(by key: Key, value: Value, on eventLoop: EventLoop) -> Future<Void> {
+        return self
+            .getEventLoop(key: key)
+            .makeFuture()
+            .map { self.set0(by: key, value: value) }
+            .hop(to: eventLoop)
     }
 
-    public func getOrSet(
+    func getOrSet(
         by key: Key,
         on eventLoop: EventLoop,
         _ getter: @escaping () -> EventLoopFuture<Value?>
     ) -> EventLoopFuture<Value?> {
-        let promise: Promise<Value?> = eventLoop.makePromise()
 
-        self.queue.async(flags: .barrier) {
-            if let value = self.get0(by: key) {
-                promise.succeed(value)
-                return
-            }
+        let keyEventLoop = self.getEventLoop(key: key)
 
-            do {
-                let result = try getter().wait()
-                if let result = result {
-                    self.set0(by: key, value: result)
+        return keyEventLoop
+            .makeSucceededFuture()
+            .flatMapThrowing {
+                if let value = self.get0(by: key) {
+                    return keyEventLoop.makeSucceededFuture(value)
                 }
-                promise.succeed(result)
-            } catch {
-                promise.fail(error)
-            }
-        }
 
-        return promise.futureResult
+                return getter().map { maybeResult in
+                    if let result = maybeResult {
+                        self.set0(by: key, value: result)
+                    }
+                    return maybeResult
+                }
+            }
+            .hop(to: eventLoop)
     }
 
-    @discardableResult public func remove(by key: Key, on eventLoop: EventLoop) -> Future<Value?> {
-        let promise: Promise<Value?> = eventLoop.makePromise()
-
-        self.queue.async(flags: .barrier) {
-            promise.succeed(self.remove0(by: key))
-        }
-
-        return promise.futureResult
+    @discardableResult func remove(by key: Key, on eventLoop: EventLoop) -> Future<Value?> {
+        return self
+            .getEventLoop(key: key)
+            .makeFuture()
+            .map { self.remove0(by: key) }
+            .hop(to: eventLoop)
     }
 }
 
 public final class SyncDict<Key: Hashable, Value>: SyncStorage {
-    public let queue: DispatchQueue
+    public let eventLoops: [EventLoop] = []
     private var storage: [Key: Value] = [:]
-
-    public init(queue: DispatchQueue = SyncDict.getQueue()) {
-        self.queue = queue
-    }
 
     public func get0(by key: Key) -> Value? {
         return self.storage[key]
@@ -220,11 +205,11 @@ final public class CacheLRU<Key: Hashable, Value>: SyncStorage {
     private let list = DoublyLinkedList<Box>()
     private var nodesDict: [Key: DoublyLinkedList<Box>.Node] = [:]
 
-    public let queue: DispatchQueue
+    public let eventLoops: [EventLoop]
 
-    public init(capacity: Int, queue: DispatchQueue = CacheLRU.getQueue()) {
+    public init(capacity: Int, eventLoopGroup: EventLoopGroup, eventLoopCount: Int) {
+        self.eventLoops = initEventLoops(from: eventLoopGroup, eventLoopCount: eventLoopCount)
         self.capacity = max(0, capacity)
-        self.queue = queue
     }
 
     public func set0(by key: Key, value: Value) {

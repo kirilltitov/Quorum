@@ -5,8 +5,8 @@ import LGNP
 import LGNS
 import NIO
 
-public struct Services {
-    public struct Shared {
+public enum Services {
+    public enum Shared {
         public final class FieldMapping: ContractEntity {
             public static let keyDictionary: [String: String] = [
                 :

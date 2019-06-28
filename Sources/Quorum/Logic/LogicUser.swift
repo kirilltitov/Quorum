@@ -10,9 +10,13 @@ public extension Logic {
         public enum E: Error {
             case UserNotFound
         }
-        
-        private static let usersLRU: CacheLRU<E2.UUID, Models.User> = CacheLRU(capacity: 1000)
-        //private static let usersLRU = CacheLRU<E2.UUID, Models.User>()
+
+        private static let usersLRU: CacheLRU<E2.UUID, Models.User> = CacheLRU(
+            capacity: 1000,
+            eventLoopGroup: eventLoopGroup,
+            eventLoopCount: eventLoopCount
+        )
+
         private static let errorNotAuthorized = LGNC.ContractError.GeneralError("Not authorized", 403)
 
         public static func authorize(token: String, on eventLoop: EventLoop) -> Future<Models.User> {
@@ -34,7 +38,6 @@ public extension Logic {
                 )
                 .flatMapErrorThrowing { error in
                     if case LGNC.ContractError.RemoteContractExecutionFailed = error {
-//                        return Services.Author.Contracts.Authenticate.Response(IDUser: nil)
                         return .init(IDUser: nil)
                     }
                     throw error
