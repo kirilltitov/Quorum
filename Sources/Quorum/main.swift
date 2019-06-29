@@ -73,6 +73,11 @@ guard let logLevel = Logger.Level(string: config[.LOG_LEVEL]) else {
 LGNCore.Logger.logLevel = logLevel
 defaultLogger.notice("Log level set to '\(logLevel)'")
 
+LGNCore.i18n.translator = LGNCore.i18n.FactoryTranslator(
+    phrases: phrases,
+    allowedLocales: [.enUS, .ruRU]
+)
+
 let SERVICE_ID = "Quorum"
 let POST_KEY = "Post"
 let COMMENT_KEY = "Comment"

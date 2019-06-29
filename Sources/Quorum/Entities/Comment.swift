@@ -4,6 +4,12 @@ import Entita2FDB
 import NIO
 import Generated
 
+extension Date {
+    func contractFormatted(locale: LGNCore.i18n.Locale) -> String {
+        return Logic.Comment.format(date: self, locale: locale)
+    }
+}
+
 public extension Models {
     final class Comment: ModelInt, Entita2FDBIndexedEntity {
         public enum Status: String, Codable {
@@ -90,8 +96,8 @@ public extension Models {
                 status: self.status.rawValue,
                 body: self.status == .deleted ? "" : self.body,
                 likes: loadLikes ? Like.getLikesFor(comment: self, on: eventLoop) : eventLoop.makeSucceededFuture(0),
-                dateCreated: self.dateCreated.formatted,
-                dateUpdated: self.dateUpdated.formatted
+                dateCreated: self.dateCreated.contractFormatted(locale: requestInfo.locale),
+                dateUpdated: self.dateUpdated.contractFormatted(locale: requestInfo.locale)
             )
         }
 

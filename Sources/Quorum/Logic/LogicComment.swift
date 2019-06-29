@@ -1,12 +1,38 @@
 import Foundation
 import Generated
+import LGNCore
 import LGNC
 import Entita2
 import FDB
 import NIO
 
 public extension Logic {
-    class Comment {
+    enum Comment {
+        fileprivate static let defaultFormatter: DateFormatter = {
+            let formatter = DateFormatter()
+
+            formatter.dateStyle = .medium
+            formatter.timeStyle = .short
+            formatter.locale = LGNCore.i18n.Locale.enUS.foundationLocale
+
+            return formatter
+        }()
+
+        fileprivate static let formatters: [LGNCore.i18n.Locale: DateFormatter] = .init(
+            uniqueKeysWithValues: Array<LGNCore.i18n.Locale>([.enUS, .ruRU]).map { locale in
+                let formatter = DateFormatter()
+                formatter.dateStyle = .medium
+                formatter.timeStyle = .short
+                formatter.locale = locale.foundationLocale
+
+                return (locale, formatter)
+            }
+        )
+
+        public static func format(date: Date, locale: LGNCore.i18n.Locale) -> String {
+            return (self.formatters[locale] ?? defaultFormatter).string(from: date)
+        }
+
         public static func get(by ID: Models.Comment.Identifier, on eventLoop: EventLoop) -> Future<Models.Comment?> {
             return Models.Comment.getUsingRefID(by: ID, on: eventLoop)
         }

@@ -47,8 +47,8 @@ public struct CommentsController {
                                 status: comment.status.rawValue,
                                 body: comment.body,
                                 likes: commentWithLikes.likes,
-                                dateCreated: comment.dateCreated.formatted,
-                                dateUpdated: comment.dateUpdated.formatted
+                                dateCreated: comment.dateCreated.contractFormatted(locale: info.locale),
+                                dateUpdated: comment.dateUpdated.contractFormatted(locale: info.locale)
                             )
                         }
                     )
