@@ -26,7 +26,7 @@ public struct EditController {
         ) -> Future<Contract.Response> {
             let eventLoop = info.eventLoop
             
-            let userFuture = Logic.User.authorize(token: request.token, on: eventLoop)
+            let userFuture = Logic.User.authorize(token: request.token, requestInfo: info)
             
             return userFuture
                 .flatMap { (user: Models.User) -> Future<(Models.Comment, FDB.Transaction)> in
@@ -70,7 +70,7 @@ public struct EditController {
                         on: eventLoop
                     )
                 }
-                .flatMap { comment in comment.getContractComment(on: eventLoop) }
+                .flatMap { comment in comment.getContractComment(requestInfo: info) }
                 .flatMapIfErrorThrowing { error in
                     if case FDB.Error.transactionRetry = error {
                         return contractRoutine(request: request, info: info)

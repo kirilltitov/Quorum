@@ -72,7 +72,7 @@ public extension SyncStorage {
 
         return keyEventLoop
             .makeSucceededFuture()
-            .flatMapThrowing {
+            .flatMap {
                 if let value = self.get0(by: key) {
                     return keyEventLoop.makeSucceededFuture(value)
                 }
@@ -252,4 +252,3 @@ final public class CacheLRU<Key: Hashable, Value>: SyncStorage {
         return node.value.value
     }
 }
-

@@ -1,5 +1,6 @@
 import Foundation
 import Generated
+import LGNCore
 import LGNC
 import Entita2
 import FDB
@@ -19,7 +20,12 @@ public extension Logic {
 
         private static let errorNotAuthorized = LGNC.ContractError.GeneralError("Not authorized", 403)
 
-        public static func authorize(token: String, on eventLoop: EventLoop) -> Future<Models.User> {
+        public static func authorize(
+            token: String,
+            requestInfo: LGNCore.RequestInfo
+        ) -> Future<Models.User> {
+            let eventLoop = requestInfo.eventLoop
+
             let exploded = token.split(separator: ".", maxSplits: 2).map { String($0) }
             guard exploded.count == 3 else {
                 return eventLoop.makeFailedFuture(self.errorNotAuthorized)
@@ -34,7 +40,8 @@ public extension Logic {
                         port: AUTHOR_PORT
                     ),
                     with: .init(portal: exploded[0], token: exploded[2]),
-                    using: client
+                    using: client,
+                    requestInfo: requestInfo
                 )
                 .flatMapErrorThrowing { error in
                     if case LGNC.ContractError.RemoteContractExecutionFailed = error {
@@ -49,7 +56,7 @@ public extension Logic {
                     guard let IDUser = Models.User.Identifier(rawIDUser) else {
                         throw LGNC.ContractError.GeneralError("Invalid ID User \(rawIDUser)", 403)
                     }
-                    return self.get(by: IDUser, on: eventLoop)
+                    return self.get(by: IDUser, requestInfo: requestInfo)
                 }
                 .mapThrowing { (maybeUser: Models.User?) in
                     guard let user = maybeUser else {
@@ -59,23 +66,38 @@ public extension Logic {
                 }
         }
 
-        public static func maybeAuthorize(token: String?, on eventLoop: EventLoop) -> Future<Models.User?> {
-            guard let _token = token else {
-                return eventLoop.makeSucceededFuture(nil)
+        public static func maybeAuthorize(token: String?, requestInfo: LGNCore.RequestInfo) -> Future<Models.User?> {
+            guard let token = token else {
+                return requestInfo.eventLoop.makeSucceededFuture(nil)
             }
+
             return self
-                .authorize(token: _token, on: eventLoop)
+                .authorize(token: token, requestInfo: requestInfo)
                 .map { Optional($0) }
         }
 
-        public static func refresh(ID: Models.User.Identifier, on eventLoop: EventLoop) -> Future<Void> {
-            self.usersLRU.remove(by: ID, on: eventLoop)
-            return self
-                .get(by: ID, on: eventLoop)
-                .map { _ in ()}
+        public static func get(by ID: Models.User.Identifier) -> Future<Models.User?> {
+            return self.get(
+                by: ID,
+                requestInfo: RequestInfo(
+                    remoteAddr: config[.PRIVATE_IP],
+                    clientAddr: config[.PRIVATE_IP],
+                    userAgent: "Quorum",
+                    locale: .enUS,
+                    uuid: UUID(),
+                    isSecure: true,
+                    transport: .LGNS,
+                    eventLoop: eventLoopGroup.eventLoop
+                )
+            )
         }
-        
-        public static func get(by ID: Models.User.Identifier, on eventLoop: EventLoop) -> Future<Models.User?> {
+
+        public static func get(
+            by ID: Models.User.Identifier,
+            requestInfo: LGNCore.RequestInfo
+        ) -> Future<Models.User?> {
+            let eventLoop = requestInfo.eventLoop
+
             return self.usersLRU.getOrSet(by: ID, on: eventLoop) {
                 Services.Author.Contracts.UserInfoInternal
                     .execute(
@@ -86,7 +108,8 @@ public extension Logic {
                             port: AUTHOR_PORT
                         ),
                         with: .init(ID: ID.string),
-                        using: client
+                        using: client,
+                        requestInfo: requestInfo
                     )
                     .flatMap { (user: Services.Author.Contracts.UserInfoInternal.Response) in
                         Models.User

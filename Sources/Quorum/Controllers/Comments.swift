@@ -8,6 +8,7 @@ import NIO
 
 public struct CommentsController {
     typealias Contract = Services.Quorum.Contracts.Comments
+    typealias CommentsWithLikesAndUsers = ([Logic.Post.CommentWithLikes], [Models.User.Identifier: Models.User])
 
     public static func setup() {
         Contract.guarantee { (
@@ -16,37 +17,24 @@ public struct CommentsController {
         ) -> Future<Contract.Response> in
             let eventLoop = info.eventLoop
 
-            info.logger.debug("[MARK] [Entered contract] \(Date().timeIntervalSince1970)")
-
             return Logic.User
-                .maybeAuthorize(token: request.token, on: eventLoop)
-                .flatMap { maybeUser in
-                    info.logger.debug("[MARK] [Authorized] \(Date().timeIntervalSince1970)")
-                    return Logic.Post.getCommentsFor(ID: request.IDPost, as: maybeUser, on: eventLoop)
-                }
-                .flatMap {
-                    (commentsWithLikes: [Logic.Post.CommentWithLikes])
-                    -> Future<([Logic.Post.CommentWithLikes], [Models.User.Identifier: Models.User])> in
-                    info.logger.debug("[MARK] [Got comments] \(Date().timeIntervalSince1970)")
-
-                    let profiler = LGNCore.Profiler.begin()
-
-                    let result =  EventLoopFuture<[Models.User.Identifier: Models.User]>.reduce(
+                .maybeAuthorize(token: request.token, requestInfo: info)
+                .flatMap { maybeUser in Logic.Post.getCommentsFor(ID: request.IDPost, as: maybeUser, on: eventLoop) }
+                .flatMap { (commentsWithLikes: [Logic.Post.CommentWithLikes]) -> Future<CommentsWithLikesAndUsers> in
+                    EventLoopFuture<[Models.User.Identifier: Models.User]>.reduce(
                         into: [:],
-                        Set(commentsWithLikes.map { $0.comment.IDUser }).map { Logic.User.get(by: $0, on: eventLoop) },
+                        Set(
+                            commentsWithLikes.map { $0.comment.IDUser }
+                        ).map { Logic.User.get(by: $0, requestInfo: info) },
                         on: eventLoop,
                         { users, _user in
                             let user = _user ?? Models.User.unknown
                             users[user.ID] = user
-                            info.logger.debug("[MARK] [Populated users] \(profiler.end())")
                         }
                     ).map { users in (commentsWithLikes, users) }
-
-                    return result
                 }
                 .map { commentsWithLikes, users -> Contract.Response in
-                    info.logger.debug("[MARK] [Returning result] \(Date().timeIntervalSince1970)")
-                    return Contract.Response(
+                    Contract.Response(
                         comments: commentsWithLikes.map { commentWithLikes in
                             let comment = commentWithLikes.comment
                             return .init(

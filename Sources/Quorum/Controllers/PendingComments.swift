@@ -13,7 +13,7 @@ class PendingCommentsController {
             let eventLoop = info.eventLoop
 
             return Logic.User
-                .authorize(token: request.token, on: eventLoop)
+                .authorize(token: request.token, requestInfo: info)
                 .mapThrowing { user in
                     guard user.isAtLeastModerator else {
                         throw LGNC.ContractError.GeneralError("Not authorized", 403)
@@ -24,7 +24,7 @@ class PendingCommentsController {
                 .flatMap { comments in
                     Future.reduce(
                         into: [Services.Shared.Comment](),
-                        comments.map { $0.getContractComment(on: eventLoop) },
+                        comments.map { $0.getContractComment(requestInfo: info) },
                         on: eventLoop
                     ) { $0.append($1) }
                 }
@@ -46,7 +46,7 @@ class PendingCommentsCountController {
             let eventLoop = info.eventLoop
 
             return Logic.User
-                .authorize(token: request.token, on: eventLoop)
+                .authorize(token: request.token, requestInfo: info)
                 .mapThrowing { user in
                     guard user.isAtLeastModerator else {
                         throw LGNC.ContractError.GeneralError("Not authorized", 403)

@@ -14,7 +14,7 @@ public struct ApproveCommentController {
             let eventLoop = info.eventLoop
 
             return Logic.User
-                .authorize(token: request.token, on: eventLoop)
+                .authorize(token: request.token, requestInfo: info)
                 .mapThrowing { user in
                     guard user.accessLevel == .Admin || user.accessLevel == .Moderator else {
                         throw LGNC.ContractError.GeneralError("Not authorized", 403)
@@ -23,7 +23,7 @@ public struct ApproveCommentController {
                 }
                 .flatMap { Logic.Comment.getThrowing(by: request.IDComment, on: eventLoop) }
                 .flatMap { comment in Logic.Comment.approve(comment: comment, on: eventLoop) }
-                .flatMap { comment in comment.getContractComment(on: eventLoop)}
+                .flatMap { comment in comment.getContractComment(requestInfo: info)}
         }
 
         Contact.guarantee(contractRoutine)

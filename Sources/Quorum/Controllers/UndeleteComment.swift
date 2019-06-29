@@ -14,7 +14,7 @@ class UndeleteController {
             let eventLoop = info.eventLoop
 
             return Logic.User
-                .authorize(token: request.token, on: eventLoop)
+                .authorize(token: request.token, requestInfo: info)
                 .flatMap { user in
                     Logic.Comment
                         .getThrowing(by: request.IDComment, on: eventLoop)
@@ -32,7 +32,7 @@ class UndeleteController {
                     }
                     return Logic.Comment.undelete(comment: comment, on: eventLoop)
                 }
-                .flatMap { comment in comment.getContractComment(on: eventLoop) }
+                .flatMap { comment in comment.getContractComment(requestInfo: info) }
         }
 
         Contract.guarantee(contractRoutine)

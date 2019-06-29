@@ -92,7 +92,11 @@ public extension Logic {
                         }
                         .map { ID, comment in
                             // author should see own hidden comments as published
-                            if comment.status == .hidden && comment.IDUser == maybeUser?.ID {
+                            if 1 == 1
+                                && comment.status == .hidden
+                                && comment.IDUser == maybeUser?.ID
+                                && maybeUser?.isAtLeastModerator == false
+                            {
                                 comment.status = .published
                             }
                             if comment.status == .deleted && maybeUser?.isAtLeastModerator == false {

@@ -36,7 +36,7 @@ public struct CreateController {
 
         Contract.guarantee { (request: Contract.Request, info: LGNCore.RequestInfo) -> Future<Contract.Response> in
             let eventLoop = info.eventLoop
-            let user = Logic.User.authorize(token: request.token, on: eventLoop)
+            let user = Logic.User.authorize(token: request.token, requestInfo: info)
 
             return Models.Comment.await(
                 on: eventLoop,
@@ -48,7 +48,7 @@ public struct CreateController {
             )
             .flatMap { comment in user.map { (comment, $0) } }
             .flatMap { comment, user in Logic.Comment.insert(comment: comment, as: user, on: eventLoop) }
-            .flatMap { comment in comment.getContractComment(on: eventLoop) }
+            .flatMap { comment in comment.getContractComment(requestInfo: info) }
         }
     }
 }

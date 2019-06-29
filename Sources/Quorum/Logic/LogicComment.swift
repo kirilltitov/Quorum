@@ -84,7 +84,7 @@ public extension Logic {
         public static func hide(comment: Models.Comment, on eventLoop: EventLoop) -> Future<Void> {
             return eventLoop
                 .makeSucceededFuture()
-                .flatMap { () -> EventLoopFuture<Models.Comment?> in
+                .flatMap { () -> Future<Models.Comment?> in
                     guard let IDReplyComment = comment.IDReplyComment else {
                         return eventLoop.makeSucceededFuture(nil)
                     }

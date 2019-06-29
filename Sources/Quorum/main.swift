@@ -6,8 +6,9 @@ import LGNP
 import LGNS
 import Entita
 import Entita2FDB
-import NIO
-import MessagePack
+
+public typealias SQuorum = Services.Quorum
+public typealias RequestInfo = LGNCore.RequestInfo
 
 public struct Models {}
 public struct Logic {}
@@ -91,8 +92,6 @@ let COMMENT_EDIT_COOLDOWN: TimeInterval = 10
 let defaultUser = E2.UUID("00000000-1637-0034-1711-000000000000")!
 let adminUserID = defaultUser
 
-typealias SQuorum = Services.Quorum
-
 extension Int {
     func clamped(min: Int? = nil, max: Int? = nil) -> Int {
         if let min = min, self < min {
@@ -103,10 +102,6 @@ extension Int {
         }
         return self
     }
-}
-
-func mark(_ name: String, file: String = #file, line: UInt = #line) {
-    defaultLogger.info("[Mark] \(name): \(Date().timeIntervalSince1970)", file: file, line: line)
 }
 
 let eventLoopCount = System.coreCount.clamped(min: 4)

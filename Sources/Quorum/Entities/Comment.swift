@@ -62,9 +62,9 @@ public extension Models {
             self.dateUpdated = .distantPast
         }
 
-        public func getUser(on eventLoop: EventLoop) -> Future<User> {
+        public func getUser(requestInfo: LGNCore.RequestInfo) -> Future<User> {
             return Logic.User
-                .get(by: self.IDUser, on: eventLoop)
+                .get(by: self.IDUser, requestInfo: requestInfo)
                 .map {
                     guard let user = $0 else {
                         return User.unknown
@@ -74,10 +74,11 @@ public extension Models {
         }
 
         public func getContractComment(
-            on eventLoop: EventLoop,
-            loadLikes: Bool = true
+            loadLikes: Bool = true,
+            requestInfo: RequestInfo
         ) -> Future<Services.Shared.Comment> {
-            let user = self.getUser(on: eventLoop)
+            let eventLoop = requestInfo.eventLoop
+            let user = self.getUser(requestInfo: requestInfo)
 
             return Services.Shared.Comment.await(
                 ID: self.ID,

@@ -13,7 +13,7 @@ public struct RejectCommentController {
         ) -> Future<Contract.Response> {
             let eventLoop = info.eventLoop
             return Logic.User
-                .authorize(token: request.token, on: eventLoop)
+                .authorize(token: request.token, requestInfo: info)
                 .mapThrowing { user in
                     guard user.accessLevel == .Admin || user.accessLevel == .Moderator else {
                         throw LGNC.ContractError.GeneralError("Not authorized", 403)

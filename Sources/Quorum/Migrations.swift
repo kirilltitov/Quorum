@@ -5,7 +5,7 @@ import Entita2FDB
 
 let migrations: Migrations = [
     {
-        let _defaultUser: Models.User! = try! Logic.User.get(by: defaultUser, on: eventLoopGroup.eventLoop).wait()
+        let _defaultUser: Models.User! = try! Logic.User.get(by: defaultUser).wait()
 
         let firstID = try! Models.Comment.getNextID(on: eventLoopGroup.eventLoop).wait()
         let comment = Models.Comment(
