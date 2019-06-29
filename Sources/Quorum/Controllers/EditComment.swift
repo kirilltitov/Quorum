@@ -26,7 +26,7 @@ public struct EditController {
         ) -> Future<Contract.Response> {
             let eventLoop = info.eventLoop
             
-            let userFuture = Logic.User.authorize(token: request.token, requestInfo: info)
+            let userFuture = Logic.User.authenticate(token: request.token, requestInfo: info)
             
             return userFuture
                 .flatMap { (user: Models.User) -> Future<(Models.Comment, FDB.Transaction)> in

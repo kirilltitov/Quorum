@@ -18,9 +18,9 @@ public extension Logic {
             eventLoopCount: eventLoopCount
         )
 
-        private static let errorNotAuthorized = LGNC.ContractError.GeneralError("Not authorized", 403)
+        private static let errorNotAuthenticated = LGNC.ContractError.GeneralError("Not authenticated", 403)
 
-        public static func authorize(
+        public static func authenticate(
             token: String,
             requestInfo: LGNCore.RequestInfo
         ) -> Future<Models.User> {
@@ -28,7 +28,7 @@ public extension Logic {
 
             let exploded = token.split(separator: ".", maxSplits: 2).map { String($0) }
             guard exploded.count == 3 else {
-                return eventLoop.makeFailedFuture(self.errorNotAuthorized)
+                return eventLoop.makeFailedFuture(self.errorNotAuthenticated)
             }
 
             return Services.Author.Contracts.Authenticate
@@ -51,7 +51,7 @@ public extension Logic {
                 }
                 .flatMapThrowing { response in
                     guard let rawIDUser = response.IDUser else {
-                        throw self.errorNotAuthorized
+                        throw self.errorNotAuthenticated
                     }
                     guard let IDUser = Models.User.Identifier(rawIDUser) else {
                         throw LGNC.ContractError.GeneralError("Invalid ID User \(rawIDUser)", 403)
@@ -66,13 +66,13 @@ public extension Logic {
                 }
         }
 
-        public static func maybeAuthorize(token: String?, requestInfo: LGNCore.RequestInfo) -> Future<Models.User?> {
+        public static func maybeAuthenticate(token: String?, requestInfo: LGNCore.RequestInfo) -> Future<Models.User?> {
             guard let token = token else {
                 return requestInfo.eventLoop.makeSucceededFuture(nil)
             }
 
             return self
-                .authorize(token: token, requestInfo: requestInfo)
+                .authenticate(token: token, requestInfo: requestInfo)
                 .map { Optional($0) }
         }
 

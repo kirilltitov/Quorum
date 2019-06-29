@@ -18,7 +18,7 @@ public struct CommentsController {
             let eventLoop = info.eventLoop
 
             return Logic.User
-                .maybeAuthorize(token: request.token, requestInfo: info)
+                .maybeAuthenticate(token: request.token, requestInfo: info)
                 .flatMap { maybeUser in Logic.Post.getCommentsFor(ID: request.IDPost, as: maybeUser, on: eventLoop) }
                 .flatMap { (commentsWithLikes: [Logic.Post.CommentWithLikes]) -> Future<CommentsWithLikesAndUsers> in
                     EventLoopFuture<[Models.User.Identifier: Models.User]>.reduce(

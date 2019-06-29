@@ -36,7 +36,7 @@ public struct CreateController {
 
         Contract.guarantee { (request: Contract.Request, info: LGNCore.RequestInfo) -> Future<Contract.Response> in
             let eventLoop = info.eventLoop
-            let user = Logic.User.authorize(token: request.token, requestInfo: info)
+            let user = Logic.User.authenticate(token: request.token, requestInfo: info)
 
             return Models.Comment.await(
                 on: eventLoop,

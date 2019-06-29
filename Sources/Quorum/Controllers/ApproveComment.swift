@@ -14,10 +14,10 @@ public struct ApproveCommentController {
             let eventLoop = info.eventLoop
 
             return Logic.User
-                .authorize(token: request.token, requestInfo: info)
+                .authenticate(token: request.token, requestInfo: info)
                 .mapThrowing { user in
                     guard user.accessLevel == .Admin || user.accessLevel == .Moderator else {
-                        throw LGNC.ContractError.GeneralError("Not authorized", 403)
+                        throw LGNC.ContractError.GeneralError("Not authenticated", 403)
                     }
                     return
                 }

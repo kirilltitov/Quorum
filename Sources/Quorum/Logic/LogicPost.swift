@@ -69,11 +69,13 @@ public extension Logic {
                     defaultLogger.info("Raw comments loaded in \(rawCommentsProfiler.end().rounded(toPlaces: 4))s")
                 }
 
+                let isAtLeastModerator = maybeUser != nil && maybeUser?.isAtLeastModerator == true
+
                 return commentsFuture.map { results in
                     results
                         .filter { ID, comment in
                             // moderators can see all comments
-                            if maybeUser?.isAtLeastModerator == true {
+                            if isAtLeastModerator {
                                 return true
                             }
                             // users can see their own comments
@@ -92,14 +94,10 @@ public extension Logic {
                         }
                         .map { ID, comment in
                             // author should see own hidden comments as published
-                            if 1 == 1
-                                && comment.status == .hidden
-                                && comment.IDUser == maybeUser?.ID
-                                && maybeUser?.isAtLeastModerator == false
-                            {
+                            if comment.status == .hidden && comment.IDUser == maybeUser?.ID && !isAtLeastModerator {
                                 comment.status = .published
                             }
-                            if comment.status == .deleted && maybeUser?.isAtLeastModerator == false {
+                            if comment.status == .deleted && !isAtLeastModerator {
                                 comment.body = ""
                             }
                             return CommentWithLikes(comment)

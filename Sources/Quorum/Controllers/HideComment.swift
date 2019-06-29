@@ -25,7 +25,7 @@ public struct HideController {
             let eventLoop = info.eventLoop
 
             return Logic.User
-                .authorize(token: request.token, requestInfo: info)
+                .authenticate(token: request.token, requestInfo: info)
                 .flatMap { user in
                     Logic.Comment
                         .getThrowing(by: request.IDComment, on: eventLoop)

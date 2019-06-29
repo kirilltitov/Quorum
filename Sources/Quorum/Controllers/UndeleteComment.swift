@@ -14,7 +14,7 @@ class UndeleteController {
             let eventLoop = info.eventLoop
 
             return Logic.User
-                .authorize(token: request.token, requestInfo: info)
+                .authenticate(token: request.token, requestInfo: info)
                 .flatMap { user in
                     Logic.Comment
                         .getThrowing(by: request.IDComment, on: eventLoop)
@@ -22,7 +22,7 @@ class UndeleteController {
                 }
                 .flatMapThrowing { (user: Models.User, comment: Models.Comment) throws -> Future<Models.Comment> in
                     guard user.isAtLeastModerator else {
-                        throw LGNC.ContractError.GeneralError("Not authorized", 403)
+                        throw LGNC.ContractError.GeneralError("Not authenticated", 403)
                     }
                     guard comment.status == .deleted else {
                         throw LGNC.ContractError.GeneralError(

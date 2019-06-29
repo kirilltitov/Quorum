@@ -13,10 +13,10 @@ class PendingCommentsController {
             let eventLoop = info.eventLoop
 
             return Logic.User
-                .authorize(token: request.token, requestInfo: info)
+                .authenticate(token: request.token, requestInfo: info)
                 .mapThrowing { user in
                     guard user.isAtLeastModerator else {
-                        throw LGNC.ContractError.GeneralError("Not authorized", 403)
+                        throw LGNC.ContractError.GeneralError("Not authenticated", 403)
                     }
                     return
                 }
@@ -46,10 +46,10 @@ class PendingCommentsCountController {
             let eventLoop = info.eventLoop
 
             return Logic.User
-                .authorize(token: request.token, requestInfo: info)
+                .authenticate(token: request.token, requestInfo: info)
                 .mapThrowing { user in
                     guard user.isAtLeastModerator else {
-                        throw LGNC.ContractError.GeneralError("Not authorized", 403)
+                        throw LGNC.ContractError.GeneralError("Not authenticated", 403)
                     }
                     return
                 }
