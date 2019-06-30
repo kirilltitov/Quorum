@@ -27,7 +27,7 @@ public enum Services {
                     "map": [],
                 ]
 
-                var _map: [String: String] = [String: String]()
+                var _map: [String: String]!
 
                 do {
                     do {
@@ -88,8 +88,8 @@ public enum Services {
                     "Response": [],
                 ]
 
-                var _Request: FieldMapping = FieldMapping()
-                var _Response: FieldMapping = FieldMapping()
+                var _Request: FieldMapping!
+                var _Response: FieldMapping!
 
                 do {
                     do {
@@ -154,7 +154,7 @@ public enum Services {
                     "map": [],
                 ]
 
-                var _map: [String: ServiceFieldMapping] = [String: ServiceFieldMapping]()
+                var _map: [String: ServiceFieldMapping]!
 
                 do {
                     do {
@@ -211,7 +211,7 @@ public enum Services {
                     "monad": [],
                 ]
 
-                var _monad: String = String()
+                var _monad: String!
 
                 do {
                     do {
@@ -268,7 +268,7 @@ public enum Services {
                     "event": [],
                 ]
 
-                var _event: String = String()
+                var _event: String!
 
                 do {
                     do {
@@ -382,13 +382,13 @@ public enum Services {
                     "recaptchaToken": [],
                 ]
 
-                var _username: String = String()
-                var _email: String = String()
-                var _password1: String = String()
-                var _password2: String = String()
-                var _sex: String = String()
-                var _language: String = String()
-                var _recaptchaToken: String = String()
+                var _username: String!
+                var _email: String!
+                var _password1: String!
+                var _password2: String!
+                var _sex: String!
+                var _language: String!
+                var _recaptchaToken: String!
 
                 do {
                     do {
@@ -590,10 +590,10 @@ public enum Services {
                     "port": [],
                 ]
 
-                var _type: String = String()
-                var _id: String = String()
-                var _name: String = String()
-                var _port: Int = Int()
+                var _type: String!
+                var _id: String!
+                var _name: String!
+                var _port: Int!
 
                 do {
                     do {
@@ -709,8 +709,8 @@ public enum Services {
                     "entities": [],
                 ]
 
-                var _name: String = String()
-                var _entities: Int = Int()
+                var _name: String!
+                var _entities: Int!
 
                 do {
                     do {
@@ -791,7 +791,7 @@ public enum Services {
                     "result": [],
                 ]
 
-                var _result: String = String()
+                var _result: String!
 
                 do {
                     do {
@@ -877,10 +877,10 @@ public enum Services {
                     "entities": [],
                 ]
 
-                var _type: String = String()
-                var _name: String = String()
-                var _port: Int = Int()
-                var _entities: Int = Int()
+                var _type: String!
+                var _name: String!
+                var _port: Int!
+                var _entities: Int!
 
                 do {
                     do {
@@ -977,7 +977,7 @@ public enum Services {
                     "result": [],
                 ]
 
-                var _result: String = String()
+                var _result: String!
 
                 do {
                     do {
@@ -1049,9 +1049,9 @@ public enum Services {
                     "recaptchaToken": [],
                 ]
 
-                var _portal: String = String()
-                var _email: String = String()
-                var _password: String = String()
+                var _portal: String!
+                var _email: String!
+                var _password: String!
                 var _recaptchaToken: String?
 
                 do {
@@ -1138,8 +1138,8 @@ public enum Services {
                     "userID": [],
                 ]
 
-                var _token: String = String()
-                var _userID: String = String()
+                var _token: String!
+                var _userID: String!
 
                 do {
                     do {
@@ -1186,31 +1186,61 @@ public enum Services {
 
         public final class CommentUserInfo: ContractEntity {
             public static let keyDictionary: [String: String] = [
-                "name": "b",
+                "ID": "a",
+                "username": "c",
+                "accessLevel": "d",
             ]
 
-            public let name: String
+            public let ID: String
+            public let username: String
+            public let accessLevel: String
 
             public init(
-                name: String
+                ID: String,
+                username: String,
+                accessLevel: String
             ) {
-                self.name = name
+                self.ID = ID
+                self.username = username
+                self.accessLevel = accessLevel
             }
 
             public static func initWithValidation(from dictionary: Entita.Dict, requestInfo: LGNCore.RequestInfo) -> Future<CommentUserInfo> {
                 let eventLoop = requestInfo.eventLoop
 
                 var validatorFutures: [String: [Future<(String, ValidatorError?)>]] = [
-                    "name": [],
+                    "ID": [],
+                    "username": [],
+                    "accessLevel": [],
                 ]
 
-                var _name: String = String()
+                var _ID: String!
+                var _username: String!
+                var _accessLevel: String!
 
                 do {
                     do {
-                        _name = try CommentUserInfo.extract(param: "name", from: dictionary)
+                        _ID = try CommentUserInfo.extract(param: "ID", from: dictionary)
+
+                        if let error = Validation.UUID().validate(_ID, requestInfo.locale) {
+                            validatorFutures["ID"]!.append(eventLoop.makeSucceededFuture(("ID", error)))
+                        }
                     } catch Entita.E.ExtractError {
-                        validatorFutures["name"]!.append(eventLoop.makeSucceededFuture(("name", Validation.Error.MissingValue(requestInfo.locale))))
+                        validatorFutures["ID"]!.append(eventLoop.makeSucceededFuture(("ID", Validation.Error.MissingValue(requestInfo.locale))))
+                    }
+                    do {
+                        _username = try CommentUserInfo.extract(param: "username", from: dictionary)
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["username"]!.append(eventLoop.makeSucceededFuture(("username", Validation.Error.MissingValue(requestInfo.locale))))
+                    }
+                    do {
+                        _accessLevel = try CommentUserInfo.extract(param: "accessLevel", from: dictionary)
+
+                        if let error = Validation.In(allowedValues: ["User", "Moderator", "Admin"]).validate(_accessLevel, requestInfo.locale) {
+                            validatorFutures["accessLevel"]!.append(eventLoop.makeSucceededFuture(("accessLevel", error)))
+                        }
+                    } catch Entita.E.ExtractError {
+                        validatorFutures["accessLevel"]!.append(eventLoop.makeSucceededFuture(("accessLevel", Validation.Error.MissingValue(requestInfo.locale))))
                     }
                 } catch {
                     return eventLoop.makeFailedFuture(error)
@@ -1223,20 +1253,26 @@ public enum Services {
                             throw LGNC.E.DecodeError(errors)
                         }
                         return self.init(
-                            name: _name
+                            ID: _ID,
+                            username: _username,
+                            accessLevel: _accessLevel
                         )
                     }
             }
 
             public convenience init(from dictionary: Entita.Dict) throws {
                 self.init(
-                    name: try CommentUserInfo.extract(param: "name", from: dictionary)
+                    ID: try CommentUserInfo.extract(param: "ID", from: dictionary),
+                    username: try CommentUserInfo.extract(param: "username", from: dictionary),
+                    accessLevel: try CommentUserInfo.extract(param: "accessLevel", from: dictionary)
                 )
             }
 
             public func getDictionary() throws -> Entita.Dict {
                 return [
-                    self.getDictionaryKey("name"): try self.encode(self.name),
+                    self.getDictionaryKey("ID"): try self.encode(self.ID),
+                    self.getDictionaryKey("username"): try self.encode(self.username),
+                    self.getDictionaryKey("accessLevel"): try self.encode(self.accessLevel),
                 ]
             }
         }
@@ -1284,21 +1320,19 @@ public enum Services {
         public final class Comment: ContractEntity {
             public static let keyDictionary: [String: String] = [
                 "ID": "a",
-                "IDUser": "c",
-                "userName": "d",
-                "IDPost": "e",
-                "IDReplyComment": "f",
-                "isEditable": "g",
-                "status": "h",
-                "body": "i",
-                "likes": "j",
-                "dateCreated": "k",
-                "dateUpdated": "l",
+                "user": "c",
+                "IDPost": "d",
+                "IDReplyComment": "e",
+                "isEditable": "f",
+                "status": "g",
+                "body": "h",
+                "likes": "i",
+                "dateCreated": "j",
+                "dateUpdated": "k",
             ]
 
             public let ID: Int
-            public let IDUser: String
-            public let userName: String
+            public let user: CommentUserInfo
             public let IDPost: Int
             public let IDReplyComment: Int?
             public let isEditable: Bool
@@ -1310,8 +1344,7 @@ public enum Services {
 
             public init(
                 ID: Int,
-                IDUser: String,
-                userName: String,
+                user: CommentUserInfo,
                 IDPost: Int,
                 IDReplyComment: Int? = nil,
                 isEditable: Bool,
@@ -1322,8 +1355,7 @@ public enum Services {
                 dateUpdated: String
             ) {
                 self.ID = ID
-                self.IDUser = IDUser
-                self.userName = userName
+                self.user = user
                 self.IDPost = IDPost
                 self.IDReplyComment = IDReplyComment
                 self.isEditable = isEditable
@@ -1336,8 +1368,7 @@ public enum Services {
 
             public static func await(
                 ID: Int,
-                IDUser IDUserFuture: Future<String>,
-                userName userNameFuture: Future<String>,
+                user: CommentUserInfo,
                 IDPost: Int,
                 IDReplyComment: Int?,
                 isEditable: Bool,
@@ -1348,19 +1379,12 @@ public enum Services {
                 dateUpdated: String
             ) -> Future<Comment> {
                 return likesFuture.eventLoop.makeSucceededFuture(()).flatMap { () in
-                    IDUserFuture.map { IDUser in IDUser }
+                    likesFuture.map { likes in likes }
                 }
-                .flatMap { IDUser in
-                    userNameFuture.map { userName in (IDUser, userName) }
-                }
-                .flatMap { IDUser, userName in
-                    likesFuture.map { likes in (IDUser, userName, likes) }
-                }
-                .map { IDUser, userName, likes in
+                .map { likes in
                     Comment(
                         ID: ID,
-                        IDUser: IDUser,
-                        userName: userName,
+                        user: user,
                         IDPost: IDPost,
                         IDReplyComment: IDReplyComment,
                         isEditable: isEditable,
@@ -1378,8 +1402,7 @@ public enum Services {
 
                 var validatorFutures: [String: [Future<(String, ValidatorError?)>]] = [
                     "ID": [],
-                    "IDUser": [],
-                    "userName": [],
+                    "user": [],
                     "IDPost": [],
                     "IDReplyComment": [],
                     "isEditable": [],
@@ -1390,17 +1413,16 @@ public enum Services {
                     "dateUpdated": [],
                 ]
 
-                var _ID: Int = Int()
-                var _IDUser: String = String()
-                var _userName: String = String()
-                var _IDPost: Int = Int()
+                var _ID: Int!
+                var _user: CommentUserInfo!
+                var _IDPost: Int!
                 var _IDReplyComment: Int?
-                var _isEditable: Bool = Bool()
-                var _status: String = String()
-                var _body: String = String()
-                var _likes: Int = Int()
-                var _dateCreated: String = String()
-                var _dateUpdated: String = String()
+                var _isEditable: Bool!
+                var _status: String!
+                var _body: String!
+                var _likes: Int!
+                var _dateCreated: String!
+                var _dateUpdated: String!
 
                 do {
                     do {
@@ -1409,18 +1431,9 @@ public enum Services {
                         validatorFutures["ID"]!.append(eventLoop.makeSucceededFuture(("ID", Validation.Error.MissingValue(requestInfo.locale))))
                     }
                     do {
-                        _IDUser = try Comment.extract(param: "IDUser", from: dictionary)
-
-                        if let error = Validation.UUID().validate(_IDUser, requestInfo.locale) {
-                            validatorFutures["IDUser"]!.append(eventLoop.makeSucceededFuture(("IDUser", error)))
-                        }
+                        _user = try Comment.extract(param: "user", from: dictionary)
                     } catch Entita.E.ExtractError {
-                        validatorFutures["IDUser"]!.append(eventLoop.makeSucceededFuture(("IDUser", Validation.Error.MissingValue(requestInfo.locale))))
-                    }
-                    do {
-                        _userName = try Comment.extract(param: "userName", from: dictionary)
-                    } catch Entita.E.ExtractError {
-                        validatorFutures["userName"]!.append(eventLoop.makeSucceededFuture(("userName", Validation.Error.MissingValue(requestInfo.locale))))
+                        validatorFutures["user"]!.append(eventLoop.makeSucceededFuture(("user", Validation.Error.MissingValue(requestInfo.locale))))
                     }
                     do {
                         _IDPost = try Comment.extract(param: "IDPost", from: dictionary)
@@ -1486,8 +1499,7 @@ public enum Services {
                         }
                         return self.init(
                             ID: _ID,
-                            IDUser: _IDUser,
-                            userName: _userName,
+                            user: _user,
                             IDPost: _IDPost,
                             IDReplyComment: _IDReplyComment,
                             isEditable: _isEditable,
@@ -1503,8 +1515,7 @@ public enum Services {
             public convenience init(from dictionary: Entita.Dict) throws {
                 self.init(
                     ID: try Comment.extract(param: "ID", from: dictionary),
-                    IDUser: try Comment.extract(param: "IDUser", from: dictionary),
-                    userName: try Comment.extract(param: "userName", from: dictionary),
+                    user: try Comment.extract(param: "user", from: dictionary),
                     IDPost: try Comment.extract(param: "IDPost", from: dictionary),
                     IDReplyComment: try Comment.extract(param: "IDReplyComment", from: dictionary, isOptional: true),
                     isEditable: try Comment.extract(param: "isEditable", from: dictionary),
@@ -1519,8 +1530,7 @@ public enum Services {
             public func getDictionary() throws -> Entita.Dict {
                 return [
                     self.getDictionaryKey("ID"): try self.encode(self.ID),
-                    self.getDictionaryKey("IDUser"): try self.encode(self.IDUser),
-                    self.getDictionaryKey("userName"): try self.encode(self.userName),
+                    self.getDictionaryKey("user"): try self.encode(self.user),
                     self.getDictionaryKey("IDPost"): try self.encode(self.IDPost),
                     self.getDictionaryKey("IDReplyComment"): try self.encode(self.IDReplyComment),
                     self.getDictionaryKey("isEditable"): try self.encode(self.isEditable),
@@ -1613,19 +1623,19 @@ public enum Services {
                     "accessLevel": [],
                 ]
 
-                var _ID: String = String()
-                var _username: String = String()
-                var _email: String = String()
-                var _password: String = String()
-                var _sex: String = String()
-                var _isBanned: Bool = Bool()
-                var _ip: String = String()
-                var _country: String = String()
-                var _dateUnsuccessfulLogin: String = String()
-                var _dateSignup: String = String()
-                var _dateLogin: String = String()
-                var _authorName: String = String()
-                var _accessLevel: String = String()
+                var _ID: String!
+                var _username: String!
+                var _email: String!
+                var _password: String!
+                var _sex: String!
+                var _isBanned: Bool!
+                var _ip: String!
+                var _country: String!
+                var _dateUnsuccessfulLogin: String!
+                var _dateSignup: String!
+                var _dateLogin: String!
+                var _authorName: String!
+                var _accessLevel: String!
 
                 do {
                     do {

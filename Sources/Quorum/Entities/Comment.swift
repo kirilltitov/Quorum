@@ -86,19 +86,25 @@ public extension Models {
             let eventLoop = requestInfo.eventLoop
             let user = self.getUser(requestInfo: requestInfo)
 
-            return Services.Shared.Comment.await(
-                ID: self.ID,
-                IDUser: user.map(\.ID.string),
-                userName: user.map(\.username),
-                IDPost: self.IDPost,
-                IDReplyComment: self.IDReplyComment,
-                isEditable: self.isEditable,
-                status: self.status.rawValue,
-                body: self.status == .deleted ? "" : self.body,
-                likes: loadLikes ? Like.getLikesFor(comment: self, on: eventLoop) : eventLoop.makeSucceededFuture(0),
-                dateCreated: self.dateCreated.contractFormatted(locale: requestInfo.locale),
-                dateUpdated: self.dateUpdated.contractFormatted(locale: requestInfo.locale)
-            )
+            // TODO proper await
+            return user.flatMap { user in
+                Services.Shared.Comment.await(
+                    ID: self.ID,
+                    user: Services.Shared.CommentUserInfo(
+                        ID: user.ID.string,
+                        username: user.username,
+                        accessLevel: user.accessLevel.rawValue
+                    ),
+                    IDPost: self.IDPost,
+                    IDReplyComment: self.IDReplyComment,
+                    isEditable: self.isEditable,
+                    status: self.status.rawValue,
+                    body: self.status == .deleted ? "" : self.body,
+                    likes: loadLikes ? Like.getLikesFor(comment: self, on: eventLoop) : eventLoop.makeSucceededFuture(0),
+                    dateCreated: self.dateCreated.contractFormatted(locale: requestInfo.locale),
+                    dateUpdated: self.dateUpdated.contractFormatted(locale: requestInfo.locale)
+                )
+            }
         }
 
         public static func getUsingRefID(

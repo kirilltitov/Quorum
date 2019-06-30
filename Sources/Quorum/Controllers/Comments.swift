@@ -37,10 +37,15 @@ public struct CommentsController {
                     Contract.Response(
                         comments: commentsWithLikes.map { commentWithLikes in
                             let comment = commentWithLikes.comment
+                            let user = users[comment.IDUser] ?? Models.User.unknown
+
                             return .init(
                                 ID: comment.ID,
-                                IDUser: comment.IDUser.string,
-                                userName: (users[comment.IDUser] ?? Models.User.unknown).username,
+                                user: Services.Shared.CommentUserInfo(
+                                    ID: comment.IDUser.string,
+                                    username: user.username,
+                                    accessLevel: user.accessLevel.rawValue
+                                ),
                                 IDPost: comment.IDPost,
                                 IDReplyComment: comment.IDReplyComment,
                                 isEditable: comment.isEditable,
