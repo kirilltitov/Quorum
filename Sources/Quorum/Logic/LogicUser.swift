@@ -18,7 +18,7 @@ public extension Logic {
             eventLoopCount: eventLoopCount
         )
 
-        private static let errorNotAuthenticated = LGNC.ContractError.GeneralError("Not authenticated", 403)
+        public static let errorNotAuthenticated = LGNC.ContractError.GeneralError("Not authenticated", 401)
 
         public static func authenticate(
             token: String,
@@ -74,6 +74,16 @@ public extension Logic {
             return self
                 .authenticate(token: token, requestInfo: requestInfo)
                 .map { Optional($0) }
+        }
+
+        public static func get(by IDString: String, requestInfo: LGNCore.RequestInfo) -> Future<Models.User?> {
+            guard let ID = Models.User.Identifier(IDString) else {
+                return requestInfo.eventLoop.makeFailedFuture(
+                    LGNC.ContractError.GeneralError("Invalid ID", 400)
+                )
+            }
+
+            return self.get(by: ID, requestInfo: requestInfo)
         }
 
         public static func get(by ID: Models.User.Identifier) -> Future<Models.User?> {

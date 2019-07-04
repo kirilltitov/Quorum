@@ -11,8 +11,9 @@ public extension Logic {
         fileprivate static let defaultFormatter: DateFormatter = {
             let formatter = DateFormatter()
 
-            formatter.dateStyle = .long
-            formatter.timeStyle = .short
+//            formatter.dateStyle = .long
+//            formatter.timeStyle = .short
+            formatter.dateFormat = "dd.MM.yyyy, HH:mm"
             formatter.locale = LGNCore.i18n.Locale.enUS.foundationLocale
 
             return formatter
@@ -21,8 +22,9 @@ public extension Logic {
         fileprivate static let formatters: [LGNCore.i18n.Locale: DateFormatter] = .init(
             uniqueKeysWithValues: Array<LGNCore.i18n.Locale>([.enUS, .ruRU]).map { locale in
                 let formatter = DateFormatter()
-                formatter.dateStyle = .long
-                formatter.timeStyle = .short
+//                formatter.dateStyle = .long
+//                formatter.timeStyle = .short
+                formatter.dateFormat = "dd.MM.yyyy, HH:mm"
                 formatter.locale = locale.foundationLocale
 
                 return (locale, formatter)

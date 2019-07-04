@@ -35,9 +35,9 @@ public enum Services {
 
                 return self
                     .reduce(validators: validatorFutures, requestInfo: requestInfo)
-                    .flatMapThrowing { errors in
-                        guard errors.count == 0 else {
-                            throw LGNC.E.DecodeError(errors.mapValues { [$0] })
+                    .flatMapThrowing {
+                        guard $0.count == 0 else {
+                            throw LGNC.E.DecodeError($0.mapValues { [$0] })
                         }
 
                         return self.init(
@@ -96,9 +96,9 @@ public enum Services {
 
                 return self
                     .reduce(validators: validatorFutures, requestInfo: requestInfo)
-                    .flatMapThrowing { errors in
-                        guard errors.count == 0 else {
-                            throw LGNC.E.DecodeError(errors.mapValues { [$0] })
+                    .flatMapThrowing {
+                        guard $0.count == 0 else {
+                            throw LGNC.E.DecodeError($0.mapValues { [$0] })
                         }
 
                         return self.init(
@@ -151,9 +151,9 @@ public enum Services {
 
                 return self
                     .reduce(validators: validatorFutures, requestInfo: requestInfo)
-                    .flatMapThrowing { errors in
-                        guard errors.count == 0 else {
-                            throw LGNC.E.DecodeError(errors.mapValues { [$0] })
+                    .flatMapThrowing {
+                        guard $0.count == 0 else {
+                            throw LGNC.E.DecodeError($0.mapValues { [$0] })
                         }
 
                         return self.init(
@@ -203,9 +203,9 @@ public enum Services {
 
                 return self
                     .reduce(validators: validatorFutures, requestInfo: requestInfo)
-                    .flatMapThrowing { errors in
-                        guard errors.count == 0 else {
-                            throw LGNC.E.DecodeError(errors.mapValues { [$0] })
+                    .flatMapThrowing {
+                        guard $0.count == 0 else {
+                            throw LGNC.E.DecodeError($0.mapValues { [$0] })
                         }
 
                         return self.init(
@@ -255,9 +255,9 @@ public enum Services {
 
                 return self
                     .reduce(validators: validatorFutures, requestInfo: requestInfo)
-                    .flatMapThrowing { errors in
-                        guard errors.count == 0 else {
-                            throw LGNC.E.DecodeError(errors.mapValues { [$0] })
+                    .flatMapThrowing {
+                        guard $0.count == 0 else {
+                            throw LGNC.E.DecodeError($0.mapValues { [$0] })
                         }
 
                         return self.init(
@@ -457,9 +457,9 @@ public enum Services {
 
                 return self
                     .reduce(validators: validatorFutures, requestInfo: requestInfo)
-                    .flatMapThrowing { errors in
-                        guard errors.count == 0 else {
-                            throw LGNC.E.DecodeError(errors.mapValues { [$0] })
+                    .flatMapThrowing {
+                        guard $0.count == 0 else {
+                            throw LGNC.E.DecodeError($0.mapValues { [$0] })
                         }
 
                         return self.init(
@@ -592,9 +592,9 @@ public enum Services {
 
                 return self
                     .reduce(validators: validatorFutures, requestInfo: requestInfo)
-                    .flatMapThrowing { errors in
-                        guard errors.count == 0 else {
-                            throw LGNC.E.DecodeError(errors.mapValues { [$0] })
+                    .flatMapThrowing {
+                        guard $0.count == 0 else {
+                            throw LGNC.E.DecodeError($0.mapValues { [$0] })
                         }
 
                         return self.init(
@@ -692,9 +692,9 @@ public enum Services {
 
                 return self
                     .reduce(validators: validatorFutures, requestInfo: requestInfo)
-                    .flatMapThrowing { errors in
-                        guard errors.count == 0 else {
-                            throw LGNC.E.DecodeError(errors.mapValues { [$0] })
+                    .flatMapThrowing {
+                        guard $0.count == 0 else {
+                            throw LGNC.E.DecodeError($0.mapValues { [$0] })
                         }
 
                         return self.init(
@@ -753,9 +753,9 @@ public enum Services {
 
                 return self
                     .reduce(validators: validatorFutures, requestInfo: requestInfo)
-                    .flatMapThrowing { errors in
-                        guard errors.count == 0 else {
-                            throw LGNC.E.DecodeError(errors.mapValues { [$0] })
+                    .flatMapThrowing {
+                        guard $0.count == 0 else {
+                            throw LGNC.E.DecodeError($0.mapValues { [$0] })
                         }
 
                         return self.init(
@@ -858,9 +858,9 @@ public enum Services {
 
                 return self
                     .reduce(validators: validatorFutures, requestInfo: requestInfo)
-                    .flatMapThrowing { errors in
-                        guard errors.count == 0 else {
-                            throw LGNC.E.DecodeError(errors.mapValues { [$0] })
+                    .flatMapThrowing {
+                        guard $0.count == 0 else {
+                            throw LGNC.E.DecodeError($0.mapValues { [$0] })
                         }
 
                         return self.init(
@@ -925,9 +925,9 @@ public enum Services {
 
                 return self
                     .reduce(validators: validatorFutures, requestInfo: requestInfo)
-                    .flatMapThrowing { errors in
-                        guard errors.count == 0 else {
-                            throw LGNC.E.DecodeError(errors.mapValues { [$0] })
+                    .flatMapThrowing {
+                        guard $0.count == 0 else {
+                            throw LGNC.E.DecodeError($0.mapValues { [$0] })
                         }
 
                         return self.init(
@@ -1011,9 +1011,9 @@ public enum Services {
 
                 return self
                     .reduce(validators: validatorFutures, requestInfo: requestInfo)
-                    .flatMapThrowing { errors in
-                        guard errors.count == 0 else {
-                            throw LGNC.E.DecodeError(errors.mapValues { [$0] })
+                    .flatMapThrowing {
+                        guard $0.count == 0 else {
+                            throw LGNC.E.DecodeError($0.mapValues { [$0] })
                         }
 
                         return self.init(
@@ -1082,9 +1082,9 @@ public enum Services {
 
                 return self
                     .reduce(validators: validatorFutures, requestInfo: requestInfo)
-                    .flatMapThrowing { errors in
-                        guard errors.count == 0 else {
-                            throw LGNC.E.DecodeError(errors.mapValues { [$0] })
+                    .flatMapThrowing {
+                        guard $0.count == 0 else {
+                            throw LGNC.E.DecodeError($0.mapValues { [$0] })
                         }
 
                         return self.init(
@@ -1167,9 +1167,9 @@ public enum Services {
 
                 return self
                     .reduce(validators: validatorFutures, requestInfo: requestInfo)
-                    .flatMapThrowing { errors in
-                        guard errors.count == 0 else {
-                            throw LGNC.E.DecodeError(errors.mapValues { [$0] })
+                    .flatMapThrowing {
+                        guard $0.count == 0 else {
+                            throw LGNC.E.DecodeError($0.mapValues { [$0] })
                         }
 
                         return self.init(
@@ -1213,9 +1213,9 @@ public enum Services {
 
                 return self
                     .reduce(validators: validatorFutures, requestInfo: requestInfo)
-                    .flatMapThrowing { errors in
-                        guard errors.count == 0 else {
-                            throw LGNC.E.DecodeError(errors.mapValues { [$0] })
+                    .flatMapThrowing {
+                        guard $0.count == 0 else {
+                            throw LGNC.E.DecodeError($0.mapValues { [$0] })
                         }
 
                         return self.init()
@@ -1399,9 +1399,9 @@ public enum Services {
 
                 return self
                     .reduce(validators: validatorFutures, requestInfo: requestInfo)
-                    .flatMapThrowing { errors in
-                        guard errors.count == 0 else {
-                            throw LGNC.E.DecodeError(errors.mapValues { [$0] })
+                    .flatMapThrowing {
+                        guard $0.count == 0 else {
+                            throw LGNC.E.DecodeError($0.mapValues { [$0] })
                         }
 
                         return self.init(
@@ -1638,9 +1638,9 @@ public enum Services {
 
                 return self
                     .reduce(validators: validatorFutures, requestInfo: requestInfo)
-                    .flatMapThrowing { errors in
-                        guard errors.count == 0 else {
-                            throw LGNC.E.DecodeError(errors.mapValues { [$0] })
+                    .flatMapThrowing {
+                        guard $0.count == 0 else {
+                            throw LGNC.E.DecodeError($0.mapValues { [$0] })
                         }
 
                         return self.init(

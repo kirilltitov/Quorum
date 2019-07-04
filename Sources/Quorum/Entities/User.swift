@@ -1,4 +1,5 @@
 import Foundation
+import LGNCore
 import Entita2FDB
 
 public extension Models {
@@ -47,6 +48,12 @@ public extension Models {
 
             self.mutedUntil = nil
             self.color = "default"
+        }
+
+        public func set(accessLevel: AccessLevel, on eventLoop: EventLoop) -> Future<Void> {
+            self.accessLevel = accessLevel
+
+            return self.save(on: eventLoop)
         }
     }
 }

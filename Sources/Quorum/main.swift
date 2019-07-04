@@ -96,6 +96,7 @@ let COMMENT_EDIT_COOLDOWN: TimeInterval = 10
 
 let defaultUser = E2.UUID("00000000-1637-0034-1711-000000000000")!
 let adminUserID = defaultUser
+let empty = LGNC.Entity.Empty()
 
 extension Int {
     func clamped(min: Int? = nil, max: Int? = nil) -> Int {
@@ -167,6 +168,7 @@ ApproveCommentController.setup()
 PendingCommentsController.setup()
 PendingCommentsCountController.setup()
 RejectCommentController.setup()
+UpdateUserAccessLevelController.setup()
 
 let dispatchGroup = DispatchGroup()
 

@@ -17,7 +17,7 @@ public struct ApproveCommentController {
                 .authenticate(token: request.token, requestInfo: info)
                 .mapThrowing { user in
                     guard user.accessLevel == .Admin || user.accessLevel == .Moderator else {
-                        throw LGNC.ContractError.GeneralError("Not authenticated", 403)
+                        throw Logic.User.errorNotAuthenticated
                     }
                     return
                 }

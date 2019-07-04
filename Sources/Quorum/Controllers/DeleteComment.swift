@@ -40,7 +40,7 @@ public struct DeleteController {
                     }
                     return Logic.Comment.delete(comment: comment, on: eventLoop)
                 }
-                .map { _ in Contract.Response() }
+                .map { empty }
         }
     }
 }
