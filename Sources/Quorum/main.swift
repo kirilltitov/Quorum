@@ -169,6 +169,7 @@ PendingCommentsController.setup()
 PendingCommentsCountController.setup()
 RejectCommentController.setup()
 UpdateUserAccessLevelController.setup()
+UserInfoController.setup()
 
 let dispatchGroup = DispatchGroup()
 
