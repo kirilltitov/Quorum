@@ -23,7 +23,7 @@ public enum Services {
             public static func initWithValidation(from dictionary: Entita.Dict, requestInfo: LGNCore.RequestInfo) -> Future<FieldMapping> {
                 let eventLoop = requestInfo.eventLoop
 
-                let map: [String: String]? = try? self.extract(param: "map", from: dictionary)
+                let map: [String: String]? = try? (self.extract(param: "map", from: dictionary) as [String: String])
 
                 let validatorFutures: [String: Future<Void>] = [
                     "map": eventLoop.submit {
@@ -78,8 +78,8 @@ public enum Services {
             public static func initWithValidation(from dictionary: Entita.Dict, requestInfo: LGNCore.RequestInfo) -> Future<ServiceFieldMapping> {
                 let eventLoop = requestInfo.eventLoop
 
-                let Request: FieldMapping? = try? self.extract(param: "Request", from: dictionary)
-                let Response: FieldMapping? = try? self.extract(param: "Response", from: dictionary)
+                let Request: FieldMapping? = try? (self.extract(param: "Request", from: dictionary) as FieldMapping)
+                let Response: FieldMapping? = try? (self.extract(param: "Response", from: dictionary) as FieldMapping)
 
                 let validatorFutures: [String: Future<Void>] = [
                     "Request": eventLoop.submit {
@@ -139,7 +139,7 @@ public enum Services {
             public static func initWithValidation(from dictionary: Entita.Dict, requestInfo: LGNCore.RequestInfo) -> Future<ServiceFieldMappings> {
                 let eventLoop = requestInfo.eventLoop
 
-                let map: [String: ServiceFieldMapping]? = try? self.extract(param: "map", from: dictionary)
+                let map: [String: ServiceFieldMapping]? = try? (self.extract(param: "map", from: dictionary) as [String: ServiceFieldMapping])
 
                 let validatorFutures: [String: Future<Void>] = [
                     "map": eventLoop.submit {
@@ -191,7 +191,7 @@ public enum Services {
             public static func initWithValidation(from dictionary: Entita.Dict, requestInfo: LGNCore.RequestInfo) -> Future<CharacterInfo> {
                 let eventLoop = requestInfo.eventLoop
 
-                let monad: String? = try? self.extract(param: "monad", from: dictionary)
+                let monad: String? = try? (self.extract(param: "monad", from: dictionary) as String)
 
                 let validatorFutures: [String: Future<Void>] = [
                     "monad": eventLoop.submit {
@@ -243,7 +243,7 @@ public enum Services {
             public static func initWithValidation(from dictionary: Entita.Dict, requestInfo: LGNCore.RequestInfo) -> Future<EventRequest> {
                 let eventLoop = requestInfo.eventLoop
 
-                let event: String? = try? self.extract(param: "event", from: dictionary)
+                let event: String? = try? (self.extract(param: "event", from: dictionary) as String)
 
                 let validatorFutures: [String: Future<Void>] = [
                     "event": eventLoop.submit {
@@ -346,13 +346,13 @@ public enum Services {
             public static func initWithValidation(from dictionary: Entita.Dict, requestInfo: LGNCore.RequestInfo) -> Future<UserSignupRequest> {
                 let eventLoop = requestInfo.eventLoop
 
-                let username: String? = try? self.extract(param: "username", from: dictionary)
-                let email: String? = try? self.extract(param: "email", from: dictionary)
-                let password1: String? = try? self.extract(param: "password1", from: dictionary)
-                let password2: String? = try? self.extract(param: "password2", from: dictionary)
-                let sex: String? = try? self.extract(param: "sex", from: dictionary)
-                let language: String? = try? self.extract(param: "language", from: dictionary)
-                let recaptchaToken: String? = try? self.extract(param: "recaptchaToken", from: dictionary)
+                let username: String? = try? (self.extract(param: "username", from: dictionary) as String)
+                let email: String? = try? (self.extract(param: "email", from: dictionary) as String)
+                let password1: String? = try? (self.extract(param: "password1", from: dictionary) as String)
+                let password2: String? = try? (self.extract(param: "password2", from: dictionary) as String)
+                let sex: String? = try? (self.extract(param: "sex", from: dictionary) as String)
+                let language: String? = try? (self.extract(param: "language", from: dictionary) as String)
+                let recaptchaToken: String? = try? (self.extract(param: "recaptchaToken", from: dictionary) as String)
 
                 let validatorFutures: [String: Future<Void>] = [
                     "username": eventLoop.submit {
@@ -553,10 +553,10 @@ public enum Services {
             public static func initWithValidation(from dictionary: Entita.Dict, requestInfo: LGNCore.RequestInfo) -> Future<NodeInfo> {
                 let eventLoop = requestInfo.eventLoop
 
-                let type: String? = try? self.extract(param: "type", from: dictionary)
-                let id: String? = try? self.extract(param: "id", from: dictionary)
-                let name: String? = try? self.extract(param: "name", from: dictionary)
-                let port: Int? = try? self.extract(param: "port", from: dictionary)
+                let type: String? = try? (self.extract(param: "type", from: dictionary) as String)
+                let id: String? = try? (self.extract(param: "id", from: dictionary) as String)
+                let name: String? = try? (self.extract(param: "name", from: dictionary) as String)
+                let port: Int? = try? (self.extract(param: "port", from: dictionary) as Int)
 
                 let validatorFutures: [String: Future<Void>] = [
                     "type": eventLoop.submit {
@@ -665,8 +665,8 @@ public enum Services {
             public static func initWithValidation(from dictionary: Entita.Dict, requestInfo: LGNCore.RequestInfo) -> Future<PingRequest> {
                 let eventLoop = requestInfo.eventLoop
 
-                let name: String? = try? self.extract(param: "name", from: dictionary)
-                let entities: Int? = try? self.extract(param: "entities", from: dictionary)
+                let name: String? = try? (self.extract(param: "name", from: dictionary) as String)
+                let entities: Int? = try? (self.extract(param: "entities", from: dictionary) as Int)
 
                 let validatorFutures: [String: Future<Void>] = [
                     "name": eventLoop.submit {
@@ -741,7 +741,7 @@ public enum Services {
             public static func initWithValidation(from dictionary: Entita.Dict, requestInfo: LGNCore.RequestInfo) -> Future<PingResponse> {
                 let eventLoop = requestInfo.eventLoop
 
-                let result: String? = try? self.extract(param: "result", from: dictionary)
+                let result: String? = try? (self.extract(param: "result", from: dictionary) as String)
 
                 let validatorFutures: [String: Future<Void>] = [
                     "result": eventLoop.submit {
@@ -819,10 +819,10 @@ public enum Services {
             public static func initWithValidation(from dictionary: Entita.Dict, requestInfo: LGNCore.RequestInfo) -> Future<CheckinRequest> {
                 let eventLoop = requestInfo.eventLoop
 
-                let type: String? = try? self.extract(param: "type", from: dictionary)
-                let name: String? = try? self.extract(param: "name", from: dictionary)
-                let port: Int? = try? self.extract(param: "port", from: dictionary)
-                let entities: Int? = try? self.extract(param: "entities", from: dictionary)
+                let type: String? = try? (self.extract(param: "type", from: dictionary) as String)
+                let name: String? = try? (self.extract(param: "name", from: dictionary) as String)
+                let port: Int? = try? (self.extract(param: "port", from: dictionary) as Int)
+                let entities: Int? = try? (self.extract(param: "entities", from: dictionary) as Int)
 
                 let validatorFutures: [String: Future<Void>] = [
                     "type": eventLoop.submit {
@@ -913,7 +913,7 @@ public enum Services {
             public static func initWithValidation(from dictionary: Entita.Dict, requestInfo: LGNCore.RequestInfo) -> Future<CheckinResponse> {
                 let eventLoop = requestInfo.eventLoop
 
-                let result: String? = try? self.extract(param: "result", from: dictionary)
+                let result: String? = try? (self.extract(param: "result", from: dictionary) as String)
 
                 let validatorFutures: [String: Future<Void>] = [
                     "result": eventLoop.submit {
@@ -977,10 +977,10 @@ public enum Services {
             public static func initWithValidation(from dictionary: Entita.Dict, requestInfo: LGNCore.RequestInfo) -> Future<LoginRequest> {
                 let eventLoop = requestInfo.eventLoop
 
-                let portal: String? = try? self.extract(param: "portal", from: dictionary)
-                let email: String? = try? self.extract(param: "email", from: dictionary)
-                let password: String? = try? self.extract(param: "password", from: dictionary)
-                let recaptchaToken: String?? = try? self.extract(param: "recaptchaToken", from: dictionary, isOptional: true)
+                let portal: String? = try? (self.extract(param: "portal", from: dictionary) as String)
+                let email: String? = try? (self.extract(param: "email", from: dictionary) as String)
+                let password: String? = try? (self.extract(param: "password", from: dictionary) as String)
+                let recaptchaToken: String?? = try? (self.extract(param: "recaptchaToken", from: dictionary, isOptional: true) as String?)
 
                 let validatorFutures: [String: Future<Void>] = [
                     "portal": eventLoop.submit {
@@ -999,7 +999,7 @@ public enum Services {
                         }
                     },
                     "recaptchaToken": eventLoop.submit {
-                        let _: String? = try self.extract(param: "recaptchaToken", from: dictionary, isOptional: true)
+                        let _: String? = try (self.extract(param: "recaptchaToken", from: dictionary, isOptional: true) as String?)
                         guard let recaptchaToken = recaptchaToken else {
                             throw Validation.Error.MissingValue(requestInfo.locale)
                         }
@@ -1064,8 +1064,8 @@ public enum Services {
             public static func initWithValidation(from dictionary: Entita.Dict, requestInfo: LGNCore.RequestInfo) -> Future<LoginResponse> {
                 let eventLoop = requestInfo.eventLoop
 
-                let token: String? = try? self.extract(param: "token", from: dictionary)
-                let userID: String? = try? self.extract(param: "userID", from: dictionary)
+                let token: String? = try? (self.extract(param: "token", from: dictionary) as String)
+                let userID: String? = try? (self.extract(param: "userID", from: dictionary) as String)
 
                 let validatorFutures: [String: Future<Void>] = [
                     "token": eventLoop.submit {
@@ -1133,9 +1133,9 @@ public enum Services {
             public static func initWithValidation(from dictionary: Entita.Dict, requestInfo: LGNCore.RequestInfo) -> Future<CommentUserInfo> {
                 let eventLoop = requestInfo.eventLoop
 
-                let ID: String? = try? self.extract(param: "ID", from: dictionary)
-                let username: String? = try? self.extract(param: "username", from: dictionary)
-                let accessLevel: String? = try? self.extract(param: "accessLevel", from: dictionary)
+                let ID: String? = try? (self.extract(param: "ID", from: dictionary) as String)
+                let username: String? = try? (self.extract(param: "username", from: dictionary) as String)
+                let accessLevel: String? = try? (self.extract(param: "accessLevel", from: dictionary) as String)
 
                 let validatorFutures: [String: Future<Void>] = [
                     "ID": eventLoop.submit {
@@ -1314,16 +1314,16 @@ public enum Services {
             public static func initWithValidation(from dictionary: Entita.Dict, requestInfo: LGNCore.RequestInfo) -> Future<Comment> {
                 let eventLoop = requestInfo.eventLoop
 
-                let ID: Int? = try? self.extract(param: "ID", from: dictionary)
-                let user: CommentUserInfo? = try? self.extract(param: "user", from: dictionary)
-                let IDPost: Int? = try? self.extract(param: "IDPost", from: dictionary)
-                let IDReplyComment: Int?? = try? self.extract(param: "IDReplyComment", from: dictionary, isOptional: true)
-                let isEditable: Bool? = try? self.extract(param: "isEditable", from: dictionary)
-                let status: String? = try? self.extract(param: "status", from: dictionary)
-                let body: String? = try? self.extract(param: "body", from: dictionary)
-                let likes: Int? = try? self.extract(param: "likes", from: dictionary)
-                let dateCreated: String? = try? self.extract(param: "dateCreated", from: dictionary)
-                let dateUpdated: String? = try? self.extract(param: "dateUpdated", from: dictionary)
+                let ID: Int? = try? (self.extract(param: "ID", from: dictionary) as Int)
+                let user: CommentUserInfo? = try? (self.extract(param: "user", from: dictionary) as CommentUserInfo)
+                let IDPost: Int? = try? (self.extract(param: "IDPost", from: dictionary) as Int)
+                let IDReplyComment: Int?? = try? (self.extract(param: "IDReplyComment", from: dictionary, isOptional: true) as Int?)
+                let isEditable: Bool? = try? (self.extract(param: "isEditable", from: dictionary) as Bool)
+                let status: String? = try? (self.extract(param: "status", from: dictionary) as String)
+                let body: String? = try? (self.extract(param: "body", from: dictionary) as String)
+                let likes: Int? = try? (self.extract(param: "likes", from: dictionary) as Int)
+                let dateCreated: String? = try? (self.extract(param: "dateCreated", from: dictionary) as String)
+                let dateUpdated: String? = try? (self.extract(param: "dateUpdated", from: dictionary) as String)
 
                 let validatorFutures: [String: Future<Void>] = [
                     "ID": eventLoop.submit {
@@ -1342,7 +1342,7 @@ public enum Services {
                         }
                     },
                     "IDReplyComment": eventLoop.submit {
-                        let _: Int? = try self.extract(param: "IDReplyComment", from: dictionary, isOptional: true)
+                        let _: Int? = try (self.extract(param: "IDReplyComment", from: dictionary, isOptional: true) as Int?)
                         guard let IDReplyComment = IDReplyComment else {
                             throw Validation.Error.MissingValue(requestInfo.locale)
                         }
@@ -1514,19 +1514,19 @@ public enum Services {
             public static func initWithValidation(from dictionary: Entita.Dict, requestInfo: LGNCore.RequestInfo) -> Future<User> {
                 let eventLoop = requestInfo.eventLoop
 
-                let ID: String? = try? self.extract(param: "ID", from: dictionary)
-                let username: String? = try? self.extract(param: "username", from: dictionary)
-                let email: String? = try? self.extract(param: "email", from: dictionary)
-                let password: String? = try? self.extract(param: "password", from: dictionary)
-                let sex: String? = try? self.extract(param: "sex", from: dictionary)
-                let isBanned: Bool? = try? self.extract(param: "isBanned", from: dictionary)
-                let ip: String? = try? self.extract(param: "ip", from: dictionary)
-                let country: String? = try? self.extract(param: "country", from: dictionary)
-                let dateUnsuccessfulLogin: String? = try? self.extract(param: "dateUnsuccessfulLogin", from: dictionary)
-                let dateSignup: String? = try? self.extract(param: "dateSignup", from: dictionary)
-                let dateLogin: String? = try? self.extract(param: "dateLogin", from: dictionary)
-                let authorName: String? = try? self.extract(param: "authorName", from: dictionary)
-                let accessLevel: String? = try? self.extract(param: "accessLevel", from: dictionary)
+                let ID: String? = try? (self.extract(param: "ID", from: dictionary) as String)
+                let username: String? = try? (self.extract(param: "username", from: dictionary) as String)
+                let email: String? = try? (self.extract(param: "email", from: dictionary) as String)
+                let password: String? = try? (self.extract(param: "password", from: dictionary) as String)
+                let sex: String? = try? (self.extract(param: "sex", from: dictionary) as String)
+                let isBanned: Bool? = try? (self.extract(param: "isBanned", from: dictionary) as Bool)
+                let ip: String? = try? (self.extract(param: "ip", from: dictionary) as String)
+                let country: String? = try? (self.extract(param: "country", from: dictionary) as String)
+                let dateUnsuccessfulLogin: String? = try? (self.extract(param: "dateUnsuccessfulLogin", from: dictionary) as String)
+                let dateSignup: String? = try? (self.extract(param: "dateSignup", from: dictionary) as String)
+                let dateLogin: String? = try? (self.extract(param: "dateLogin", from: dictionary) as String)
+                let authorName: String? = try? (self.extract(param: "authorName", from: dictionary) as String)
+                let accessLevel: String? = try? (self.extract(param: "accessLevel", from: dictionary) as String)
 
                 let validatorFutures: [String: Future<Void>] = [
                     "ID": eventLoop.submit {

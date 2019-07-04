@@ -8,6 +8,7 @@ import Entita
 import Entita2FDB
 
 public typealias SQuorum = Services.Quorum
+public typealias SAuthor = Services.Author
 public typealias RequestInfo = LGNCore.RequestInfo
 
 public struct Models {}
@@ -126,7 +127,7 @@ let client: LGNCClient
 if APP_ENV == .local {
     client = LGNC.Client.Loopback(eventLoopGroup: eventLoopGroup)
 
-    Services.Author.Contracts.UserInfoInternal.guarantee { (request, requestInfo) throws -> Services.Shared.User in
+    SAuthor.Contracts.UserInfoInternal.guarantee { (request, requestInfo) throws -> Services.Shared.User in
         Services.Shared.User(
             ID: defaultUser.string,
             username: "teonoman",
@@ -142,6 +143,10 @@ if APP_ENV == .local {
             authorName: "viktor",
             accessLevel: "Admin"
         )
+    }
+
+    SAuthor.Contracts.Authenticate.guarantee { (request, info) -> SAuthor.Contracts.Authenticate.Response in
+        .init(IDUser: defaultUser.string)
     }
 } else {
     client = LGNC.Client.Dynamic(
