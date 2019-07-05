@@ -71,7 +71,7 @@ public extension Logic {
             count: Int = 1,
             on eventLoop: EventLoop
         ) -> Future<Void> {
-            return self.updateCommentCounterForPost(ID: ID, count: 1, on: eventLoop)
+            return self.updateCommentCounterForPost(ID: ID, count: count, on: eventLoop)
         }
 
         public static func decrementCommentCounterForPost(
@@ -79,7 +79,7 @@ public extension Logic {
             count: Int = -1,
             on eventLoop: EventLoop
         ) -> Future<Void> {
-            return self.updateCommentCounterForPost(ID: ID, count: 1, on: eventLoop)
+            return self.updateCommentCounterForPost(ID: ID, count: count, on: eventLoop)
         }
 
         public static func getCommentCounterForPost(
