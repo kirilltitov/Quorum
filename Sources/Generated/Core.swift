@@ -1247,7 +1247,7 @@ public enum Services {
 
             public let ID: Int
             public let user: CommentUserInfo
-            public let IDPost: Int
+            public let IDPost: String
             public let IDReplyComment: Int?
             public let isEditable: Bool
             public let status: String
@@ -1259,7 +1259,7 @@ public enum Services {
             public init(
                 ID: Int,
                 user: CommentUserInfo,
-                IDPost: Int,
+                IDPost: String,
                 IDReplyComment: Int? = nil,
                 isEditable: Bool,
                 status: String,
@@ -1283,7 +1283,7 @@ public enum Services {
             public static func await(
                 ID: Int,
                 user: CommentUserInfo,
-                IDPost: Int,
+                IDPost: String,
                 IDReplyComment: Int?,
                 isEditable: Bool,
                 status: String,
@@ -1316,7 +1316,7 @@ public enum Services {
 
                 let ID: Int? = try? (self.extract(param: "ID", from: dictionary) as Int)
                 let user: CommentUserInfo? = try? (self.extract(param: "user", from: dictionary) as CommentUserInfo)
-                let IDPost: Int? = try? (self.extract(param: "IDPost", from: dictionary) as Int)
+                let IDPost: String? = try? (self.extract(param: "IDPost", from: dictionary) as String)
                 let IDReplyComment: Int?? = try? (self.extract(param: "IDReplyComment", from: dictionary, isOptional: true) as Int?)
                 let isEditable: Bool? = try? (self.extract(param: "isEditable", from: dictionary) as Bool)
                 let status: String? = try? (self.extract(param: "status", from: dictionary) as String)

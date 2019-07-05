@@ -17,7 +17,7 @@ public extension Models {
         )
 
         public static var indices: [String : Entita2.Index<Models.User>] = [
-            "username": E2.Index(\User.username, unique: true),
+            "username": E2.Index(\.username, unique: true),
         ]
 
         public let ID: E2.UUID

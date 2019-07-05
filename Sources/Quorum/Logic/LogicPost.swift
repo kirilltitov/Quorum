@@ -29,7 +29,28 @@ public extension Logic {
             case PostNotFound
         }
 
-        public static func getPostStatus(_ ID: Int, on eventLoop: EventLoop) -> Future<Status> {
+        private static var hashids = Hashids(
+            salt: config[.HASHIDS_SALT],
+            minHashLength: UInt(config[.HASHIDS_MIN_LENGTH])!
+        )
+
+        public static func decodeHash(ID: String) -> Models.Post.Identifier? {
+            return self.hashids.decode(ID).first
+        }
+
+        public static func encodeHash(ID: Models.Post.Identifier) -> String {
+            return self.hashids.encode(ID) ?? "invalid"
+        }
+
+        public static func getPostStatus(_ ID: String, on eventLoop: EventLoop) -> Future<Status> {
+            guard let ID = self.decodeHash(ID: ID) else {
+                return eventLoop.makeFailedFuture(LGNC.ContractError.GeneralError("Invalid post ID", 400))
+            }
+
+            return self.getPostStatus(ID, on: eventLoop)
+        }
+
+        public static func getPostStatus(_ ID: Models.Post.Identifier, on eventLoop: EventLoop) -> Future<Status> {
             let url = "\(config[.WEBSITE_DOMAIN])/post/exists/\(ID)"
 
             return HTTPRequester
@@ -52,7 +73,19 @@ public extension Logic {
         }
 
         public static func getCommentsFor(
-            ID: Int,
+            ID: String,
+            as maybeUser: Models.User? = nil,
+            on eventLoop: EventLoop
+        ) -> Future<[CommentWithLikes]> {
+            guard let ID = self.decodeHash(ID: ID) else {
+                return eventLoop.makeFailedFuture(LGNC.ContractError.GeneralError("Invalid post ID", 400))
+            }
+
+            return self.getCommentsFor(ID: ID, on: eventLoop)
+        }
+
+        public static func getCommentsFor(
+            ID: Models.Post.Identifier,
             as maybeUser: Models.User? = nil,
             on eventLoop: EventLoop
         ) -> Future<[CommentWithLikes]> {

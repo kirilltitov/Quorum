@@ -86,7 +86,7 @@ public extension Logic {
                 .insert(on: eventLoop)
                 .flatMap { _ -> Future<Void> in
                     if user.isAtLeastModerator {
-                        return eventLoop.makeSucceededFuture(())
+                        return eventLoop.makeSucceededFuture()
                     }
                     return Models.PendingComment.savePending(comment: comment, on: eventLoop)
                 }

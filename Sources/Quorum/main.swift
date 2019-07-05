@@ -45,6 +45,8 @@ public enum ConfigKeys: String, AnyConfigKey {
     case HTTP_PORT
     case PRIVATE_IP
     case REGISTER_TO_CONSUL
+    case HASHIDS_SALT
+    case HASHIDS_MIN_LENGTH
 }
 
 let config = try LGNCore.Config<ConfigKeys>(
@@ -61,6 +63,8 @@ let config = try LGNCore.Config<ConfigKeys>(
         .HTTP_PORT: "8081",
         .PRIVATE_IP: "127.0.0.1",
         .REGISTER_TO_CONSUL: "false",
+        .HASHIDS_SALT: "TXRcA(q7)1fZDp5z0v{_52",
+        .HASHIDS_MIN_LENGTH: "5",
     ]
 )
 

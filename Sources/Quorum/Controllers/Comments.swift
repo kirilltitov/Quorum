@@ -46,7 +46,7 @@ public struct CommentsController {
                                     username: user.username,
                                     accessLevel: user.accessLevel.rawValue
                                 ),
-                                IDPost: comment.IDPost,
+                                IDPost: comment.IDPostEncoded,
                                 IDReplyComment: comment.IDReplyComment,
                                 isEditable: comment.isEditable,
                                 status: comment.status.rawValue,

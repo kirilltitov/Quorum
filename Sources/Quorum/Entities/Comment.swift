@@ -1,5 +1,6 @@
 import Foundation
 import LGNCore
+import LGNC
 import Entita2FDB
 import NIO
 import Generated
@@ -51,6 +52,10 @@ public extension Models {
             return self.dateCreated.timeIntervalSince < COMMENT_EDITABLE_TIME
         }
 
+        public var IDPostEncoded: String {
+            return Logic.Post.encodeHash(ID: self.IDPost)
+        }
+
         public init(
             ID: Int,
             IDUser: User.Identifier,
@@ -95,7 +100,7 @@ public extension Models {
                         username: user.username,
                         accessLevel: user.accessLevel.rawValue
                     ),
-                    IDPost: self.IDPost,
+                    IDPost: self.IDPostEncoded,
                     IDReplyComment: self.IDReplyComment,
                     isEditable: self.isEditable,
                     status: self.status.rawValue,
@@ -146,11 +151,15 @@ public extension Models {
             on eventLoop: EventLoop,
             ID IDFuture: Future<Models.Comment.Identifier>,
             IDUser IDUserFuture: Future<User.Identifier>,
-            IDPost: Post.Identifier,
+            IDPost: String,
             IDReplyComment: Int?,
             body: String
         ) -> Future<Comment> {
-            return eventLoop.makeSucceededFuture(())
+            guard let IDPost = Logic.Post.decodeHash(ID: IDPost) else {
+                return eventLoop.makeFailedFuture(LGNC.ContractError.GeneralError("Invalid post ID", 400))
+            }
+
+            return eventLoop.makeSucceededFuture()
                 .flatMap { () in
                     IDFuture.map { ID in (ID) }
                 }
