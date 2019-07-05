@@ -8,7 +8,7 @@ public extension Models {
 
         public static var fullEntityName = false
 
-        private static let counterSubspace = subspaceMain["cnt"]["unapproved"]
+        private static let counterSubspace = subspaceCounter["unapproved"]
 
         public let ID: Int
 

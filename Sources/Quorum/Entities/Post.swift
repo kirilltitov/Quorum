@@ -5,6 +5,9 @@ public extension Models {
         public typealias Identifier = Int
 
         public static let entityName = "post"
+        public static var subspacePrefix: FDB.Subspace {
+            return subspaceCounter[self.entityName]["comments"]
+        }
     }
 //    final public class Post: ModelInt {
 //        public static var IDKey: KeyPath<Models.Post, Int> = \.ID

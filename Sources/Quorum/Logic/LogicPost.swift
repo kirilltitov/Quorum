@@ -34,6 +34,10 @@ public extension Logic {
             minHashLength: UInt(config[.HASHIDS_MIN_LENGTH])!
         )
 
+        private static func commentCounterSubspaceForPost(ID: Models.Post.Identifier) -> FDB.Subspace {
+            return Models.Post.subspacePrefix[ID]
+        }
+
         public static func decodeHash(ID: String) -> Models.Post.Identifier? {
             return self.hashids.decode(ID).first
         }
@@ -48,6 +52,83 @@ public extension Logic {
             }
 
             return self.getPostStatus(ID, on: eventLoop)
+        }
+
+        public static func updateCommentCounterForPost(
+            ID: Models.Post.Identifier,
+            count: Int,
+            on eventLoop: EventLoop
+        ) -> Future<Void> {
+            return fdb.withTransaction(on: eventLoop) { (transaction: FDB.Transaction) in
+                transaction
+                    .atomic(.add, key: self.commentCounterSubspaceForPost(ID: ID), value: count)
+                    .flatMap { $0.commit() }
+            }
+        }
+
+        public static func incrementCommentCounterForPost(
+            ID: Models.Post.Identifier,
+            count: Int = 1,
+            on eventLoop: EventLoop
+        ) -> Future<Void> {
+            return self.updateCommentCounterForPost(ID: ID, count: 1, on: eventLoop)
+        }
+
+        public static func decrementCommentCounterForPost(
+            ID: Models.Post.Identifier,
+            count: Int = -1,
+            on eventLoop: EventLoop
+        ) -> Future<Void> {
+            return self.updateCommentCounterForPost(ID: ID, count: 1, on: eventLoop)
+        }
+
+        public static func getCommentCounterForPost(
+            ID: Models.Post.Identifier,
+            on eventLoop: EventLoop
+        ) -> Future<Int> {
+            return fdb.withTransaction(on: eventLoop) { (transaction: FDB.Transaction) in
+                transaction
+                    .get(key: self.commentCounterSubspaceForPost(ID: ID), snapshot: true, commit: true)
+                    .map { (maybeBytes: Bytes?) -> Int in
+                        guard let bytes = maybeBytes else {
+                            return 0
+                        }
+                        return bytes.cast()
+                    }
+            }
+        }
+
+        public static func getCommentCountersForPosts(
+            IDs: [Models.Post.Identifier],
+            on eventLoop: EventLoop
+        ) -> Future<[Models.Post.Identifier: Int]> {
+            return Future.reduce(
+                into: [:],
+                IDs.map { ID in
+                    self
+                        .getCommentCounterForPost(ID: ID, on: eventLoopGroup.eventLoop)
+                        .map { (ID, $0) }
+                },
+                on: eventLoop
+            ) { carry, result in
+                carry[result.0] = result.1
+            }
+        }
+
+        public static func getCommentCountersForPosts(
+            IDs obfuscatedIDs: [String],
+            on eventLoop: EventLoop
+        ) -> Future<[String: Int]> {
+            return self
+                .getCommentCountersForPosts(
+                    IDs: obfuscatedIDs
+                        .map(self.decodeHash)
+                        .compactMap { $0 ?? 0 },
+                    on: eventLoop
+                )
+                .map { results in
+                    Dictionary.init(uniqueKeysWithValues: results.map { k, v in (self.encodeHash(ID: k), v) })
+                }
         }
 
         public static func getPostStatus(_ ID: Models.Post.Identifier, on eventLoop: EventLoop) -> Future<Status> {

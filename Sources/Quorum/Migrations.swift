@@ -44,4 +44,16 @@ let migrations: Migrations = [
             on: eventLoopGroup.eventLoop
         ).wait()
     },
+    {
+        try fdb.get(range: Models.Comment._getPrefix().range).records.forEach { row in
+            let tuple = try FDB.Tuple(from: row.key)
+            if tuple.tuple.count != 6 {
+                return
+            }
+            guard let IDPost: Int = tuple.tuple[3] as? Int else {
+                return
+            }
+            try Logic.Post.incrementCommentCounterForPost(ID: IDPost, on: eventLoopGroup.eventLoop).wait()
+        }
+    },
 ]

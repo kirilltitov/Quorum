@@ -135,8 +135,12 @@ public extension Models {
 //        }
 
         // this is extracted because logic would like to use it as range
+        public static func _getPrefix() -> FDB.Subspace {
+            return self.subspace[Post.entityName]
+        }
+
         public static func _getPostPrefix(_ ID: Post.Identifier) -> FDB.Subspace {
-            return self.subspace[Post.entityName][ID][Comment.entityName]
+            return self._getPrefix()[ID][Comment.entityName]
         }
 
         public func _getFullPrefix() -> FDB.Subspace {

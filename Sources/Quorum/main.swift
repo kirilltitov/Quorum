@@ -124,6 +124,7 @@ let fdb = FDB(clusterFile: "/opt/foundationdb/fdb.cluster")
 try fdb.connect()
 
 let subspaceMain = FDB.Subspace(PORTAL_ID, SERVICE_ID)
+let subspaceCounter = subspaceMain["cnt"]
 
 let requiredBitmask: LGNP.Message.ControlBitmask = [.signatureSHA1, /*.encrypted,*/ .contentTypeMsgPack]
 
@@ -167,6 +168,7 @@ runMigrations(migrations, on: fdb)
 
 CreateController.setup()
 CommentsController.setup()
+CommentsCountersController.setup()
 EditController.setup()
 DeleteController.setup()
 UndeleteController.setup()

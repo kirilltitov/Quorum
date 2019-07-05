@@ -78,19 +78,18 @@ public extension Logic {
             as user: Models.User,
             on eventLoop: EventLoop
         ) -> Future<Models.Comment> {
-            if user.isAtLeastModerator {
-                comment.status = .published
-            }
-
             return comment
                 .insert(on: eventLoop)
-                .flatMap { _ -> Future<Void> in
+                .flatMap { Models.PendingComment.savePending(comment: comment, on: eventLoop) }
+                .flatMap {
                     if user.isAtLeastModerator {
-                        return eventLoop.makeSucceededFuture()
+                        return Logic.Comment
+                            .approve(comment: comment, on: eventLoop)
+                            .map { _ in Void() }
                     }
-                    return Models.PendingComment.savePending(comment: comment, on: eventLoop)
+                    return eventLoop.makeSucceededFuture()
                 }
-                .map { _ in comment }
+                .map { comment }
         }
 
         public static func save(comment: Models.Comment, on eventLoop: EventLoop) -> Future<Models.Comment> {
@@ -130,6 +129,7 @@ public extension Logic {
 
                     return comment.save(on: eventLoop)
                 }
+                .flatMap { Logic.Post.decrementCommentCounterForPost(ID: comment.IDPost, on: eventLoop) }
         }
 
         public static func unhide(comment: Models.Comment, on eventLoop: EventLoop) -> Future<Void> {
@@ -147,6 +147,7 @@ public extension Logic {
                     
                     return comment.save(on: eventLoop)
                 }
+                .flatMap { Logic.Post.incrementCommentCounterForPost(ID: comment.IDPost, on: eventLoop) }
         }
 
         public static func undelete(
@@ -199,7 +200,8 @@ public extension Logic {
             return comment
                 .save(on: eventLoop)
                 .flatMap { Models.PendingComment.clearRoutine(comment: comment, on: eventLoop) }
-                .map { _ in comment }
+                .flatMap { Logic.Post.incrementCommentCounterForPost(ID: comment.IDPost, on: eventLoop) }
+                .map { comment }
         }
 
         public static func reject(comment: Models.Comment, on eventLoop: EventLoop) -> Future<Void> {
