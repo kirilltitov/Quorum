@@ -999,7 +999,6 @@ public enum Services {
                         }
                     },
                     "recaptchaToken": eventLoop.submit {
-                        let _: String? = try (self.extract(param: "recaptchaToken", from: dictionary, isOptional: true) as String?)
                         guard let recaptchaToken = recaptchaToken else {
                             throw Validation.Error.MissingValue(requestInfo.locale)
                         }
@@ -1342,7 +1341,6 @@ public enum Services {
                         }
                     },
                     "IDReplyComment": eventLoop.submit {
-                        let _: Int? = try (self.extract(param: "IDReplyComment", from: dictionary, isOptional: true) as Int?)
                         guard let IDReplyComment = IDReplyComment else {
                             throw Validation.Error.MissingValue(requestInfo.locale)
                         }
