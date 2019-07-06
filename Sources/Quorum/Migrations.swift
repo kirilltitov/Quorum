@@ -56,4 +56,22 @@ let migrations: Migrations = [
             try Logic.Post.incrementCommentCounterForPost(ID: IDPost, on: eventLoopGroup.eventLoop).wait()
         }
     },
+    {
+        try fdb.get(range: Models.Like.getRootPrefix().range).records.forEach { row in
+            let tuple = try FDB.Tuple(from: row.key).tuple
+            guard 1 == 1
+                && tuple.count >= 5
+                && tuple[tuple.count - 5] as? String == Models.Post.entityName
+                && tuple[tuple.count - 3] as? String == Models.Comment.entityName,
+                let IDPost = tuple[tuple.count - 4] as? Int,
+                let IDComment = tuple[tuple.count - 2] as? Int
+                else { return }
+            let transaction = try fdb.begin(on: eventLoopGroup.eventLoop).wait()
+            _ = try Models.Like.incrementLikesCounterFor(
+                comment: Models.Comment(ID: IDComment, IDUser: defaultUser, IDPost: IDPost, IDReplyComment: nil, body: ""),
+                within: transaction
+                ).wait()
+            try transaction.commit().wait()
+        }
+    },
 ]

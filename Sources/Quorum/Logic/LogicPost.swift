@@ -89,12 +89,7 @@ public extension Logic {
             return fdb.withTransaction(on: eventLoop) { (transaction: FDB.Transaction) in
                 transaction
                     .get(key: self.commentCounterSubspaceForPost(ID: ID), snapshot: true, commit: true)
-                    .map { (maybeBytes: Bytes?) -> Int in
-                        guard let bytes = maybeBytes else {
-                            return 0
-                        }
-                        return bytes.cast()
-                    }
+                    .map { (maybeBytes: Bytes?) -> Int in maybeBytes?.cast() ?? 0 }
             }
         }
 
@@ -184,6 +179,8 @@ public extension Logic {
                 }
 
                 let isAtLeastModerator = maybeUser != nil && maybeUser?.isAtLeastModerator == true
+                dump(maybeUser)
+                dump(isAtLeastModerator)
 
                 return commentsFuture.map { results in
                     results
@@ -218,7 +215,7 @@ public extension Logic {
                         }
                 }.flatMap { commentsWithLikes in
                     Models.Like
-                        .getLikesForCommentsIn(postID: ID, with: transaction, on: eventLoop)
+                        .getLikesForCommentsIn(postID: ID, within: transaction, on: eventLoop)
                         .map { (commentsWithLikes, $0) }
                 }.map { (commentsWithLikes: [CommentWithLikes], likesInfo: [Models.Comment.Identifier: Int]) in
                     commentsWithLikes.forEach { commentWithLikes in
