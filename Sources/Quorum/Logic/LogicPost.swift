@@ -157,7 +157,7 @@ public extension Logic {
                 return eventLoop.makeFailedFuture(LGNC.ContractError.GeneralError("Invalid post ID", 400))
             }
 
-            return self.getCommentsFor(ID: ID, on: eventLoop)
+            return self.getCommentsFor(ID: ID, as: maybeUser, on: eventLoop)
         }
 
         public static func getCommentsFor(
@@ -179,8 +179,6 @@ public extension Logic {
                 }
 
                 let isAtLeastModerator = maybeUser != nil && maybeUser?.isAtLeastModerator == true
-                dump(maybeUser)
-                dump(isAtLeastModerator)
 
                 return commentsFuture.map { results in
                     results
