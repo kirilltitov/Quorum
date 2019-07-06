@@ -89,7 +89,12 @@ public extension Logic {
             return fdb.withTransaction(on: eventLoop) { (transaction: FDB.Transaction) in
                 transaction
                     .get(key: self.commentCounterSubspaceForPost(ID: ID), snapshot: true, commit: true)
-                    .map { (maybeBytes: Bytes?) -> Int in maybeBytes?.cast() ?? 0 }
+                    .map { (maybeBytes: Bytes?) in
+                        guard let bytes = maybeBytes else {
+                            return 0
+                        }
+                        return bytes.cast()
+                    }
             }
         }
 

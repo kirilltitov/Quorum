@@ -59,7 +59,12 @@ public extension Models {
                 .flatMap {
                     $0.get(key: self.getLikesCounterSubspaceFor(comment: comment), snapshot: true, commit: true)
                 }
-                .map { (maybeBytes: Bytes?) in maybeBytes?.cast() ?? 0 }
+                .map { (maybeBytes: Bytes?) in
+                    guard let bytes = maybeBytes else {
+                        return 0
+                    }
+                    return bytes.cast()
+                }
         }
 
         public static func getLikesForCommentsIn(
@@ -134,7 +139,7 @@ public extension Models {
             return fdb.withTransaction(on: eventLoop) { transaction in
                 transaction
                     .get(key: self.getCommentsLikesPrefix(for: comment)[user.ID])
-                        .flatMap { (maybeLike, transaction) -> Future<FDB.Transaction> in
+                    .flatMap { (maybeLike, transaction) -> Future<FDB.Transaction> in
                         maybeLike == nil
                             ? transaction
                                 .set(key: commentLikeKey, value: [])
@@ -145,7 +150,7 @@ public extension Models {
                                 .flatMap { $0.clear(key: userLikeIndexKey) }
                                 .flatMap { self.decrementLikesCounterFor(comment: comment, within: $0) }
                     }
-                    .map { _ in Void() }
+                    .flatMap { $0.commit() }
             }
         }
     }
