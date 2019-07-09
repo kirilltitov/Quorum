@@ -165,69 +165,84 @@ public extension Logic {
             return self.getCommentsFor(ID: ID, as: maybeUser, on: eventLoop)
         }
 
+        public static func getRawCommentsFor(
+            ID: Models.Post.Identifier,
+            on eventLoop: EventLoop,
+            within transaction: FDB.Transaction? = nil
+        ) -> Future<[(ID: Models.Comment.Identifier, value: Models.Comment)]> {
+            return eventLoop
+                .makeSucceededFuture()
+                .flatMap {
+                    guard let transaction = transaction else {
+                        return fdb.begin(on: eventLoop)
+                    }
+                    return eventLoop.makeSucceededFuture(transaction)
+                }
+                .flatMap { (transaction: FDB.Transaction) in
+                    Models.Comment.loadAll(
+                        bySubspace: Models.Comment._getPostPrefix(ID),
+                        with: transaction,
+                        snapshot: true,
+                        on: eventLoop
+                    )
+                }
+        }
+
         public static func getCommentsFor(
             ID: Models.Post.Identifier,
             as maybeUser: Models.User? = nil,
             on eventLoop: EventLoop
         ) -> Future<[CommentWithLikes]> {
             return fdb.withTransaction(on: eventLoop) { transaction in
-                let rawCommentsProfiler = LGNCore.Profiler.begin()
-                let commentsFuture = Models.Comment.loadAll(
-                    bySubspace: Models.Comment._getPostPrefix(ID),
-                    with: transaction,
-                    snapshot: true,
-                    on: eventLoop
-                )
-
-                commentsFuture.whenComplete { _ in
-                    defaultLogger.info("Raw comments loaded in \(rawCommentsProfiler.end().rounded(toPlaces: 4))s")
-                }
-
                 let isAtLeastModerator = maybeUser != nil && maybeUser?.isAtLeastModerator == true
 
-                return commentsFuture.map { results in
-                    results
-                        .filter { ID, comment in
-                            // moderators can see all comments
-                            if isAtLeastModerator {
+                return self
+                    .getRawCommentsFor(ID: ID, on: eventLoop, within: transaction)
+                    .map { results in
+                        results
+                            .filter { ID, comment in
+                                // moderators can see all comments
+                                if isAtLeastModerator {
+                                    return true
+                                }
+                                // users can see their own comments
+                                if comment.IDUser == maybeUser?.ID {
+                                    return true
+                                }
+                                // author should see own hidden comments as published
+                                if comment.status == .hidden && comment.IDUser == maybeUser?.ID {
+                                    return true
+                                }
+                                // if comment isn't published or hidden, don't show it
+                                if comment.status => [.pending, .hidden, .banHidden] {
+                                    return false
+                                }
                                 return true
                             }
-                            // users can see their own comments
-                            if comment.IDUser == maybeUser?.ID {
-                                return true
+                            .map { ID, comment in
+                                // author should see own hidden comments as published
+                                if comment.status == .hidden && comment.IDUser == maybeUser?.ID && !isAtLeastModerator {
+                                    comment.status = .published
+                                }
+                                if comment.status == .deleted && !isAtLeastModerator {
+                                    comment.body = ""
+                                }
+                                return CommentWithLikes(comment)
                             }
-                            // author should see own hidden comments as published
-                            if comment.status == .hidden && comment.IDUser == maybeUser?.ID {
-                                return true
-                            }
-                            // if comment isn't published or hidden, don't show it
-                            if comment.status => [.pending, .hidden, .banHidden] {
-                                return false
-                            }
-                            return true
-                        }
-                        .map { ID, comment in
-                            // author should see own hidden comments as published
-                            if comment.status == .hidden && comment.IDUser == maybeUser?.ID && !isAtLeastModerator {
-                                comment.status = .published
-                            }
-                            if comment.status == .deleted && !isAtLeastModerator {
-                                comment.body = ""
-                            }
-                            return CommentWithLikes(comment)
-                        }
-                }.flatMap { commentsWithLikes in
-                    Models.Like
-                        .getLikesForCommentsIn(postID: ID, within: transaction, on: eventLoop)
-                        .map { (commentsWithLikes, $0) }
-                }.map { (commentsWithLikes: [CommentWithLikes], likesInfo: [Models.Comment.Identifier: Int]) in
-                    commentsWithLikes.forEach { commentWithLikes in
-                        if let likes = likesInfo[commentWithLikes.comment.ID] {
-                            commentWithLikes.incrementLikes(likes)
-                        }
                     }
-                    return commentsWithLikes
-                }
+                    .flatMap { commentsWithLikes in
+                        Models.Like
+                            .getLikesForCommentsIn(postID: ID, within: transaction, on: eventLoop)
+                            .map { (commentsWithLikes, $0) }
+                    }
+                    .map { (commentsWithLikes: [CommentWithLikes], likesInfo: [Models.Comment.Identifier: Int]) in
+                        commentsWithLikes.forEach { commentWithLikes in
+                            if let likes = likesInfo[commentWithLikes.comment.ID] {
+                                commentWithLikes.incrementLikes(likes)
+                            }
+                        }
+                        return commentsWithLikes
+                    }
             }
 
 //        private static let postsLRU: CacheLRU<Int, Models.Post> = CacheLRU(capacity: 1000)

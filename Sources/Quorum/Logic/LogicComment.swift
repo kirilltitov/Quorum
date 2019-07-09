@@ -111,20 +111,20 @@ public extension Logic {
         public static func hide(comment: Models.Comment, on eventLoop: EventLoop) -> Future<Void> {
             return eventLoop
                 .makeSucceededFuture()
-                .flatMap { () -> Future<Models.Comment?> in
-                    guard let IDReplyComment = comment.IDReplyComment else {
-                        return eventLoop.makeSucceededFuture(nil)
-                    }
-                    return self.get(by: IDReplyComment, on: eventLoop)
+                .flatMap { () -> Future<[(ID: Models.Comment.Identifier, value: Models.Comment)]> in
+                    Logic.Post.getRawCommentsFor(ID: comment.IDPost, on: eventLoop)
                 }
-                .flatMapThrowing { (maybeParentComment: Models.Comment?) in
-                    if let parentComment = maybeParentComment, parentComment.status == .published {
-                        throw LGNC.ContractError.GeneralError(
-                            "Cannot hide comment, it has parent published comment",
-                            401
-                        )
+                .mapThrowing { comments in
+                    for (_, _comment) in comments {
+                        if _comment.IDReplyComment == comment.ID {
+                            throw LGNC.ContractError.GeneralError(
+                                "Cannot hide comment, it has parent published comment",
+                                401
+                            )
+                        }
                     }
-
+                }
+                .flatMap {
                     comment.status = .hidden
 
                     return comment.save(on: eventLoop)
