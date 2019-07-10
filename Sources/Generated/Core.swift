@@ -198,6 +198,11 @@ public enum Services {
                         guard let _ = monad else {
                             throw Validation.Error.MissingValue(requestInfo.locale)
                         }
+                    }.flatMap {
+                        if let error = Validation.NotEmpty().validate(monad!, requestInfo.locale) {
+                            return eventLoop.makeFailedFuture(error)
+                        }
+                        return eventLoop.makeSucceededFuture()
                     },
                 ]
 
@@ -250,6 +255,11 @@ public enum Services {
                         guard let _ = event else {
                             throw Validation.Error.MissingValue(requestInfo.locale)
                         }
+                    }.flatMap {
+                        if let error = Validation.NotEmpty().validate(event!, requestInfo.locale) {
+                            return eventLoop.makeFailedFuture(error)
+                        }
+                        return eventLoop.makeSucceededFuture()
                     },
                 ]
 
@@ -383,6 +393,11 @@ public enum Services {
                             requestInfo.locale,
                             on: eventLoop
                         ).mapThrowing { maybeError in if let error = maybeError { throw error } }
+                    }.flatMap {
+                        if let error = Validation.NotEmpty().validate(username!, requestInfo.locale) {
+                            return eventLoop.makeFailedFuture(error)
+                        }
+                        return eventLoop.makeSucceededFuture()
                     },
                     "email": eventLoop.submit {
                         guard let _ = email else {
@@ -402,6 +417,11 @@ public enum Services {
                             requestInfo.locale,
                             on: eventLoop
                         ).mapThrowing { maybeError in if let error = maybeError { throw error } }
+                    }.flatMap {
+                        if let error = Validation.NotEmpty().validate(email!, requestInfo.locale) {
+                            return eventLoop.makeFailedFuture(error)
+                        }
+                        return eventLoop.makeSucceededFuture()
                     },
                     "password1": eventLoop.submit {
                         guard let _ = password1 else {
@@ -417,6 +437,11 @@ public enum Services {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
+                    }.flatMap {
+                        if let error = Validation.NotEmpty().validate(password1!, requestInfo.locale) {
+                            return eventLoop.makeFailedFuture(error)
+                        }
+                        return eventLoop.makeSucceededFuture()
                     },
                     "password2": eventLoop.submit {
                         guard let _ = password2 else {
@@ -424,6 +449,11 @@ public enum Services {
                         }
                     }.flatMap {
                         if let error = Validation.Identical(right: password1!, message: "Passwords must match").validate(password2!, requestInfo.locale) {
+                            return eventLoop.makeFailedFuture(error)
+                        }
+                        return eventLoop.makeSucceededFuture()
+                    }.flatMap {
+                        if let error = Validation.NotEmpty().validate(password2!, requestInfo.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
@@ -437,6 +467,11 @@ public enum Services {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
+                    }.flatMap {
+                        if let error = Validation.NotEmpty().validate(sex!, requestInfo.locale) {
+                            return eventLoop.makeFailedFuture(error)
+                        }
+                        return eventLoop.makeSucceededFuture()
                     },
                     "language": eventLoop.submit {
                         guard let _ = language else {
@@ -447,11 +482,21 @@ public enum Services {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
+                    }.flatMap {
+                        if let error = Validation.NotEmpty().validate(language!, requestInfo.locale) {
+                            return eventLoop.makeFailedFuture(error)
+                        }
+                        return eventLoop.makeSucceededFuture()
                     },
                     "recaptchaToken": eventLoop.submit {
                         guard let _ = recaptchaToken else {
                             throw Validation.Error.MissingValue(requestInfo.locale)
                         }
+                    }.flatMap {
+                        if let error = Validation.NotEmpty().validate(recaptchaToken!, requestInfo.locale) {
+                            return eventLoop.makeFailedFuture(error)
+                        }
+                        return eventLoop.makeSucceededFuture()
                     },
                 ]
 
@@ -563,11 +608,21 @@ public enum Services {
                         guard let _ = type else {
                             throw Validation.Error.MissingValue(requestInfo.locale)
                         }
+                    }.flatMap {
+                        if let error = Validation.NotEmpty().validate(type!, requestInfo.locale) {
+                            return eventLoop.makeFailedFuture(error)
+                        }
+                        return eventLoop.makeSucceededFuture()
                     },
                     "id": eventLoop.submit {
                         guard let _ = id else {
                             throw Validation.Error.MissingValue(requestInfo.locale)
                         }
+                    }.flatMap {
+                        if let error = Validation.NotEmpty().validate(id!, requestInfo.locale) {
+                            return eventLoop.makeFailedFuture(error)
+                        }
+                        return eventLoop.makeSucceededFuture()
                     },
                     "name": eventLoop.submit {
                         guard let _ = name else {
@@ -582,6 +637,11 @@ public enum Services {
                             requestInfo.locale,
                             on: eventLoop
                         ).mapThrowing { maybeError in if let error = maybeError { throw error } }
+                    }.flatMap {
+                        if let error = Validation.NotEmpty().validate(name!, requestInfo.locale) {
+                            return eventLoop.makeFailedFuture(error)
+                        }
+                        return eventLoop.makeSucceededFuture()
                     },
                     "port": eventLoop.submit {
                         guard let _ = port else {
@@ -682,6 +742,11 @@ public enum Services {
                             requestInfo.locale,
                             on: eventLoop
                         ).mapThrowing { maybeError in if let error = maybeError { throw error } }
+                    }.flatMap {
+                        if let error = Validation.NotEmpty().validate(name!, requestInfo.locale) {
+                            return eventLoop.makeFailedFuture(error)
+                        }
+                        return eventLoop.makeSucceededFuture()
                     },
                     "entities": eventLoop.submit {
                         guard let _ = entities else {
@@ -748,6 +813,11 @@ public enum Services {
                         guard let _ = result else {
                             throw Validation.Error.MissingValue(requestInfo.locale)
                         }
+                    }.flatMap {
+                        if let error = Validation.NotEmpty().validate(result!, requestInfo.locale) {
+                            return eventLoop.makeFailedFuture(error)
+                        }
+                        return eventLoop.makeSucceededFuture()
                     },
                 ]
 
@@ -829,6 +899,11 @@ public enum Services {
                         guard let _ = type else {
                             throw Validation.Error.MissingValue(requestInfo.locale)
                         }
+                    }.flatMap {
+                        if let error = Validation.NotEmpty().validate(type!, requestInfo.locale) {
+                            return eventLoop.makeFailedFuture(error)
+                        }
+                        return eventLoop.makeSucceededFuture()
                     },
                     "name": eventLoop.submit {
                         guard let _ = name else {
@@ -843,6 +918,11 @@ public enum Services {
                             requestInfo.locale,
                             on: eventLoop
                         ).mapThrowing { maybeError in if let error = maybeError { throw error } }
+                    }.flatMap {
+                        if let error = Validation.NotEmpty().validate(name!, requestInfo.locale) {
+                            return eventLoop.makeFailedFuture(error)
+                        }
+                        return eventLoop.makeSucceededFuture()
                     },
                     "port": eventLoop.submit {
                         guard let _ = port else {
@@ -920,6 +1000,11 @@ public enum Services {
                         guard let _ = result else {
                             throw Validation.Error.MissingValue(requestInfo.locale)
                         }
+                    }.flatMap {
+                        if let error = Validation.NotEmpty().validate(result!, requestInfo.locale) {
+                            return eventLoop.makeFailedFuture(error)
+                        }
+                        return eventLoop.makeSucceededFuture()
                     },
                 ]
 
@@ -951,52 +1036,67 @@ public enum Services {
 
         public final class LoginRequest: ContractEntity {
             public static let keyDictionary: [String: String] = [
-                "portal": "b",
-                "email": "c",
-                "password": "d",
+                "email": "b",
+                "password": "c",
+                "portal": "d",
                 "recaptchaToken": "e",
             ]
 
-            public let portal: String
             public let email: String
             public let password: String
+            public let portal: String
             public let recaptchaToken: String?
 
             public init(
-                portal: String,
                 email: String,
                 password: String,
+                portal: String,
                 recaptchaToken: String? = nil
             ) {
-                self.portal = portal
                 self.email = email
                 self.password = password
+                self.portal = portal
                 self.recaptchaToken = recaptchaToken
             }
 
             public static func initWithValidation(from dictionary: Entita.Dict, requestInfo: LGNCore.RequestInfo) -> Future<LoginRequest> {
                 let eventLoop = requestInfo.eventLoop
 
-                let portal: String? = try? (self.extract(param: "portal", from: dictionary) as String)
                 let email: String? = try? (self.extract(param: "email", from: dictionary) as String)
                 let password: String? = try? (self.extract(param: "password", from: dictionary) as String)
+                let portal: String? = try? (self.extract(param: "portal", from: dictionary) as String)
                 let recaptchaToken: String?? = try? (self.extract(param: "recaptchaToken", from: dictionary, isOptional: true) as String?)
 
                 let validatorFutures: [String: Future<Void>] = [
-                    "portal": eventLoop.submit {
-                        guard let _ = portal else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
-                        }
-                    },
                     "email": eventLoop.submit {
                         guard let _ = email else {
                             throw Validation.Error.MissingValue(requestInfo.locale)
                         }
+                    }.flatMap {
+                        if let error = Validation.NotEmpty(message: "Please enter email").validate(email!, requestInfo.locale) {
+                            return eventLoop.makeFailedFuture(error)
+                        }
+                        return eventLoop.makeSucceededFuture()
                     },
                     "password": eventLoop.submit {
                         guard let _ = password else {
                             throw Validation.Error.MissingValue(requestInfo.locale)
                         }
+                    }.flatMap {
+                        if let error = Validation.NotEmpty(message: "Please enter password").validate(password!, requestInfo.locale) {
+                            return eventLoop.makeFailedFuture(error)
+                        }
+                        return eventLoop.makeSucceededFuture()
+                    },
+                    "portal": eventLoop.submit {
+                        guard let _ = portal else {
+                            throw Validation.Error.MissingValue(requestInfo.locale)
+                        }
+                    }.flatMap {
+                        if let error = Validation.NotEmpty().validate(portal!, requestInfo.locale) {
+                            return eventLoop.makeFailedFuture(error)
+                        }
+                        return eventLoop.makeSucceededFuture()
                     },
                     "recaptchaToken": eventLoop.submit {
                         guard let recaptchaToken = recaptchaToken else {
@@ -1016,9 +1116,9 @@ public enum Services {
                         }
 
                         return self.init(
-                            portal: portal!,
                             email: email!,
                             password: password!,
+                            portal: portal!,
                             recaptchaToken: recaptchaToken!
                         )
                     }
@@ -1026,18 +1126,18 @@ public enum Services {
 
             public convenience init(from dictionary: Entita.Dict) throws {
                 self.init(
-                    portal: try LoginRequest.extract(param: "portal", from: dictionary),
                     email: try LoginRequest.extract(param: "email", from: dictionary),
                     password: try LoginRequest.extract(param: "password", from: dictionary),
+                    portal: try LoginRequest.extract(param: "portal", from: dictionary),
                     recaptchaToken: try LoginRequest.extract(param: "recaptchaToken", from: dictionary, isOptional: true)
                 )
             }
 
             public func getDictionary() throws -> Entita.Dict {
                 return [
-                    self.getDictionaryKey("portal"): try self.encode(self.portal),
                     self.getDictionaryKey("email"): try self.encode(self.email),
                     self.getDictionaryKey("password"): try self.encode(self.password),
+                    self.getDictionaryKey("portal"): try self.encode(self.portal),
                     self.getDictionaryKey("recaptchaToken"): try self.encode(self.recaptchaToken),
                 ]
             }
@@ -1071,11 +1171,21 @@ public enum Services {
                         guard let _ = token else {
                             throw Validation.Error.MissingValue(requestInfo.locale)
                         }
+                    }.flatMap {
+                        if let error = Validation.NotEmpty().validate(token!, requestInfo.locale) {
+                            return eventLoop.makeFailedFuture(error)
+                        }
+                        return eventLoop.makeSucceededFuture()
                     },
                     "userID": eventLoop.submit {
                         guard let _ = userID else {
                             throw Validation.Error.MissingValue(requestInfo.locale)
                         }
+                    }.flatMap {
+                        if let error = Validation.NotEmpty().validate(userID!, requestInfo.locale) {
+                            return eventLoop.makeFailedFuture(error)
+                        }
+                        return eventLoop.makeSucceededFuture()
                     },
                 ]
 
@@ -1146,11 +1256,21 @@ public enum Services {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
+                    }.flatMap {
+                        if let error = Validation.NotEmpty().validate(ID!, requestInfo.locale) {
+                            return eventLoop.makeFailedFuture(error)
+                        }
+                        return eventLoop.makeSucceededFuture()
                     },
                     "username": eventLoop.submit {
                         guard let _ = username else {
                             throw Validation.Error.MissingValue(requestInfo.locale)
                         }
+                    }.flatMap {
+                        if let error = Validation.NotEmpty().validate(username!, requestInfo.locale) {
+                            return eventLoop.makeFailedFuture(error)
+                        }
+                        return eventLoop.makeSucceededFuture()
                     },
                     "accessLevel": eventLoop.submit {
                         guard let _ = accessLevel else {
@@ -1158,6 +1278,11 @@ public enum Services {
                         }
                     }.flatMap {
                         if let error = Validation.In(allowedValues: ["User", "Moderator", "Admin"]).validate(accessLevel!, requestInfo.locale) {
+                            return eventLoop.makeFailedFuture(error)
+                        }
+                        return eventLoop.makeSucceededFuture()
+                    }.flatMap {
+                        if let error = Validation.NotEmpty().validate(accessLevel!, requestInfo.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
@@ -1339,6 +1464,11 @@ public enum Services {
                         guard let _ = IDPost else {
                             throw Validation.Error.MissingValue(requestInfo.locale)
                         }
+                    }.flatMap {
+                        if let error = Validation.NotEmpty().validate(IDPost!, requestInfo.locale) {
+                            return eventLoop.makeFailedFuture(error)
+                        }
+                        return eventLoop.makeSucceededFuture()
                     },
                     "IDReplyComment": eventLoop.submit {
                         guard let IDReplyComment = IDReplyComment else {
@@ -1362,11 +1492,21 @@ public enum Services {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
+                    }.flatMap {
+                        if let error = Validation.NotEmpty().validate(status!, requestInfo.locale) {
+                            return eventLoop.makeFailedFuture(error)
+                        }
+                        return eventLoop.makeSucceededFuture()
                     },
                     "body": eventLoop.submit {
                         guard let _ = body else {
                             throw Validation.Error.MissingValue(requestInfo.locale)
                         }
+                    }.flatMap {
+                        if let error = Validation.NotEmpty().validate(body!, requestInfo.locale) {
+                            return eventLoop.makeFailedFuture(error)
+                        }
+                        return eventLoop.makeSucceededFuture()
                     },
                     "likes": eventLoop.submit {
                         guard let _ = likes else {
@@ -1382,6 +1522,11 @@ public enum Services {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
+                    }.flatMap {
+                        if let error = Validation.NotEmpty().validate(dateCreated!, requestInfo.locale) {
+                            return eventLoop.makeFailedFuture(error)
+                        }
+                        return eventLoop.makeSucceededFuture()
                     },
                     "dateUpdated": eventLoop.submit {
                         guard let _ = dateUpdated else {
@@ -1389,6 +1534,11 @@ public enum Services {
                         }
                     }.flatMap {
                         if let error = Validation.Date(format: "yyyy-MM-dd kk:mm:ss.SSSSxxx").validate(dateUpdated!, requestInfo.locale) {
+                            return eventLoop.makeFailedFuture(error)
+                        }
+                        return eventLoop.makeSucceededFuture()
+                    }.flatMap {
+                        if let error = Validation.NotEmpty().validate(dateUpdated!, requestInfo.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
@@ -1536,11 +1686,21 @@ public enum Services {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
+                    }.flatMap {
+                        if let error = Validation.NotEmpty().validate(ID!, requestInfo.locale) {
+                            return eventLoop.makeFailedFuture(error)
+                        }
+                        return eventLoop.makeSucceededFuture()
                     },
                     "username": eventLoop.submit {
                         guard let _ = username else {
                             throw Validation.Error.MissingValue(requestInfo.locale)
                         }
+                    }.flatMap {
+                        if let error = Validation.NotEmpty().validate(username!, requestInfo.locale) {
+                            return eventLoop.makeFailedFuture(error)
+                        }
+                        return eventLoop.makeSucceededFuture()
                     },
                     "email": eventLoop.submit {
                         guard let _ = email else {
@@ -1556,11 +1716,21 @@ public enum Services {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
+                    }.flatMap {
+                        if let error = Validation.NotEmpty().validate(email!, requestInfo.locale) {
+                            return eventLoop.makeFailedFuture(error)
+                        }
+                        return eventLoop.makeSucceededFuture()
                     },
                     "password": eventLoop.submit {
                         guard let _ = password else {
                             throw Validation.Error.MissingValue(requestInfo.locale)
                         }
+                    }.flatMap {
+                        if let error = Validation.NotEmpty().validate(password!, requestInfo.locale) {
+                            return eventLoop.makeFailedFuture(error)
+                        }
+                        return eventLoop.makeSucceededFuture()
                     },
                     "sex": eventLoop.submit {
                         guard let _ = sex else {
@@ -1568,6 +1738,11 @@ public enum Services {
                         }
                     }.flatMap {
                         if let error = Validation.In(allowedValues: ["Male", "Female", "Attack helicopter"]).validate(sex!, requestInfo.locale) {
+                            return eventLoop.makeFailedFuture(error)
+                        }
+                        return eventLoop.makeSucceededFuture()
+                    }.flatMap {
+                        if let error = Validation.NotEmpty().validate(sex!, requestInfo.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
@@ -1581,11 +1756,21 @@ public enum Services {
                         guard let _ = ip else {
                             throw Validation.Error.MissingValue(requestInfo.locale)
                         }
+                    }.flatMap {
+                        if let error = Validation.NotEmpty().validate(ip!, requestInfo.locale) {
+                            return eventLoop.makeFailedFuture(error)
+                        }
+                        return eventLoop.makeSucceededFuture()
                     },
                     "country": eventLoop.submit {
                         guard let _ = country else {
                             throw Validation.Error.MissingValue(requestInfo.locale)
                         }
+                    }.flatMap {
+                        if let error = Validation.NotEmpty().validate(country!, requestInfo.locale) {
+                            return eventLoop.makeFailedFuture(error)
+                        }
+                        return eventLoop.makeSucceededFuture()
                     },
                     "dateUnsuccessfulLogin": eventLoop.submit {
                         guard let _ = dateUnsuccessfulLogin else {
@@ -1593,6 +1778,11 @@ public enum Services {
                         }
                     }.flatMap {
                         if let error = Validation.Date(format: "yyyy-MM-dd kk:mm:ss.SSSSxxx").validate(dateUnsuccessfulLogin!, requestInfo.locale) {
+                            return eventLoop.makeFailedFuture(error)
+                        }
+                        return eventLoop.makeSucceededFuture()
+                    }.flatMap {
+                        if let error = Validation.NotEmpty().validate(dateUnsuccessfulLogin!, requestInfo.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
@@ -1606,6 +1796,11 @@ public enum Services {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
+                    }.flatMap {
+                        if let error = Validation.NotEmpty().validate(dateSignup!, requestInfo.locale) {
+                            return eventLoop.makeFailedFuture(error)
+                        }
+                        return eventLoop.makeSucceededFuture()
                     },
                     "dateLogin": eventLoop.submit {
                         guard let _ = dateLogin else {
@@ -1616,11 +1811,21 @@ public enum Services {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
+                    }.flatMap {
+                        if let error = Validation.NotEmpty().validate(dateLogin!, requestInfo.locale) {
+                            return eventLoop.makeFailedFuture(error)
+                        }
+                        return eventLoop.makeSucceededFuture()
                     },
                     "authorName": eventLoop.submit {
                         guard let _ = authorName else {
                             throw Validation.Error.MissingValue(requestInfo.locale)
                         }
+                    }.flatMap {
+                        if let error = Validation.NotEmpty().validate(authorName!, requestInfo.locale) {
+                            return eventLoop.makeFailedFuture(error)
+                        }
+                        return eventLoop.makeSucceededFuture()
                     },
                     "accessLevel": eventLoop.submit {
                         guard let _ = accessLevel else {
@@ -1628,6 +1833,11 @@ public enum Services {
                         }
                     }.flatMap {
                         if let error = Validation.In(allowedValues: ["User", "Moderator", "Admin"]).validate(accessLevel!, requestInfo.locale) {
+                            return eventLoop.makeFailedFuture(error)
+                        }
+                        return eventLoop.makeSucceededFuture()
+                    }.flatMap {
+                        if let error = Validation.NotEmpty().validate(accessLevel!, requestInfo.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
