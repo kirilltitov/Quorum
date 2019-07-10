@@ -55,7 +55,7 @@ public struct EditController {
                             }
 
                             let editDiff = Date().timeIntervalSince1970 - comment.dateUpdated.timeIntervalSince1970
-                            guard editDiff > COMMENT_EDIT_COOLDOWN else {
+                            guard editDiff > COMMENT_EDIT_COOLDOWN_SECONDS else {
                                 throw LGNC.ContractError.GeneralError("You're editing too often", 429)
                             }
 

@@ -49,7 +49,7 @@ public extension Models {
         public var dateUpdated: Date
 
         public var isEditable: Bool {
-            return self.dateCreated.timeIntervalSince < COMMENT_EDITABLE_TIME
+            return self.dateCreated.timeIntervalSince < COMMENT_EDITABLE_TIME_SECONDS
         }
 
         public var IDPostEncoded: String {
