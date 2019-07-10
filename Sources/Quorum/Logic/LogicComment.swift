@@ -116,7 +116,7 @@ public extension Logic {
                 }
                 .mapThrowing { comments in
                     for (_, _comment) in comments {
-                        if _comment.IDReplyComment == comment.ID {
+                        if _comment.IDReplyComment == comment.ID && _comment.status == .published {
                             throw LGNC.ContractError.GeneralError(
                                 "Cannot hide comment, it has parent published comment",
                                 401
@@ -179,15 +179,14 @@ public extension Logic {
         public static func edit(
             comment: Models.Comment,
             body: String,
-            with transaction: FDB.Transaction,
+            within transaction: FDB.Transaction,
             on eventLoop: EventLoop
         ) -> Future<Models.Comment> {
             comment.body = Logic.Comment.getProcessedBody(from: body)
 
             return comment
-                .save(with: transaction, on: eventLoop)
-                .flatMap { transaction in transaction.commit() }
-                .map { _ in comment }
+                .save(within: transaction, on: eventLoop)
+                .map { comment }
         }
 
         public static func approve(comment: Models.Comment, on eventLoop: EventLoop) -> Future<Models.Comment> {

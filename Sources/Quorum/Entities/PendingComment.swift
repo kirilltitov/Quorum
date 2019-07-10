@@ -20,7 +20,7 @@ public extension Models {
             return self.storage.withTransaction(on: eventLoop) { transaction in
                 transaction
                     .set(key: self.IDAsKey(ID: comment.ID), value: comment.getIDAsKey())
-                    .flatMap { self.incrementPendingCounter(with: $0) }
+                    .flatMap { self.incrementPendingCounter(within: $0) }
                     .flatMap { $0.commit() }
             }
         }
@@ -29,16 +29,16 @@ public extension Models {
             return self.storage.withTransaction(on: eventLoop) { transaction in
                 transaction
                     .clear(key: self.IDAsKey(ID: comment.ID))
-                    .flatMap { self.decrementPendingCounter(with: $0) }
+                    .flatMap { self.decrementPendingCounter(within: $0) }
                     .flatMap { $0.commit() }
             }
         }
 
-        private static func incrementPendingCounter(with transaction: FDB.Transaction) -> Future<FDB.Transaction> {
+        private static func incrementPendingCounter(within transaction: FDB.Transaction) -> Future<FDB.Transaction> {
             return transaction.atomic(.add, key: self.counterSubspace, value: Int(1))
         }
 
-        private static func decrementPendingCounter(with transaction: FDB.Transaction) -> Future<FDB.Transaction> {
+        private static func decrementPendingCounter(within transaction: FDB.Transaction) -> Future<FDB.Transaction> {
             return transaction.atomic(.add, key: self.counterSubspace, value: Int(-1))
         }
 

@@ -181,7 +181,7 @@ public extension Logic {
                 .flatMap { (transaction: FDB.Transaction) in
                     Models.Comment.loadAll(
                         bySubspace: Models.Comment._getPostPrefix(ID),
-                        with: transaction,
+                        within: transaction,
                         snapshot: true,
                         on: eventLoop
                     )

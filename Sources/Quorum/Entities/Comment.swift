@@ -125,7 +125,7 @@ public extension Models {
         ) -> Future<(Models.Comment?, FDB.Transaction)> {
             return fdb.withTransaction(on: eventLoop) { transaction in
                 self
-                    .loadByIndex(name: "ID", value: ID, with: transaction, on: eventLoop)
+                    .loadByIndex(name: "ID", value: ID, within: transaction, on: eventLoop)
                     .map { maybeComment in (maybeComment, transaction) }
             }
         }
@@ -181,7 +181,7 @@ public extension Models {
                 }
         }
 
-        public func beforeSave(with transaction: AnyTransaction?, on eventLoop: EventLoop) -> EventLoopFuture<Void> {
+        public func beforeSave(within transaction: AnyTransaction?, on eventLoop: EventLoop) -> EventLoopFuture<Void> {
             self.dateUpdated = Date()
 
             return eventLoop.makeSucceededFuture(())
