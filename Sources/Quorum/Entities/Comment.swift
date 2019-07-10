@@ -227,6 +227,10 @@ public extension Models {
                     }
                     .flatMap { model in model.save(commit: false, within: transaction, on: eventLoop) }
             }
+
+            public func getIDAsKey() -> Bytes {
+                return History.subspacePrefix[self.IDComment, self.ID].asFDBKey()
+            }
         }
     }
 }
