@@ -179,13 +179,32 @@ public extension Logic {
         public static func edit(
             comment: Models.Comment,
             body: String,
+            by user: Models.User,
             within transaction: FDB.Transaction,
             on eventLoop: EventLoop
         ) -> Future<Models.Comment> {
-            comment.body = Logic.Comment.getProcessedBody(from: body)
+            let newBody = Logic.Comment.getProcessedBody(from: body)
+            let oldBody = comment.body
+
+            if newBody == oldBody {
+                return eventLoop.makeSucceededFuture(comment)
+            }
+
+            comment.body = newBody
 
             return comment
-                .save(within: transaction, on: eventLoop)
+                .save(commit: false, within: transaction, on: eventLoop)
+                .flatMap { _ in
+                    Models.Comment.History.log(
+                        comment: comment,
+                        newBody: newBody,
+                        oldBody: oldBody,
+                        by: user,
+                        within: transaction,
+                        on: eventLoop
+                    )
+                }
+                .flatMap { transaction.commit() }
                 .map { comment }
         }
 

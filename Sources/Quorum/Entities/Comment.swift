@@ -186,6 +186,47 @@ public extension Models {
 
             return eventLoop.makeSucceededFuture(())
         }
+
+        final class History: ModelInt {
+            public static let IDKey: KeyPath<History, Int> = \.ID
+            public static var fullEntityName = false
+
+            public let ID: History.Identifier
+            public let IDComment: Models.Comment.Identifier
+            public let IDUser: Models.User.Identifier
+            public let oldBody: String
+            public let newBody: String
+            public let date: Date = Date()
+
+            public init(
+                ID: History.Identifier,
+                IDComment: Models.Comment.Identifier,
+                IDUser: Models.User.Identifier,
+                oldBody: String,
+                newBody: String
+            ) {
+                self.ID = ID
+                self.IDComment = IDComment
+                self.IDUser = IDUser
+                self.oldBody = oldBody
+                self.newBody = newBody
+            }
+
+            public static func log(
+                comment: Models.Comment,
+                newBody: String,
+                oldBody: String,
+                by user: Models.User,
+                within transaction: FDB.Transaction,
+                on eventLoop: EventLoop
+            ) -> Future<Void> {
+                return History
+                    .getNextID(commit: false, within: transaction)
+                    .map { (ID: Int) -> History in
+                        History(ID: ID, IDComment: comment.ID, IDUser: user.ID, oldBody: oldBody, newBody: newBody)
+                    }
+                    .flatMap { model in model.save(commit: false, within: transaction, on: eventLoop) }
+            }
+        }
     }
 }
-

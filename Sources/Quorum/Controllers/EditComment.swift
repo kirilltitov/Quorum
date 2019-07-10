@@ -28,7 +28,7 @@ public struct EditController {
             
             return Logic.User
                 .authenticate(token: request.token, requestInfo: info)
-                .flatMap { (user: Models.User) -> Future<(Models.Comment, FDB.Transaction)> in
+                .flatMap { (user: Models.User) -> Future<(Models.Comment, Models.User, FDB.Transaction)> in
                     Logic.Comment
                         .getThrowingWithTransaction(by: request.IDComment, on: eventLoop)
                         .flatMap { (comment, transaction) in
@@ -38,7 +38,7 @@ public struct EditController {
                         }
                         .mapThrowing { status, comment, transaction in
                             if user.isAtLeastModerator {
-                                return (comment, transaction)
+                                return (comment, user, transaction)
                             }
 
                             guard status != .NotCommentable else {
@@ -58,13 +58,14 @@ public struct EditController {
                                 throw LGNC.ContractError.GeneralError("You're editing too often", 429)
                             }
 
-                            return (comment, transaction)
+                            return (comment, user, transaction)
                     }
                 }
-                .flatMap { comment, transaction in
+                .flatMap { comment, user, transaction in
                     Logic.Comment.edit(
                         comment: comment,
                         body: request.body,
+                        by: user,
                         within: transaction,
                         on: eventLoop
                     )
