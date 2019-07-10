@@ -131,16 +131,16 @@ public protocol ModelInt: E2FDBEntity where Identifier == Int {}
 public extension ModelInt {
     static func getNextID(on eventLoop: EventLoop) -> Future<Self.Identifier> {
         return Self.storage.withTransaction(on: eventLoop) { transaction in
-            return Self.getNextID(on: transaction)
+            return Self.getNextID(commit: true, within: transaction)
         }
     }
 
-    static func getNextID(on transaction: FDB.Transaction) -> Future<Self.Identifier> {
+    static func getNextID(commit: Bool = true, within transaction: FDB.Transaction) -> Future<Self.Identifier> {
         let key = Self.subspace["idx"][Self.entityName]
         return transaction
             .atomic(.add, key: key, value: Int(1))
-            .flatMap { $0.get(key: key, commit: true) }
-            .map { (bytes, _) in bytes!.cast() }
+            .flatMap { $0.get(key: key, commit: commit) }
+            .map { (bytes, _) in bytes!.unsafeCast() }
     }
 }
 
@@ -159,7 +159,7 @@ func runMigrations(_ migrations: Migrations, on fdb: FDB) {
             try fdb.set(key: key, value: LGNCore.getBytes(initial))
             lastState = initial
         } else {
-            lastState = lastMigration!.cast()
+            lastState = lastMigration!.unsafeCast()
         }
     } catch {
         fatalError("Could not read migration state from fdb: \(error)")

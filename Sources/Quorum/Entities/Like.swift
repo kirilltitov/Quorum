@@ -63,7 +63,7 @@ public extension Models {
                     guard let bytes = maybeBytes else {
                         return 0
                     }
-                    return bytes.cast()
+                    return bytes.unsafeCast()
                 }
         }
 
