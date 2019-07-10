@@ -19,6 +19,7 @@ let phrases: [i18n.Locale: i18n.Phrases] = [
         "Comment not found": "Комментарий не найден",
 
         // LGNC messages
+        "Internal server error": "Ошибка сервера",
         "Type mismatch": "Неправильный тип",
         "Value missing": "Не заполнено",
         "Invalid value": "Некорректное значение",
