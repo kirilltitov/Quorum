@@ -5,7 +5,10 @@ import Entita2FDB
 public extension Models {
     final class User: Model, Entita2FDBIndexedEntity {
         public enum AccessLevel: String, Codable {
-            case User, Moderator, Admin
+            case User
+            case PowerUser
+            case Moderator
+            case Admin
         }
 
         public static var IDKey: KeyPath<Models.User, E2.UUID> = \.ID
@@ -35,6 +38,10 @@ public extension Models {
 
         public var isOrdinaryUser: Bool {
             return self.accessLevel == .User
+        }
+
+        public var shouldSkipPremoderation: Bool {
+            return self.isAtLeastModerator || self.accessLevel == .PowerUser
         }
 
         public init(

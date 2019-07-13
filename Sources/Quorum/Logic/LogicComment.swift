@@ -82,7 +82,7 @@ public extension Logic {
                 .insert(on: eventLoop)
                 .flatMap { Models.PendingComment.savePending(comment: comment, on: eventLoop) }
                 .flatMap {
-                    if user.isAtLeastModerator {
+                    if user.shouldSkipPremoderation {
                         return Logic.Comment
                             .approve(comment: comment, on: eventLoop)
                             .map { _ in Void() }
