@@ -1070,7 +1070,7 @@ public enum Services {
                 let validatorFutures: [String: Future<Void>] = [
                     "email": eventLoop.submit {
                         guard let _ = email else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(requestInfo.locale, message: "Please enter email")
                         }
                     }.flatMap {
                         if let error = Validation.NotEmpty(message: "Please enter email").validate(email!, requestInfo.locale) {
@@ -1080,7 +1080,7 @@ public enum Services {
                     },
                     "password": eventLoop.submit {
                         guard let _ = password else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(requestInfo.locale, message: "Please enter password")
                         }
                     }.flatMap {
                         if let error = Validation.NotEmpty(message: "Please enter password").validate(password!, requestInfo.locale) {
