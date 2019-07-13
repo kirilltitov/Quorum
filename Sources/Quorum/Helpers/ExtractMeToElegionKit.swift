@@ -4,6 +4,12 @@ import Entita2FDB
 import FDB
 import NIO
 
+public extension Date {
+    static var now: Date {
+        return Date()
+    }
+}
+
 //MARK:- FDB
 public extension FDB.Tuple {
     var _string: String {

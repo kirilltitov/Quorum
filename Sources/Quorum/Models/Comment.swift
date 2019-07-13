@@ -69,7 +69,7 @@ public extension Models {
             self.IDReplyComment = IDReplyComment
             self.status = .pending
             self.body = body
-            self.dateCreated = Date()
+            self.dateCreated = .now
             self.dateUpdated = .distantPast
         }
 
@@ -182,7 +182,7 @@ public extension Models {
         }
 
         public func beforeSave(within transaction: AnyTransaction?, on eventLoop: EventLoop) -> EventLoopFuture<Void> {
-            self.dateUpdated = Date()
+            self.dateUpdated = .now
 
             return eventLoop.makeSucceededFuture(())
         }
@@ -196,7 +196,7 @@ public extension Models {
             public let IDUser: Models.User.Identifier
             public let oldBody: String
             public let newBody: String
-            public let date: Date = Date()
+            public let date: Date = .now
 
             public init(
                 ID: History.Identifier,

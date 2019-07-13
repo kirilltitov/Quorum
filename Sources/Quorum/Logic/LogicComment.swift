@@ -99,6 +99,11 @@ public extension Logic {
                     }
                     return eventLoop.makeSucceededFuture()
                 }
+                .flatMap {
+                    user.dateLastComment = .now
+
+                    return user.save(on: eventLoop)
+                }
                 .map { comment }
         }
 
