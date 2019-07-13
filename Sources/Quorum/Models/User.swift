@@ -29,6 +29,7 @@ public extension Models {
         public var username: String
         public var accessLevel: AccessLevel
 
+        public var dateLastComment: Date
         public var mutedUntil: Date?
         public var color: String
 
@@ -55,6 +56,7 @@ public extension Models {
 
             self.mutedUntil = nil
             self.color = "default"
+            self.dateLastComment = .distantPast
         }
 
         public func set(accessLevel: AccessLevel, on eventLoop: EventLoop) -> Future<Void> {

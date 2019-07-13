@@ -78,8 +78,15 @@ public extension Logic {
             as user: Models.User,
             on eventLoop: EventLoop
         ) -> Future<Models.Comment> {
-            return comment
-                .insert(on: eventLoop)
+            return eventLoop
+                .makeSucceededFuture()
+                .flatMapThrowing {
+                    let dateLastCommentDiff = Date().timeIntervalSince1970 - user.dateLastComment.timeIntervalSince1970
+                    guard dateLastCommentDiff > COMMENT_POST_COOLDOWN_SECONDS else {
+                        throw LGNC.ContractError.GeneralError("You're commenting too often", 429)
+                    }
+                }
+                .flatMap { _ in comment.insert(on: eventLoop) }
                 .flatMap { Models.PendingComment.savePending(comment: comment, on: eventLoop) }
                 .flatMap {
                     if user.shouldSkipPremoderation {

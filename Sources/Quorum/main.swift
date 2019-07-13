@@ -97,7 +97,8 @@ public extension LGNCore.Address {
 
 let COMMENT_EDITABLE_TIME_SECONDS: TimeInterval = 3600
 let COMMENT_LIKEABLE_TIME_SECONDS: TimeInterval = 86400 * 365
-let COMMENT_EDIT_COOLDOWN_SECONDS: TimeInterval = 10
+let COMMENT_POST_COOLDOWN_SECONDS: TimeInterval = 5
+let COMMENT_EDIT_COOLDOWN_SECONDS: TimeInterval = 5
 
 let defaultUser = E2.UUID("00000000-1637-0034-1711-000000000000")!
 let adminUserID = defaultUser

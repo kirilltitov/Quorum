@@ -2,6 +2,7 @@ import Foundation
 import LGNCore
 import LGNC
 import Entita2FDB
+import Entita
 
 let migrations: Migrations = [
     {
@@ -65,13 +66,20 @@ let migrations: Migrations = [
                 && tuple[tuple.count - 3] as? String == Models.Comment.entityName,
                 let IDPost = tuple[tuple.count - 4] as? Int,
                 let IDComment = tuple[tuple.count - 2] as? Int
-                else { return }
+            else { return }
             let transaction = try fdb.begin(on: eventLoopGroup.eventLoop).wait()
             _ = try Models.Like.incrementLikesCounterFor(
                 comment: Models.Comment(ID: IDComment, IDUser: defaultUser, IDPost: IDPost, IDReplyComment: nil, body: ""),
                 within: transaction
-                ).wait()
+            ).wait()
             try transaction.commit().wait()
+        }
+    },
+    {
+        try fdb.get(range: Models.User.subspacePrefix.range).records.forEach { row in
+            var dict: Entita.Dict = try row.value.unpackFromJSON()
+            dict["dateLastComment"] = Int(0)
+            try fdb.set(key: row.key, value: dict.pack(to: .JSON))
         }
     },
 ]
