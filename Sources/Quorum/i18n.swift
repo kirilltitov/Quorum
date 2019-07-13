@@ -17,6 +17,8 @@ let phrases: [i18n.Locale: i18n.Phrases] = [
         "Post not found": "Пост не найден",
         "Post is read only": "В пост уже нельзя писать комменты",
         "Comment not found": "Комментарий не найден",
+        "You're editing too often": "Вы слишком часто редактируете комментарий",
+        "You're commenting too often": "Вы слишком часто пишете комментарии",
 
         // LGNC messages
         "Internal server error": "Ошибка сервера",
