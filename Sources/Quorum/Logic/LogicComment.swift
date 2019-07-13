@@ -81,6 +81,9 @@ public extension Logic {
             return eventLoop
                 .makeSucceededFuture()
                 .flatMapThrowing {
+                    if user.isAtLeastModerator {
+                        return
+                    }
                     let dateLastCommentDiff = Date().timeIntervalSince1970 - user.dateLastComment.timeIntervalSince1970
                     guard dateLastCommentDiff > COMMENT_POST_COOLDOWN_SECONDS else {
                         throw LGNC.ContractError.GeneralError("You're commenting too often", 429)
