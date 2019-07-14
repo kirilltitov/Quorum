@@ -6,6 +6,12 @@ import Entita2
 import FDB
 import NIO
 
+public extension LGNCore.RequestInfo {
+    var errorNotAuthenticated: LGNC.ContractError {
+        return LGNC.ContractError.GeneralError("Not authenticated".tr(self.locale), 401)
+    }
+}
+
 public extension Logic {
     class User {
         public enum E: Error {
@@ -18,8 +24,6 @@ public extension Logic {
             eventLoopCount: eventLoopCount
         )
 
-        public static let errorNotAuthenticated = LGNC.ContractError.GeneralError("Not authenticated", 401)
-
         public static func authenticate(
             token: String,
             requestInfo: LGNCore.RequestInfo
@@ -28,7 +32,7 @@ public extension Logic {
 
             let exploded = token.split(separator: ".", maxSplits: 2).map { String($0) }
             guard exploded.count == 3 else {
-                return eventLoop.makeFailedFuture(self.errorNotAuthenticated)
+                return eventLoop.makeFailedFuture(requestInfo.errorNotAuthenticated)
             }
 
             return Services.Author.Contracts.Authenticate
@@ -51,7 +55,7 @@ public extension Logic {
                 }
                 .flatMapThrowing { response in
                     guard let rawIDUser = response.IDUser else {
-                        throw self.errorNotAuthenticated
+                        throw requestInfo.errorNotAuthenticated
                     }
                     guard let IDUser = Models.User.Identifier(rawIDUser) else {
                         throw LGNC.ContractError.GeneralError("Invalid ID User \(rawIDUser)", 403)

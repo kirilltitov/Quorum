@@ -22,7 +22,7 @@ class UndeleteController {
                 }
                 .flatMapThrowing { (user: Models.User, comment: Models.Comment) throws -> Future<Models.Comment> in
                     guard user.isAtLeastModerator else {
-                        throw Logic.User.errorNotAuthenticated
+                        throw info.errorNotAuthenticated
                     }
                     guard comment.status == .deleted else {
                         throw LGNC.ContractError.GeneralError(

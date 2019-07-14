@@ -244,34 +244,6 @@ public extension Logic {
                         return commentsWithLikes
                     }
             }
-
-//        private static let postsLRU: CacheLRU<Int, Models.Post> = CacheLRU(capacity: 1000)
-//
-//        public static func get(by ID: Int, snapshot: Bool, on eventLoop: EventLoop) -> Future<Models.Post?> {
-//            return self.postsLRU.getOrSet(by: ID, on: eventLoop) {
-//                Models.Post.loadWithTransaction(
-//                    by: ID,
-//                    snapshot: snapshot,
-//                    on: eventLoop
-//                ).map { $0.0 }
-//            }
-//        }
-//
-//        public static func getThrowing(
-//            by ID: Int,
-//            snapshot: Bool,
-//            on eventLoop: EventLoop
-//        ) -> Future<Models.Post> {
-//            return self
-//                .get(by: ID, snapshot: snapshot, on: eventLoop)
-//                .thenThrowing { maybePost in
-//                    guard let post = maybePost else {
-//                        throw LGNC.ContractError.GeneralError("Post not found", 404)
-//                    }
-//                    return post
-//                }
-//        }
-//
         }
     }
 }

@@ -38,7 +38,7 @@ public struct HideController {
                     guard comment.status == .published else {
                         throw LGNC.ContractError.GeneralError("Comment is not in hideable status", 400)
                     }
-                    return Logic.Comment.hide(comment: comment, on: eventLoop)
+                    return Logic.Comment.hide(comment: comment, requestInfo: info)
                 }
                 .map { _ in Contract.Response() }
         }

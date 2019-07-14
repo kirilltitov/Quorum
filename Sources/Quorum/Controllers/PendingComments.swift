@@ -16,7 +16,7 @@ class PendingCommentsController {
                 .authenticate(token: request.token, requestInfo: info)
                 .mapThrowing { user in
                     guard user.isAtLeastModerator else {
-                        throw Logic.User.errorNotAuthenticated
+                        throw info.errorNotAuthenticated
                     }
                     return
                 }
@@ -49,7 +49,7 @@ class PendingCommentsCountController {
                 .authenticate(token: request.token, requestInfo: info)
                 .mapThrowing { user in
                     guard user.isAtLeastModerator else {
-                        throw Logic.User.errorNotAuthenticated
+                        throw info.errorNotAuthenticated
                     }
                     return
                 }

@@ -47,7 +47,7 @@ public struct CreateController {
                 body: Logic.Comment.getProcessedBody(from: request.body)
             )
             .flatMap { comment in user.map { (comment, $0) } }
-            .flatMap { comment, user in Logic.Comment.insert(comment: comment, as: user, on: eventLoop) }
+            .flatMap { comment, user in Logic.Comment.insert(comment: comment, as: user, requestInfo: info) }
             .flatMap { comment in comment.getContractComment(requestInfo: info) }
         }
     }

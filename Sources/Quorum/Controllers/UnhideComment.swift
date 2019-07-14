@@ -38,7 +38,7 @@ public struct UnhideController {
                     guard comment.status == .hidden else {
                         throw LGNC.ContractError.GeneralError("Comment is not in hideable status", 400)
                     }
-                    return Logic.Comment.unhide(comment: comment, on: eventLoop)
+                    return Logic.Comment.unhide(comment: comment, requestInfo: info)
                 }
                 .map { _ in Contract.Response() }
         }
