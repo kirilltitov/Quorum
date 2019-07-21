@@ -1277,7 +1277,7 @@ public enum Services {
                             throw Validation.Error.MissingValue(requestInfo.locale)
                         }
                     }.flatMap {
-                        if let error = Validation.In(allowedValues: ["User", "Moderator", "Admin"]).validate(accessLevel!, requestInfo.locale) {
+                        if let error = Validation.In(allowedValues: ["User", "PowerUser", "Moderator", "Admin"]).validate(accessLevel!, requestInfo.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
@@ -1832,7 +1832,7 @@ public enum Services {
                             throw Validation.Error.MissingValue(requestInfo.locale)
                         }
                     }.flatMap {
-                        if let error = Validation.In(allowedValues: ["User", "Moderator", "Admin"]).validate(accessLevel!, requestInfo.locale) {
+                        if let error = Validation.In(allowedValues: ["User", "Admin"]).validate(accessLevel!, requestInfo.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
