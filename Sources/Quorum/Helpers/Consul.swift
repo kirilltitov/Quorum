@@ -4,9 +4,10 @@ import LGNCore
 func registerToConsul() throws {
     do {
         let tags: [String] = ["main"]
+        let fullServiceName = "\(SERVICE_ID)-\(PORTAL_ID.lowercased())"
         let params: [String: Any] = [
-            "ID": "main",
-            "Name": "\(SERVICE_ID)-\(PORTAL_ID.lowercased())",
+            "ID": "main-\(fullServiceName)",
+            "Name": fullServiceName,
             "Address": "\(config[.PRIVATE_IP])",
             "Port": LGNS_PORT,
             "Tags": tags,
