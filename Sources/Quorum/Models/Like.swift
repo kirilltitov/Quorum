@@ -59,11 +59,11 @@ public extension Models {
                 .flatMap {
                     $0.get(key: self.getLikesCounterSubspaceFor(comment: comment), snapshot: true, commit: true)
                 }
-                .map { (maybeBytes: Bytes?) in
+                .mapThrowing { (maybeBytes: Bytes?) in
                     guard let bytes = maybeBytes else {
                         return 0
                     }
-                    return bytes.unsafeCast()
+                    return try bytes.cast()
                 }
         }
 

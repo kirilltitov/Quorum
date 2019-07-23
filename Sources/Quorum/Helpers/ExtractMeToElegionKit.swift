@@ -140,7 +140,7 @@ public extension ModelInt {
         return transaction
             .atomic(.add, key: key, value: Int(1))
             .flatMap { $0.get(key: key, commit: commit) }
-            .map { (bytes, _) in bytes!.unsafeCast() }
+            .flatMapThrowing { (bytes, _) in try bytes!.cast() }
     }
 }
 
@@ -159,7 +159,7 @@ func runMigrations(_ migrations: Migrations, on fdb: FDB) {
             try fdb.set(key: key, value: LGNCore.getBytes(initial))
             lastState = initial
         } else {
-            lastState = lastMigration!.unsafeCast()
+            lastState = try lastMigration!.cast()
         }
     } catch {
         fatalError("Could not read migration state from fdb: \(error)")

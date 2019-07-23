@@ -45,11 +45,11 @@ public extension Models {
         public static func getPendingCount(on eventLoop: EventLoop) -> Future<Int> {
             return self.storage
                 .withTransaction(on: eventLoop) { $0.get(key: self.counterSubspace, snapshot: true, commit: true) }
-                .map { (maybeBytes: Bytes?) -> Int in
+                .flatMapThrowing { (maybeBytes: Bytes?) -> Int in
                     guard let bytes = maybeBytes else {
                         return 0
                     }
-                    return bytes.unsafeCast()
+                    return try bytes.cast()
                 }
         }
 
