@@ -140,7 +140,10 @@ public extension ModelInt {
         return transaction
             .atomic(.add, key: key, value: Int(1))
             .flatMap { $0.get(key: key, commit: commit) }
-            .flatMapThrowing { (bytes, _) in try bytes!.cast() }
+            .flatMapThrowing { (maybeBytes, _) -> Int in
+                let result: Int = try maybeBytes!.cast()
+                return result
+            }
     }
 }
 
