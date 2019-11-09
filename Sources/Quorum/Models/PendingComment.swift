@@ -34,11 +34,11 @@ public extension Models {
             }
         }
 
-        private static func incrementPendingCounter(within transaction: FDB.Transaction) -> Future<FDB.Transaction> {
+        private static func incrementPendingCounter(within transaction: AnyFDBTransaction) -> Future<AnyFDBTransaction> {
             return transaction.atomic(.add, key: self.counterSubspace, value: Int(1))
         }
 
-        private static func decrementPendingCounter(within transaction: FDB.Transaction) -> Future<FDB.Transaction> {
+        private static func decrementPendingCounter(within transaction: AnyFDBTransaction) -> Future<AnyFDBTransaction> {
             return transaction.atomic(.add, key: self.counterSubspace, value: Int(-1))
         }
 

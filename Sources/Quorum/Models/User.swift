@@ -4,6 +4,14 @@ import Entita2FDB
 
 public extension Models {
     final class User: Model, Entita2FDBIndexedEntity {
+        public enum IndexKey: String, AnyIndexKey {
+            case username
+
+            /// This case is lcfirst (`Like`) and not `like` because of backward compatibility,
+            /// as ucfirst version has been used before
+            case Like
+        }
+
         public enum AccessLevel: String, Codable {
             case User
             case PowerUser
@@ -19,8 +27,8 @@ public extension Models {
             accessLevel: .User
         )
 
-        public static var indices: [String : Entita2.Index<Models.User>] = [
-            "username": E2.Index(\.username, unique: true),
+        public static var indices: [IndexKey: Entita2.Index<Models.User>] = [
+            .username: E2.Index(\.username, unique: true),
         ]
 
         public let ID: E2.UUID

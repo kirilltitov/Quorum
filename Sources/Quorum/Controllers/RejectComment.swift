@@ -9,14 +9,14 @@ public struct RejectCommentController {
     public static func setup() {
         func contractRoutine(
             request: Contract.Request,
-            info: LGNCore.RequestInfo
+            context: LGNCore.Context
         ) -> Future<Contract.Response> {
-            let eventLoop = info.eventLoop
+            let eventLoop = context.eventLoop
             return Logic.User
-                .authenticate(token: request.token, requestInfo: info)
+                .authenticate(token: request.token, context: context)
                 .mapThrowing { user in
                     guard user.accessLevel == .Admin || user.accessLevel == .Moderator else {
-                        throw info.errorNotAuthenticated
+                        throw context.errorNotAuthenticated
                     }
                     return
                 }

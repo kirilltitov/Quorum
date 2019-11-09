@@ -69,12 +69,12 @@ public extension Models {
 
         public static func getLikesForCommentsIn(
             postID: Int,
-            within transaction: FDB.Transaction,
+            within transaction: AnyFDBTransaction,
             on eventLoop: EventLoop
         ) -> Future<[Comment.Identifier: Int]> {
             return transaction
                 .get(range: self.getLikesCounterPrefixSubspace(forPostID: postID).range, snapshot: true)
-                .map { (results: FDB.KeyValuesResult, _: FDB.Transaction) -> [Comment.Identifier: Int] in
+                .map { (results: FDB.KeyValuesResult, _: AnyFDBTransaction) -> [Comment.Identifier: Int] in
                     var result = [Comment.Identifier: Int]()
 
                     // Can't use results.records.map because skipping rows becomes unreasonably more difficult
@@ -109,22 +109,22 @@ public extension Models {
         fileprivate static func updateLikesCounterFor(
             comment: Comment,
             count: Int,
-            within transaction: FDB.Transaction
-        ) -> Future<FDB.Transaction> {
+            within transaction: AnyFDBTransaction
+        ) -> Future<AnyFDBTransaction> {
             return transaction.atomic(.add, key: self.getLikesCounterSubspaceFor(comment: comment), value: count)
         }
 
         /* fileprivate */ public static func incrementLikesCounterFor(
             comment: Comment,
-            within transaction: FDB.Transaction
-        ) -> Future<FDB.Transaction> {
+            within transaction: AnyFDBTransaction
+        ) -> Future<AnyFDBTransaction> {
             return self.updateLikesCounterFor(comment: comment, count: 1, within: transaction)
         }
 
         fileprivate static func decrementLikesCounterFor(
             comment: Comment,
-            within transaction: FDB.Transaction
-        ) -> Future<FDB.Transaction> {
+            within transaction: AnyFDBTransaction
+        ) -> Future<AnyFDBTransaction> {
             return self.updateLikesCounterFor(comment: comment, count: -1, within: transaction)
         }
 
@@ -134,12 +134,12 @@ public extension Models {
             on eventLoop: EventLoop
         ) -> Future<Void> {
             let commentLikeKey = self.getCommentsLikesPrefix(for: comment)[user.ID]
-            let userLikeIndexKey = user.getIndexIndexKeyForIndex(name: self.entityName, value: comment.ID)
+            let userLikeIndexKey = user.getIndexIndexKeyForIndex(key: .Like, value: comment.ID)
 
             return fdb.withTransaction(on: eventLoop) { transaction in
                 transaction
                     .get(key: self.getCommentsLikesPrefix(for: comment)[user.ID])
-                    .flatMap { (maybeLike, transaction) -> Future<FDB.Transaction> in
+                    .flatMap { (maybeLike, transaction) -> Future<AnyFDBTransaction> in
                         maybeLike == nil
                             ? transaction
                                 .set(key: commentLikeKey, value: [])

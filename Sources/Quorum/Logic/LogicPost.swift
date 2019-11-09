@@ -59,7 +59,7 @@ public extension Logic {
             count: Int,
             on eventLoop: EventLoop
         ) -> Future<Void> {
-            return fdb.withTransaction(on: eventLoop) { (transaction: FDB.Transaction) in
+            return fdb.withTransaction(on: eventLoop) { (transaction: AnyFDBTransaction) in
                 transaction
                     .atomic(.add, key: self.commentCounterSubspaceForPost(ID: ID), value: count)
                     .flatMap { $0.commit() }
@@ -86,7 +86,7 @@ public extension Logic {
             ID: Models.Post.Identifier,
             on eventLoop: EventLoop
         ) -> Future<Int> {
-            return fdb.withTransaction(on: eventLoop) { (transaction: FDB.Transaction) in
+            return fdb.withTransaction(on: eventLoop) { (transaction: AnyFDBTransaction) in
                 transaction
                     .get(key: self.commentCounterSubspaceForPost(ID: ID), snapshot: true, commit: true)
                     .mapThrowing { (maybeBytes: Bytes?) in
@@ -168,7 +168,7 @@ public extension Logic {
         public static func getRawCommentsFor(
             ID: Models.Post.Identifier,
             on eventLoop: EventLoop,
-            within transaction: FDB.Transaction? = nil
+            within transaction: AnyFDBTransaction? = nil
         ) -> Future<[(ID: Models.Comment.Identifier, value: Models.Comment)]> {
             return eventLoop
                 .makeSucceededFuture()
@@ -178,7 +178,7 @@ public extension Logic {
                     }
                     return eventLoop.makeSucceededFuture(transaction)
                 }
-                .flatMap { (transaction: FDB.Transaction) in
+                .flatMap { (transaction: AnyFDBTransaction) in
                     Models.Comment.loadAll(
                         bySubspace: Models.Comment._getPostPrefix(ID),
                         within: transaction,

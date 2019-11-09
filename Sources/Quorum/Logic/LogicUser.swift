@@ -6,7 +6,7 @@ import Entita2
 import FDB
 import NIO
 
-public extension LGNCore.RequestInfo {
+public extension LGNCore.Context {
     var errorNotAuthenticated: LGNC.ContractError {
         return LGNC.ContractError.GeneralError("Not authenticated".tr(self.locale), 401)
     }
@@ -26,13 +26,13 @@ public extension Logic {
 
         public static func authenticate(
             token: String,
-            requestInfo: LGNCore.RequestInfo
+            context: LGNCore.Context
         ) -> Future<Models.User> {
-            let eventLoop = requestInfo.eventLoop
+            let eventLoop = context.eventLoop
 
             let exploded = token.split(separator: ".", maxSplits: 2).map { String($0) }
             guard exploded.count == 3 else {
-                return eventLoop.makeFailedFuture(requestInfo.errorNotAuthenticated)
+                return eventLoop.makeFailedFuture(context.errorNotAuthenticated)
             }
 
             return Services.Author.Contracts.Authenticate
@@ -45,7 +45,7 @@ public extension Logic {
                     ),
                     with: .init(portal: exploded[0], token: exploded[2]),
                     using: client,
-                    requestInfo: requestInfo
+                    context: context
                 )
                 .flatMapErrorThrowing { error in
                     if case LGNC.ContractError.RemoteContractExecutionFailed = error {
@@ -55,12 +55,12 @@ public extension Logic {
                 }
                 .flatMapThrowing { response in
                     guard let rawIDUser = response.IDUser else {
-                        throw requestInfo.errorNotAuthenticated
+                        throw context.errorNotAuthenticated
                     }
                     guard let IDUser = Models.User.Identifier(rawIDUser) else {
                         throw LGNC.ContractError.GeneralError("Invalid ID User \(rawIDUser)", 403)
                     }
-                    return self.get(by: IDUser, requestInfo: requestInfo)
+                    return self.get(by: IDUser, context: context)
                 }
                 .mapThrowing { (maybeUser: Models.User?) in
                     guard let user = maybeUser else {
@@ -70,30 +70,30 @@ public extension Logic {
                 }
         }
 
-        public static func maybeAuthenticate(token: String?, requestInfo: LGNCore.RequestInfo) -> Future<Models.User?> {
+        public static func maybeAuthenticate(token: String?, context: LGNCore.Context) -> Future<Models.User?> {
             guard let token = token else {
-                return requestInfo.eventLoop.makeSucceededFuture(nil)
+                return context.eventLoop.makeSucceededFuture(nil)
             }
 
             return self
-                .authenticate(token: token, requestInfo: requestInfo)
+                .authenticate(token: token, context: context)
                 .map { Optional($0) }
         }
 
-        public static func get(by IDString: String, requestInfo: LGNCore.RequestInfo) -> Future<Models.User?> {
+        public static func get(by IDString: String, context: LGNCore.Context) -> Future<Models.User?> {
             guard let ID = Models.User.Identifier(IDString) else {
-                return requestInfo.eventLoop.makeFailedFuture(
+                return context.eventLoop.makeFailedFuture(
                     LGNC.ContractError.GeneralError("Invalid ID", 400)
                 )
             }
 
-            return self.get(by: ID, requestInfo: requestInfo)
+            return self.get(by: ID, context: context)
         }
 
         public static func get(by ID: Models.User.Identifier) -> Future<Models.User?> {
             return self.get(
                 by: ID,
-                requestInfo: RequestInfo(
+                context: context(
                     remoteAddr: config[.PRIVATE_IP],
                     clientAddr: config[.PRIVATE_IP],
                     userAgent: "Quorum",
@@ -108,9 +108,9 @@ public extension Logic {
 
         public static func get(
             by ID: Models.User.Identifier,
-            requestInfo: LGNCore.RequestInfo
+            context: LGNCore.Context
         ) -> Future<Models.User?> {
-            let eventLoop = requestInfo.eventLoop
+            let eventLoop = context.eventLoop
 
             return self.usersLRU.getOrSet(by: ID, on: eventLoop) {
                 Services.Author.Contracts.UserInfoInternal
@@ -123,7 +123,7 @@ public extension Logic {
                         ),
                         with: .init(ID: ID.string),
                         using: client,
-                        requestInfo: requestInfo
+                        context: context
                     )
                     .flatMap { (user: Services.Author.Contracts.UserInfoInternal.Response) in
                         Models.User

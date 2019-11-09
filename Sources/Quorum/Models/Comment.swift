@@ -13,6 +13,10 @@ extension Date {
 
 public extension Models {
     final class Comment: ModelInt, Entita2FDBIndexedEntity {
+        public enum IndexKey: String, AnyIndexKey {
+            case ID, user
+        }
+
         public enum Status: String, Codable {
             /// Freshly posted comment, awaits moderation
             case pending
@@ -34,9 +38,9 @@ public extension Models {
         public static let IDKey: KeyPath<Comment, Int> = \.ID
         public static var fullEntityName = false
 
-        public static var indices: [String : Entita2.Index<Models.Comment>] = [
-            "ID": E2.Index(\.ID, unique: true),
-            "user": E2.Index(\.IDUser, unique: false),
+        public static var indices: [IndexKey: Entita2.Index<Models.Comment>] = [
+            .ID: E2.Index(\.ID, unique: true),
+            .user: E2.Index(\.IDUser, unique: false),
         ]
 
         public let ID: Int
@@ -73,9 +77,9 @@ public extension Models {
             self.dateUpdated = .distantPast
         }
 
-        public func getUser(requestInfo: LGNCore.RequestInfo) -> Future<User> {
+        public func getUser(context: LGNCore.Context) -> Future<User> {
             return Logic.User
-                .get(by: self.IDUser, requestInfo: requestInfo)
+                .get(by: self.IDUser, context: context)
                 .map {
                     guard let user = $0 else {
                         return User.unknown
@@ -86,10 +90,10 @@ public extension Models {
 
         public func getContractComment(
             loadLikes: Bool = true,
-            requestInfo: RequestInfo
+            context: context
         ) -> Future<Services.Shared.Comment> {
-            let eventLoop = requestInfo.eventLoop
-            let user = self.getUser(requestInfo: requestInfo)
+            let eventLoop = context.eventLoop
+            let user = self.getUser(context: context)
 
             // TODO proper await
             return user.flatMap { user in
@@ -106,8 +110,8 @@ public extension Models {
                     status: self.status.rawValue,
                     body: self.status == .deleted ? "" : self.body,
                     likes: loadLikes ? Like.getLikesFor(comment: self, on: eventLoop) : eventLoop.makeSucceededFuture(0),
-                    dateCreated: self.dateCreated.contractFormatted(locale: requestInfo.locale),
-                    dateUpdated: self.dateUpdated.contractFormatted(locale: requestInfo.locale)
+                    dateCreated: self.dateCreated.contractFormatted(locale: context.locale),
+                    dateUpdated: self.dateUpdated.contractFormatted(locale: context.locale)
                 )
             }
         }
@@ -116,16 +120,16 @@ public extension Models {
             by ID: Comment.Identifier,
             on eventLoop: EventLoop
         ) -> Future<Models.Comment?> {
-            return self.loadByIndex(name: "ID", value: ID, on: eventLoop)
+            return self.loadByIndex(key: .ID, value: ID, on: eventLoop)
         }
 
         public static func getUsingRefIDWithTransaction(
             by ID: Comment.Identifier,
             on eventLoop: EventLoop
-        ) -> Future<(Models.Comment?, FDB.Transaction)> {
+        ) -> Future<(Models.Comment?, AnyFDBTransaction)> {
             return fdb.withTransaction(on: eventLoop) { transaction in
                 self
-                    .loadByIndex(name: "ID", value: ID, within: transaction, on: eventLoop)
+                    .loadByIndex(key: .ID, value: ID, within: transaction, on: eventLoop)
                     .map { maybeComment in (maybeComment, transaction) }
             }
         }
@@ -217,7 +221,7 @@ public extension Models {
                 newBody: String,
                 oldBody: String,
                 by user: Models.User,
-                within transaction: FDB.Transaction,
+                within transaction: AnyFDBTransaction,
                 on eventLoop: EventLoop
             ) -> Future<Void> {
                 return History

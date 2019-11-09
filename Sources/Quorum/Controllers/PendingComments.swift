@@ -8,15 +8,15 @@ class PendingCommentsController {
 
         func contractRoutine(
             request: Contract.Request,
-            info: LGNCore.RequestInfo
+            context: LGNCore.Context
         ) -> Future<Contract.Response> {
-            let eventLoop = info.eventLoop
+            let eventLoop = context.eventLoop
 
             return Logic.User
-                .authenticate(token: request.token, requestInfo: info)
+                .authenticate(token: request.token, context: context)
                 .mapThrowing { user in
                     guard user.isAtLeastModerator else {
-                        throw info.errorNotAuthenticated
+                        throw context.errorNotAuthenticated
                     }
                     return
                 }
@@ -24,7 +24,7 @@ class PendingCommentsController {
                 .flatMap { comments in
                     Future.reduce(
                         into: [Services.Shared.Comment](),
-                        comments.map { $0.getContractComment(requestInfo: info) },
+                        comments.map { $0.getContractComment(context: context) },
                         on: eventLoop
                     ) { $0.append($1) }
                 }
@@ -41,15 +41,15 @@ class PendingCommentsCountController {
 
         func contractRoutine(
             request: Contract.Request,
-            info: LGNCore.RequestInfo
+            context: LGNCore.Context
         ) -> Future<Contract.Response> {
-            let eventLoop = info.eventLoop
+            let eventLoop = context.eventLoop
 
             return Logic.User
-                .authenticate(token: request.token, requestInfo: info)
+                .authenticate(token: request.token, context: context)
                 .mapThrowing { user in
                     guard user.isAtLeastModerator else {
-                        throw info.errorNotAuthenticated
+                        throw context.errorNotAuthenticated
                     }
                     return
                 }

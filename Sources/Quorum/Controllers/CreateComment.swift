@@ -34,9 +34,9 @@ public struct CreateController {
                 }
         }
 
-        Contract.guarantee { (request: Contract.Request, info: LGNCore.RequestInfo) -> Future<Contract.Response> in
-            let eventLoop = info.eventLoop
-            let user = Logic.User.authenticate(token: request.token, requestInfo: info)
+        Contract.guarantee { (request: Contract.Request, context: LGNCore.Context) -> Future<Contract.Response> in
+            let eventLoop = context.eventLoop
+            let user = Logic.User.authenticate(token: request.token, context: context)
 
             return Models.Comment.await(
                 on: eventLoop,
@@ -47,8 +47,8 @@ public struct CreateController {
                 body: Logic.Comment.getProcessedBody(from: request.body)
             )
             .flatMap { comment in user.map { (comment, $0) } }
-            .flatMap { comment, user in Logic.Comment.insert(comment: comment, as: user, requestInfo: info) }
-            .flatMap { comment in comment.getContractComment(requestInfo: info) }
+            .flatMap { comment, user in Logic.Comment.insert(comment: comment, as: user, context: context) }
+            .flatMap { comment in comment.getContractComment(context: context) }
         }
     }
 }

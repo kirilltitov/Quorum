@@ -20,21 +20,21 @@ public enum Services {
                 self.map = map
             }
 
-            public static func initWithValidation(from dictionary: Entita.Dict, requestInfo: LGNCore.RequestInfo) -> Future<FieldMapping> {
-                let eventLoop = requestInfo.eventLoop
+            public static func initWithValidation(from dictionary: Entita.Dict, context: LGNCore.Context) -> Future<FieldMapping> {
+                let eventLoop = context.eventLoop
 
                 let map: [String: String]? = try? (self.extract(param: "map", from: dictionary) as [String: String])
 
                 let validatorFutures: [String: Future<Void>] = [
                     "map": eventLoop.submit {
                         guard let _ = map else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                     },
                 ]
 
                 return self
-                    .reduce(validators: validatorFutures, requestInfo: requestInfo)
+                    .reduce(validators: validatorFutures, context: context)
                     .flatMapThrowing {
                         guard $0.count == 0 else {
                             throw LGNC.E.DecodeError($0.mapValues { [$0] })
@@ -75,8 +75,8 @@ public enum Services {
                 self.Response = Response
             }
 
-            public static func initWithValidation(from dictionary: Entita.Dict, requestInfo: LGNCore.RequestInfo) -> Future<ServiceFieldMapping> {
-                let eventLoop = requestInfo.eventLoop
+            public static func initWithValidation(from dictionary: Entita.Dict, context: LGNCore.Context) -> Future<ServiceFieldMapping> {
+                let eventLoop = context.eventLoop
 
                 let Request: FieldMapping? = try? (self.extract(param: "Request", from: dictionary) as FieldMapping)
                 let Response: FieldMapping? = try? (self.extract(param: "Response", from: dictionary) as FieldMapping)
@@ -84,18 +84,18 @@ public enum Services {
                 let validatorFutures: [String: Future<Void>] = [
                     "Request": eventLoop.submit {
                         guard let _ = Request else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                     },
                     "Response": eventLoop.submit {
                         guard let _ = Response else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                     },
                 ]
 
                 return self
-                    .reduce(validators: validatorFutures, requestInfo: requestInfo)
+                    .reduce(validators: validatorFutures, context: context)
                     .flatMapThrowing {
                         guard $0.count == 0 else {
                             throw LGNC.E.DecodeError($0.mapValues { [$0] })
@@ -136,21 +136,21 @@ public enum Services {
                 self.map = map
             }
 
-            public static func initWithValidation(from dictionary: Entita.Dict, requestInfo: LGNCore.RequestInfo) -> Future<ServiceFieldMappings> {
-                let eventLoop = requestInfo.eventLoop
+            public static func initWithValidation(from dictionary: Entita.Dict, context: LGNCore.Context) -> Future<ServiceFieldMappings> {
+                let eventLoop = context.eventLoop
 
                 let map: [String: ServiceFieldMapping]? = try? (self.extract(param: "map", from: dictionary) as [String: ServiceFieldMapping])
 
                 let validatorFutures: [String: Future<Void>] = [
                     "map": eventLoop.submit {
                         guard let _ = map else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                     },
                 ]
 
                 return self
-                    .reduce(validators: validatorFutures, requestInfo: requestInfo)
+                    .reduce(validators: validatorFutures, context: context)
                     .flatMapThrowing {
                         guard $0.count == 0 else {
                             throw LGNC.E.DecodeError($0.mapValues { [$0] })
@@ -188,18 +188,18 @@ public enum Services {
                 self.monad = monad
             }
 
-            public static func initWithValidation(from dictionary: Entita.Dict, requestInfo: LGNCore.RequestInfo) -> Future<CharacterInfo> {
-                let eventLoop = requestInfo.eventLoop
+            public static func initWithValidation(from dictionary: Entita.Dict, context: LGNCore.Context) -> Future<CharacterInfo> {
+                let eventLoop = context.eventLoop
 
                 let monad: String? = try? (self.extract(param: "monad", from: dictionary) as String)
 
                 let validatorFutures: [String: Future<Void>] = [
                     "monad": eventLoop.submit {
                         guard let _ = monad else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                     }.flatMap {
-                        if let error = Validation.NotEmpty().validate(monad!, requestInfo.locale) {
+                        if let error = Validation.NotEmpty().validate(monad!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
@@ -207,7 +207,7 @@ public enum Services {
                 ]
 
                 return self
-                    .reduce(validators: validatorFutures, requestInfo: requestInfo)
+                    .reduce(validators: validatorFutures, context: context)
                     .flatMapThrowing {
                         guard $0.count == 0 else {
                             throw LGNC.E.DecodeError($0.mapValues { [$0] })
@@ -245,18 +245,18 @@ public enum Services {
                 self.event = event
             }
 
-            public static func initWithValidation(from dictionary: Entita.Dict, requestInfo: LGNCore.RequestInfo) -> Future<EventRequest> {
-                let eventLoop = requestInfo.eventLoop
+            public static func initWithValidation(from dictionary: Entita.Dict, context: LGNCore.Context) -> Future<EventRequest> {
+                let eventLoop = context.eventLoop
 
                 let event: String? = try? (self.extract(param: "event", from: dictionary) as String)
 
                 let validatorFutures: [String: Future<Void>] = [
                     "event": eventLoop.submit {
                         guard let _ = event else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                     }.flatMap {
-                        if let error = Validation.NotEmpty().validate(event!, requestInfo.locale) {
+                        if let error = Validation.NotEmpty().validate(event!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
@@ -264,7 +264,7 @@ public enum Services {
                 ]
 
                 return self
-                    .reduce(validators: validatorFutures, requestInfo: requestInfo)
+                    .reduce(validators: validatorFutures, context: context)
                     .flatMapThrowing {
                         guard $0.count == 0 else {
                             throw LGNC.E.DecodeError($0.mapValues { [$0] })
@@ -353,8 +353,8 @@ public enum Services {
                 self.recaptchaToken = recaptchaToken
             }
 
-            public static func initWithValidation(from dictionary: Entita.Dict, requestInfo: LGNCore.RequestInfo) -> Future<UserSignupRequest> {
-                let eventLoop = requestInfo.eventLoop
+            public static func initWithValidation(from dictionary: Entita.Dict, context: LGNCore.Context) -> Future<UserSignupRequest> {
+                let eventLoop = context.eventLoop
 
                 let username: String? = try? (self.extract(param: "username", from: dictionary) as String)
                 let email: String? = try? (self.extract(param: "email", from: dictionary) as String)
@@ -367,20 +367,20 @@ public enum Services {
                 let validatorFutures: [String: Future<Void>] = [
                     "username": eventLoop.submit {
                         guard let _ = username else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                     }.flatMap {
-                        if let error = Validation.Regexp(pattern: "^[a-zA-Zа-яА-Я0-9_\\- ]+$", message: "Username must only consist of letters, numbers and underscores").validate(username!, requestInfo.locale) {
+                        if let error = Validation.Regexp(pattern: "^[a-zA-Zа-яА-Я0-9_\\- ]+$", message: "Username must only consist of letters, numbers and underscores").validate(username!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     }.flatMap {
-                        if let error = Validation.Length.Min(length: 3).validate(username!, requestInfo.locale) {
+                        if let error = Validation.Length.Min(length: 3).validate(username!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     }.flatMap {
-                        if let error = Validation.Length.Max(length: 24).validate(username!, requestInfo.locale) {
+                        if let error = Validation.Length.Max(length: 24).validate(username!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
@@ -390,21 +390,21 @@ public enum Services {
                         }
                         return Validation.CallbackWithAllowedValues<CallbackValidatorUsernameAllowedValues>(callback: validator).validate(
                             username!,
-                            requestInfo.locale,
+                            context.locale,
                             on: eventLoop
                         ).mapThrowing { maybeError in if let error = maybeError { throw error } }
                     }.flatMap {
-                        if let error = Validation.NotEmpty().validate(username!, requestInfo.locale) {
+                        if let error = Validation.NotEmpty().validate(username!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     },
                     "email": eventLoop.submit {
                         guard let _ = email else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                     }.flatMap {
-                        if let error = Validation.Regexp(pattern: "^.+@.+\\..+$", message: "Invalid email format").validate(email!, requestInfo.locale) {
+                        if let error = Validation.Regexp(pattern: "^.+@.+\\..+$", message: "Invalid email format").validate(email!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
@@ -414,86 +414,86 @@ public enum Services {
                         }
                         return Validation.CallbackWithAllowedValues<CallbackValidatorEmailAllowedValues>(callback: validator).validate(
                             email!,
-                            requestInfo.locale,
+                            context.locale,
                             on: eventLoop
                         ).mapThrowing { maybeError in if let error = maybeError { throw error } }
                     }.flatMap {
-                        if let error = Validation.NotEmpty().validate(email!, requestInfo.locale) {
+                        if let error = Validation.NotEmpty().validate(email!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     },
                     "password1": eventLoop.submit {
                         guard let _ = password1 else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                     }.flatMap {
-                        if let error = Validation.Length.Min(length: 6, message: "Password must be at least {Length} characters long").validate(password1!, requestInfo.locale) {
+                        if let error = Validation.Length.Min(length: 6, message: "Password must be at least {Length} characters long").validate(password1!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     }.flatMap {
-                        if let error = Validation.Length.Max(length: 64, message: "Password must be less than {Length} characters long").validate(password1!, requestInfo.locale) {
+                        if let error = Validation.Length.Max(length: 64, message: "Password must be less than {Length} characters long").validate(password1!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     }.flatMap {
-                        if let error = Validation.NotEmpty().validate(password1!, requestInfo.locale) {
+                        if let error = Validation.NotEmpty().validate(password1!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     },
                     "password2": eventLoop.submit {
                         guard let _ = password2 else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                     }.flatMap {
-                        if let error = Validation.Identical(right: password1!, message: "Passwords must match").validate(password2!, requestInfo.locale) {
+                        if let error = Validation.Identical(right: password1!, message: "Passwords must match").validate(password2!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     }.flatMap {
-                        if let error = Validation.NotEmpty().validate(password2!, requestInfo.locale) {
+                        if let error = Validation.NotEmpty().validate(password2!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     },
                     "sex": eventLoop.submit {
                         guard let _ = sex else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                     }.flatMap {
-                        if let error = Validation.In(allowedValues: ["Male", "Female", "Attack helicopter"]).validate(sex!, requestInfo.locale) {
+                        if let error = Validation.In(allowedValues: ["Male", "Female", "Attack helicopter"]).validate(sex!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     }.flatMap {
-                        if let error = Validation.NotEmpty().validate(sex!, requestInfo.locale) {
+                        if let error = Validation.NotEmpty().validate(sex!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     },
                     "language": eventLoop.submit {
                         guard let _ = language else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                     }.flatMap {
-                        if let error = Validation.In(allowedValues: ["en", "ru"]).validate(language!, requestInfo.locale) {
+                        if let error = Validation.In(allowedValues: ["en", "ru"]).validate(language!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     }.flatMap {
-                        if let error = Validation.NotEmpty().validate(language!, requestInfo.locale) {
+                        if let error = Validation.NotEmpty().validate(language!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     },
                     "recaptchaToken": eventLoop.submit {
                         guard let _ = recaptchaToken else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                     }.flatMap {
-                        if let error = Validation.NotEmpty().validate(recaptchaToken!, requestInfo.locale) {
+                        if let error = Validation.NotEmpty().validate(recaptchaToken!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
@@ -501,7 +501,7 @@ public enum Services {
                 ]
 
                 return self
-                    .reduce(validators: validatorFutures, requestInfo: requestInfo)
+                    .reduce(validators: validatorFutures, context: context)
                     .flatMapThrowing {
                         guard $0.count == 0 else {
                             throw LGNC.E.DecodeError($0.mapValues { [$0] })
@@ -595,8 +595,8 @@ public enum Services {
                 self.port = port
             }
 
-            public static func initWithValidation(from dictionary: Entita.Dict, requestInfo: LGNCore.RequestInfo) -> Future<NodeInfo> {
-                let eventLoop = requestInfo.eventLoop
+            public static func initWithValidation(from dictionary: Entita.Dict, context: LGNCore.Context) -> Future<NodeInfo> {
+                let eventLoop = context.eventLoop
 
                 let type: String? = try? (self.extract(param: "type", from: dictionary) as String)
                 let id: String? = try? (self.extract(param: "id", from: dictionary) as String)
@@ -606,27 +606,27 @@ public enum Services {
                 let validatorFutures: [String: Future<Void>] = [
                     "type": eventLoop.submit {
                         guard let _ = type else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                     }.flatMap {
-                        if let error = Validation.NotEmpty().validate(type!, requestInfo.locale) {
+                        if let error = Validation.NotEmpty().validate(type!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     },
                     "id": eventLoop.submit {
                         guard let _ = id else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                     }.flatMap {
-                        if let error = Validation.NotEmpty().validate(id!, requestInfo.locale) {
+                        if let error = Validation.NotEmpty().validate(id!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     },
                     "name": eventLoop.submit {
                         guard let _ = name else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                     }.flatMap {
                         guard let validator = self.validatorNameClosure else {
@@ -634,24 +634,24 @@ public enum Services {
                         }
                         return Validation.CallbackWithAllowedValues<CallbackValidatorNameAllowedValues>(callback: validator).validate(
                             name!,
-                            requestInfo.locale,
+                            context.locale,
                             on: eventLoop
                         ).mapThrowing { maybeError in if let error = maybeError { throw error } }
                     }.flatMap {
-                        if let error = Validation.NotEmpty().validate(name!, requestInfo.locale) {
+                        if let error = Validation.NotEmpty().validate(name!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     },
                     "port": eventLoop.submit {
                         guard let _ = port else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                     },
                 ]
 
                 return self
-                    .reduce(validators: validatorFutures, requestInfo: requestInfo)
+                    .reduce(validators: validatorFutures, context: context)
                     .flatMapThrowing {
                         guard $0.count == 0 else {
                             throw LGNC.E.DecodeError($0.mapValues { [$0] })
@@ -722,8 +722,8 @@ public enum Services {
                 self.entities = entities
             }
 
-            public static func initWithValidation(from dictionary: Entita.Dict, requestInfo: LGNCore.RequestInfo) -> Future<PingRequest> {
-                let eventLoop = requestInfo.eventLoop
+            public static func initWithValidation(from dictionary: Entita.Dict, context: LGNCore.Context) -> Future<PingRequest> {
+                let eventLoop = context.eventLoop
 
                 let name: String? = try? (self.extract(param: "name", from: dictionary) as String)
                 let entities: Int? = try? (self.extract(param: "entities", from: dictionary) as Int)
@@ -731,7 +731,7 @@ public enum Services {
                 let validatorFutures: [String: Future<Void>] = [
                     "name": eventLoop.submit {
                         guard let _ = name else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                     }.flatMap {
                         guard let validator = self.validatorNameClosure else {
@@ -739,24 +739,24 @@ public enum Services {
                         }
                         return Validation.CallbackWithAllowedValues<CallbackValidatorNameAllowedValues>(callback: validator).validate(
                             name!,
-                            requestInfo.locale,
+                            context.locale,
                             on: eventLoop
                         ).mapThrowing { maybeError in if let error = maybeError { throw error } }
                     }.flatMap {
-                        if let error = Validation.NotEmpty().validate(name!, requestInfo.locale) {
+                        if let error = Validation.NotEmpty().validate(name!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     },
                     "entities": eventLoop.submit {
                         guard let _ = entities else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                     },
                 ]
 
                 return self
-                    .reduce(validators: validatorFutures, requestInfo: requestInfo)
+                    .reduce(validators: validatorFutures, context: context)
                     .flatMapThrowing {
                         guard $0.count == 0 else {
                             throw LGNC.E.DecodeError($0.mapValues { [$0] })
@@ -803,18 +803,18 @@ public enum Services {
                 self.result = result
             }
 
-            public static func initWithValidation(from dictionary: Entita.Dict, requestInfo: LGNCore.RequestInfo) -> Future<PingResponse> {
-                let eventLoop = requestInfo.eventLoop
+            public static func initWithValidation(from dictionary: Entita.Dict, context: LGNCore.Context) -> Future<PingResponse> {
+                let eventLoop = context.eventLoop
 
                 let result: String? = try? (self.extract(param: "result", from: dictionary) as String)
 
                 let validatorFutures: [String: Future<Void>] = [
                     "result": eventLoop.submit {
                         guard let _ = result else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                     }.flatMap {
-                        if let error = Validation.NotEmpty().validate(result!, requestInfo.locale) {
+                        if let error = Validation.NotEmpty().validate(result!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
@@ -822,7 +822,7 @@ public enum Services {
                 ]
 
                 return self
-                    .reduce(validators: validatorFutures, requestInfo: requestInfo)
+                    .reduce(validators: validatorFutures, context: context)
                     .flatMapThrowing {
                         guard $0.count == 0 else {
                             throw LGNC.E.DecodeError($0.mapValues { [$0] })
@@ -886,8 +886,8 @@ public enum Services {
                 self.entities = entities
             }
 
-            public static func initWithValidation(from dictionary: Entita.Dict, requestInfo: LGNCore.RequestInfo) -> Future<CheckinRequest> {
-                let eventLoop = requestInfo.eventLoop
+            public static func initWithValidation(from dictionary: Entita.Dict, context: LGNCore.Context) -> Future<CheckinRequest> {
+                let eventLoop = context.eventLoop
 
                 let type: String? = try? (self.extract(param: "type", from: dictionary) as String)
                 let name: String? = try? (self.extract(param: "name", from: dictionary) as String)
@@ -897,17 +897,17 @@ public enum Services {
                 let validatorFutures: [String: Future<Void>] = [
                     "type": eventLoop.submit {
                         guard let _ = type else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                     }.flatMap {
-                        if let error = Validation.NotEmpty().validate(type!, requestInfo.locale) {
+                        if let error = Validation.NotEmpty().validate(type!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     },
                     "name": eventLoop.submit {
                         guard let _ = name else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                     }.flatMap {
                         guard let validator = self.validatorNameClosure else {
@@ -915,29 +915,29 @@ public enum Services {
                         }
                         return Validation.CallbackWithAllowedValues<CallbackValidatorNameAllowedValues>(callback: validator).validate(
                             name!,
-                            requestInfo.locale,
+                            context.locale,
                             on: eventLoop
                         ).mapThrowing { maybeError in if let error = maybeError { throw error } }
                     }.flatMap {
-                        if let error = Validation.NotEmpty().validate(name!, requestInfo.locale) {
+                        if let error = Validation.NotEmpty().validate(name!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     },
                     "port": eventLoop.submit {
                         guard let _ = port else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                     },
                     "entities": eventLoop.submit {
                         guard let _ = entities else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                     },
                 ]
 
                 return self
-                    .reduce(validators: validatorFutures, requestInfo: requestInfo)
+                    .reduce(validators: validatorFutures, context: context)
                     .flatMapThrowing {
                         guard $0.count == 0 else {
                             throw LGNC.E.DecodeError($0.mapValues { [$0] })
@@ -990,18 +990,18 @@ public enum Services {
                 self.result = result
             }
 
-            public static func initWithValidation(from dictionary: Entita.Dict, requestInfo: LGNCore.RequestInfo) -> Future<CheckinResponse> {
-                let eventLoop = requestInfo.eventLoop
+            public static func initWithValidation(from dictionary: Entita.Dict, context: LGNCore.Context) -> Future<CheckinResponse> {
+                let eventLoop = context.eventLoop
 
                 let result: String? = try? (self.extract(param: "result", from: dictionary) as String)
 
                 let validatorFutures: [String: Future<Void>] = [
                     "result": eventLoop.submit {
                         guard let _ = result else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                     }.flatMap {
-                        if let error = Validation.NotEmpty().validate(result!, requestInfo.locale) {
+                        if let error = Validation.NotEmpty().validate(result!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
@@ -1009,7 +1009,7 @@ public enum Services {
                 ]
 
                 return self
-                    .reduce(validators: validatorFutures, requestInfo: requestInfo)
+                    .reduce(validators: validatorFutures, context: context)
                     .flatMapThrowing {
                         guard $0.count == 0 else {
                             throw LGNC.E.DecodeError($0.mapValues { [$0] })
@@ -1059,8 +1059,8 @@ public enum Services {
                 self.recaptchaToken = recaptchaToken
             }
 
-            public static func initWithValidation(from dictionary: Entita.Dict, requestInfo: LGNCore.RequestInfo) -> Future<LoginRequest> {
-                let eventLoop = requestInfo.eventLoop
+            public static func initWithValidation(from dictionary: Entita.Dict, context: LGNCore.Context) -> Future<LoginRequest> {
+                let eventLoop = context.eventLoop
 
                 let email: String? = try? (self.extract(param: "email", from: dictionary) as String)
                 let password: String? = try? (self.extract(param: "password", from: dictionary) as String)
@@ -1070,37 +1070,37 @@ public enum Services {
                 let validatorFutures: [String: Future<Void>] = [
                     "email": eventLoop.submit {
                         guard let _ = email else {
-                            throw Validation.Error.MissingValue(requestInfo.locale, message: "Please enter email")
+                            throw Validation.Error.MissingValue(context.locale, message: "Please enter email")
                         }
                     }.flatMap {
-                        if let error = Validation.NotEmpty(message: "Please enter email").validate(email!, requestInfo.locale) {
+                        if let error = Validation.NotEmpty(message: "Please enter email").validate(email!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     },
                     "password": eventLoop.submit {
                         guard let _ = password else {
-                            throw Validation.Error.MissingValue(requestInfo.locale, message: "Please enter password")
+                            throw Validation.Error.MissingValue(context.locale, message: "Please enter password")
                         }
                     }.flatMap {
-                        if let error = Validation.NotEmpty(message: "Please enter password").validate(password!, requestInfo.locale) {
+                        if let error = Validation.NotEmpty(message: "Please enter password").validate(password!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     },
                     "portal": eventLoop.submit {
                         guard let _ = portal else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                     }.flatMap {
-                        if let error = Validation.NotEmpty().validate(portal!, requestInfo.locale) {
+                        if let error = Validation.NotEmpty().validate(portal!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     },
                     "recaptchaToken": eventLoop.submit {
                         guard let recaptchaToken = recaptchaToken else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                         if recaptchaToken == nil {
                             throw Validation.Error.SkipMissingOptionalValueValidators()
@@ -1109,7 +1109,7 @@ public enum Services {
                 ]
 
                 return self
-                    .reduce(validators: validatorFutures, requestInfo: requestInfo)
+                    .reduce(validators: validatorFutures, context: context)
                     .flatMapThrowing {
                         guard $0.count == 0 else {
                             throw LGNC.E.DecodeError($0.mapValues { [$0] })
@@ -1160,8 +1160,8 @@ public enum Services {
                 self.userID = userID
             }
 
-            public static func initWithValidation(from dictionary: Entita.Dict, requestInfo: LGNCore.RequestInfo) -> Future<LoginResponse> {
-                let eventLoop = requestInfo.eventLoop
+            public static func initWithValidation(from dictionary: Entita.Dict, context: LGNCore.Context) -> Future<LoginResponse> {
+                let eventLoop = context.eventLoop
 
                 let token: String? = try? (self.extract(param: "token", from: dictionary) as String)
                 let userID: String? = try? (self.extract(param: "userID", from: dictionary) as String)
@@ -1169,20 +1169,20 @@ public enum Services {
                 let validatorFutures: [String: Future<Void>] = [
                     "token": eventLoop.submit {
                         guard let _ = token else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                     }.flatMap {
-                        if let error = Validation.NotEmpty().validate(token!, requestInfo.locale) {
+                        if let error = Validation.NotEmpty().validate(token!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     },
                     "userID": eventLoop.submit {
                         guard let _ = userID else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                     }.flatMap {
-                        if let error = Validation.NotEmpty().validate(userID!, requestInfo.locale) {
+                        if let error = Validation.NotEmpty().validate(userID!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
@@ -1190,7 +1190,7 @@ public enum Services {
                 ]
 
                 return self
-                    .reduce(validators: validatorFutures, requestInfo: requestInfo)
+                    .reduce(validators: validatorFutures, context: context)
                     .flatMapThrowing {
                         guard $0.count == 0 else {
                             throw LGNC.E.DecodeError($0.mapValues { [$0] })
@@ -1239,8 +1239,8 @@ public enum Services {
                 self.accessLevel = accessLevel
             }
 
-            public static func initWithValidation(from dictionary: Entita.Dict, requestInfo: LGNCore.RequestInfo) -> Future<CommentUserInfo> {
-                let eventLoop = requestInfo.eventLoop
+            public static func initWithValidation(from dictionary: Entita.Dict, context: LGNCore.Context) -> Future<CommentUserInfo> {
+                let eventLoop = context.eventLoop
 
                 let ID: String? = try? (self.extract(param: "ID", from: dictionary) as String)
                 let username: String? = try? (self.extract(param: "username", from: dictionary) as String)
@@ -1249,40 +1249,40 @@ public enum Services {
                 let validatorFutures: [String: Future<Void>] = [
                     "ID": eventLoop.submit {
                         guard let _ = ID else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                     }.flatMap {
-                        if let error = Validation.UUID().validate(ID!, requestInfo.locale) {
+                        if let error = Validation.UUID().validate(ID!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     }.flatMap {
-                        if let error = Validation.NotEmpty().validate(ID!, requestInfo.locale) {
+                        if let error = Validation.NotEmpty().validate(ID!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     },
                     "username": eventLoop.submit {
                         guard let _ = username else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                     }.flatMap {
-                        if let error = Validation.NotEmpty().validate(username!, requestInfo.locale) {
+                        if let error = Validation.NotEmpty().validate(username!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     },
                     "accessLevel": eventLoop.submit {
                         guard let _ = accessLevel else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                     }.flatMap {
-                        if let error = Validation.In(allowedValues: ["User", "PowerUser", "Moderator", "Admin"]).validate(accessLevel!, requestInfo.locale) {
+                        if let error = Validation.In(allowedValues: ["User", "PowerUser", "Moderator", "Admin"]).validate(accessLevel!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     }.flatMap {
-                        if let error = Validation.NotEmpty().validate(accessLevel!, requestInfo.locale) {
+                        if let error = Validation.NotEmpty().validate(accessLevel!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
@@ -1290,7 +1290,7 @@ public enum Services {
                 ]
 
                 return self
-                    .reduce(validators: validatorFutures, requestInfo: requestInfo)
+                    .reduce(validators: validatorFutures, context: context)
                     .flatMapThrowing {
                         guard $0.count == 0 else {
                             throw LGNC.E.DecodeError($0.mapValues { [$0] })
@@ -1330,13 +1330,13 @@ public enum Services {
             ) {
             }
 
-            public static func initWithValidation(from _: Entita.Dict, requestInfo: LGNCore.RequestInfo) -> Future<Empty> {
+            public static func initWithValidation(from _: Entita.Dict, context: LGNCore.Context) -> Future<Empty> {
                 let validatorFutures: [String: Future<Void>] = [
                     :
                 ]
 
                 return self
-                    .reduce(validators: validatorFutures, requestInfo: requestInfo)
+                    .reduce(validators: validatorFutures, context: context)
                     .flatMapThrowing {
                         guard $0.count == 0 else {
                             throw LGNC.E.DecodeError($0.mapValues { [$0] })
@@ -1435,8 +1435,8 @@ public enum Services {
                 }
             }
 
-            public static func initWithValidation(from dictionary: Entita.Dict, requestInfo: LGNCore.RequestInfo) -> Future<Comment> {
-                let eventLoop = requestInfo.eventLoop
+            public static func initWithValidation(from dictionary: Entita.Dict, context: LGNCore.Context) -> Future<Comment> {
+                let eventLoop = context.eventLoop
 
                 let ID: Int? = try? (self.extract(param: "ID", from: dictionary) as Int)
                 let user: CommentUserInfo? = try? (self.extract(param: "user", from: dictionary) as CommentUserInfo)
@@ -1452,27 +1452,27 @@ public enum Services {
                 let validatorFutures: [String: Future<Void>] = [
                     "ID": eventLoop.submit {
                         guard let _ = ID else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                     },
                     "user": eventLoop.submit {
                         guard let _ = user else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                     },
                     "IDPost": eventLoop.submit {
                         guard let _ = IDPost else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                     }.flatMap {
-                        if let error = Validation.NotEmpty().validate(IDPost!, requestInfo.locale) {
+                        if let error = Validation.NotEmpty().validate(IDPost!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     },
                     "IDReplyComment": eventLoop.submit {
                         guard let IDReplyComment = IDReplyComment else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                         if IDReplyComment == nil {
                             throw Validation.Error.SkipMissingOptionalValueValidators()
@@ -1480,65 +1480,65 @@ public enum Services {
                     },
                     "isEditable": eventLoop.submit {
                         guard let _ = isEditable else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                     },
                     "status": eventLoop.submit {
                         guard let _ = status else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                     }.flatMap {
-                        if let error = Validation.In(allowedValues: ["pending", "deleted", "hidden", "published"]).validate(status!, requestInfo.locale) {
+                        if let error = Validation.In(allowedValues: ["pending", "deleted", "hidden", "published"]).validate(status!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     }.flatMap {
-                        if let error = Validation.NotEmpty().validate(status!, requestInfo.locale) {
+                        if let error = Validation.NotEmpty().validate(status!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     },
                     "body": eventLoop.submit {
                         guard let _ = body else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                     }.flatMap {
-                        if let error = Validation.NotEmpty().validate(body!, requestInfo.locale) {
+                        if let error = Validation.NotEmpty().validate(body!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     },
                     "likes": eventLoop.submit {
                         guard let _ = likes else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                     },
                     "dateCreated": eventLoop.submit {
                         guard let _ = dateCreated else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                     }.flatMap {
-                        if let error = Validation.Date(format: "yyyy-MM-dd kk:mm:ss.SSSSxxx").validate(dateCreated!, requestInfo.locale) {
+                        if let error = Validation.Date(format: "yyyy-MM-dd kk:mm:ss.SSSSxxx").validate(dateCreated!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     }.flatMap {
-                        if let error = Validation.NotEmpty().validate(dateCreated!, requestInfo.locale) {
+                        if let error = Validation.NotEmpty().validate(dateCreated!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     },
                     "dateUpdated": eventLoop.submit {
                         guard let _ = dateUpdated else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                     }.flatMap {
-                        if let error = Validation.Date(format: "yyyy-MM-dd kk:mm:ss.SSSSxxx").validate(dateUpdated!, requestInfo.locale) {
+                        if let error = Validation.Date(format: "yyyy-MM-dd kk:mm:ss.SSSSxxx").validate(dateUpdated!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     }.flatMap {
-                        if let error = Validation.NotEmpty().validate(dateUpdated!, requestInfo.locale) {
+                        if let error = Validation.NotEmpty().validate(dateUpdated!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
@@ -1546,7 +1546,7 @@ public enum Services {
                 ]
 
                 return self
-                    .reduce(validators: validatorFutures, requestInfo: requestInfo)
+                    .reduce(validators: validatorFutures, context: context)
                     .flatMapThrowing {
                         guard $0.count == 0 else {
                             throw LGNC.E.DecodeError($0.mapValues { [$0] })
@@ -1659,8 +1659,8 @@ public enum Services {
                 self.accessLevel = accessLevel
             }
 
-            public static func initWithValidation(from dictionary: Entita.Dict, requestInfo: LGNCore.RequestInfo) -> Future<User> {
-                let eventLoop = requestInfo.eventLoop
+            public static func initWithValidation(from dictionary: Entita.Dict, context: LGNCore.Context) -> Future<User> {
+                let eventLoop = context.eventLoop
 
                 let ID: String? = try? (self.extract(param: "ID", from: dictionary) as String)
                 let username: String? = try? (self.extract(param: "username", from: dictionary) as String)
@@ -1679,165 +1679,165 @@ public enum Services {
                 let validatorFutures: [String: Future<Void>] = [
                     "ID": eventLoop.submit {
                         guard let _ = ID else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                     }.flatMap {
-                        if let error = Validation.UUID().validate(ID!, requestInfo.locale) {
+                        if let error = Validation.UUID().validate(ID!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     }.flatMap {
-                        if let error = Validation.NotEmpty().validate(ID!, requestInfo.locale) {
+                        if let error = Validation.NotEmpty().validate(ID!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     },
                     "username": eventLoop.submit {
                         guard let _ = username else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                     }.flatMap {
-                        if let error = Validation.NotEmpty().validate(username!, requestInfo.locale) {
+                        if let error = Validation.NotEmpty().validate(username!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     },
                     "email": eventLoop.submit {
                         guard let _ = email else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                     }.flatMap {
-                        if let error = Validation.Regexp(pattern: "^.+@.+\\..+$", message: "Invalid email format").validate(email!, requestInfo.locale) {
+                        if let error = Validation.Regexp(pattern: "^.+@.+\\..+$", message: "Invalid email format").validate(email!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     }.flatMap {
-                        if let error = Validation.Length.Min(length: 6).validate(email!, requestInfo.locale) {
+                        if let error = Validation.Length.Min(length: 6).validate(email!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     }.flatMap {
-                        if let error = Validation.NotEmpty().validate(email!, requestInfo.locale) {
+                        if let error = Validation.NotEmpty().validate(email!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     },
                     "password": eventLoop.submit {
                         guard let _ = password else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                     }.flatMap {
-                        if let error = Validation.NotEmpty().validate(password!, requestInfo.locale) {
+                        if let error = Validation.NotEmpty().validate(password!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     },
                     "sex": eventLoop.submit {
                         guard let _ = sex else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                     }.flatMap {
-                        if let error = Validation.In(allowedValues: ["Male", "Female", "Attack helicopter"]).validate(sex!, requestInfo.locale) {
+                        if let error = Validation.In(allowedValues: ["Male", "Female", "Attack helicopter"]).validate(sex!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     }.flatMap {
-                        if let error = Validation.NotEmpty().validate(sex!, requestInfo.locale) {
+                        if let error = Validation.NotEmpty().validate(sex!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     },
                     "isBanned": eventLoop.submit {
                         guard let _ = isBanned else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                     },
                     "ip": eventLoop.submit {
                         guard let _ = ip else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                     }.flatMap {
-                        if let error = Validation.NotEmpty().validate(ip!, requestInfo.locale) {
+                        if let error = Validation.NotEmpty().validate(ip!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     },
                     "country": eventLoop.submit {
                         guard let _ = country else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                     }.flatMap {
-                        if let error = Validation.NotEmpty().validate(country!, requestInfo.locale) {
+                        if let error = Validation.NotEmpty().validate(country!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     },
                     "dateUnsuccessfulLogin": eventLoop.submit {
                         guard let _ = dateUnsuccessfulLogin else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                     }.flatMap {
-                        if let error = Validation.Date(format: "yyyy-MM-dd kk:mm:ss.SSSSxxx").validate(dateUnsuccessfulLogin!, requestInfo.locale) {
+                        if let error = Validation.Date(format: "yyyy-MM-dd kk:mm:ss.SSSSxxx").validate(dateUnsuccessfulLogin!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     }.flatMap {
-                        if let error = Validation.NotEmpty().validate(dateUnsuccessfulLogin!, requestInfo.locale) {
+                        if let error = Validation.NotEmpty().validate(dateUnsuccessfulLogin!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     },
                     "dateSignup": eventLoop.submit {
                         guard let _ = dateSignup else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                     }.flatMap {
-                        if let error = Validation.Date(format: "yyyy-MM-dd kk:mm:ss.SSSSxxx").validate(dateSignup!, requestInfo.locale) {
+                        if let error = Validation.Date(format: "yyyy-MM-dd kk:mm:ss.SSSSxxx").validate(dateSignup!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     }.flatMap {
-                        if let error = Validation.NotEmpty().validate(dateSignup!, requestInfo.locale) {
+                        if let error = Validation.NotEmpty().validate(dateSignup!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     },
                     "dateLogin": eventLoop.submit {
                         guard let _ = dateLogin else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                     }.flatMap {
-                        if let error = Validation.Date(format: "yyyy-MM-dd kk:mm:ss.SSSSxxx").validate(dateLogin!, requestInfo.locale) {
+                        if let error = Validation.Date(format: "yyyy-MM-dd kk:mm:ss.SSSSxxx").validate(dateLogin!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     }.flatMap {
-                        if let error = Validation.NotEmpty().validate(dateLogin!, requestInfo.locale) {
+                        if let error = Validation.NotEmpty().validate(dateLogin!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     },
                     "authorName": eventLoop.submit {
                         guard let _ = authorName else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                     }.flatMap {
-                        if let error = Validation.NotEmpty().validate(authorName!, requestInfo.locale) {
+                        if let error = Validation.NotEmpty().validate(authorName!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     },
                     "accessLevel": eventLoop.submit {
                         guard let _ = accessLevel else {
-                            throw Validation.Error.MissingValue(requestInfo.locale)
+                            throw Validation.Error.MissingValue(context.locale)
                         }
                     }.flatMap {
-                        if let error = Validation.In(allowedValues: ["User", "Admin"]).validate(accessLevel!, requestInfo.locale) {
+                        if let error = Validation.In(allowedValues: ["User", "Admin"]).validate(accessLevel!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     }.flatMap {
-                        if let error = Validation.NotEmpty().validate(accessLevel!, requestInfo.locale) {
+                        if let error = Validation.NotEmpty().validate(accessLevel!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
@@ -1845,7 +1845,7 @@ public enum Services {
                 ]
 
                 return self
-                    .reduce(validators: validatorFutures, requestInfo: requestInfo)
+                    .reduce(validators: validatorFutures, context: context)
                     .flatMapThrowing {
                         guard $0.count == 0 else {
                             throw LGNC.E.DecodeError($0.mapValues { [$0] })

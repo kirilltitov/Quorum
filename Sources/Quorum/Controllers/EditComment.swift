@@ -22,13 +22,13 @@ public struct EditController {
         
         func contractRoutine(
             request: Contract.Request,
-            info: LGNCore.RequestInfo
+            context: LGNCore.Context
         ) -> Future<Contract.Response> {
-            let eventLoop = info.eventLoop
+            let eventLoop = context.eventLoop
             
             return Logic.User
-                .authenticate(token: request.token, requestInfo: info)
-                .flatMap { (user: Models.User) -> Future<(Models.Comment, Models.User, FDB.Transaction)> in
+                .authenticate(token: request.token, context: context)
+                .flatMap { (user: Models.User) -> Future<(Models.Comment, Models.User, AnyFDBTransaction)> in
                     Logic.Comment
                         .getThrowingWithTransaction(by: request.IDComment, on: eventLoop)
                         .flatMap { (comment, transaction) in
@@ -43,21 +43,21 @@ public struct EditController {
 
                             guard status != .NotCommentable else {
                                 throw LGNC.ContractError.GeneralError(
-                                    "Comment is not editable anymore".tr(info.locale),
+                                    "Comment is not editable anymore".tr(context.locale),
                                     403
                                 )
                             }
 
                             guard user.ID == comment.IDUser else {
                                 throw LGNC.ContractError.GeneralError(
-                                    "It's not your comment".tr(info.locale),
+                                    "It's not your comment".tr(context.locale),
                                     403
                                 )
                             }
 
                             guard comment.isEditable else {
                                 throw LGNC.ContractError.GeneralError(
-                                    "This comment is not editable anymore".tr(info.locale),
+                                    "This comment is not editable anymore".tr(context.locale),
                                     408
                                 )
                             }
@@ -65,7 +65,7 @@ public struct EditController {
                             let editDiff = Date().timeIntervalSince1970 - comment.dateUpdated.timeIntervalSince1970
                             guard editDiff > COMMENT_EDIT_COOLDOWN_SECONDS else {
                                 throw LGNC.ContractError.GeneralError(
-                                    "You're editing too often".tr(info.locale),
+                                    "You're editing too often".tr(context.locale),
                                     429
                                 )
                             }
@@ -82,10 +82,10 @@ public struct EditController {
                         on: eventLoop
                     )
                 }
-                .flatMap { comment in comment.getContractComment(requestInfo: info) }
+                .flatMap { comment in comment.getContractComment(context: context) }
                 .flatMapIfErrorThrowing { error in
                     if case FDB.Error.transactionRetry = error {
-                        return contractRoutine(request: request, info: info)
+                        return contractRoutine(request: request, context: context)
                     }
                     throw error
                 }

@@ -10,9 +10,9 @@ public struct UpdateUserAccessLevelController {
     typealias Contract = Services.Quorum.Contracts.UpdateUserAccessLevel
 
     public static func setup() {
-        Contract.guarantee { (request: Contract.Request, info: LGNCore.RequestInfo) -> Future<Contract.Response> in
+        Contract.guarantee { (request: Contract.Request, context: LGNCore.Context) -> Future<Contract.Response> in
             Logic.User
-                .authenticate(token: request.token, requestInfo: info)
+                .authenticate(token: request.token, context: context)
                 .flatMapThrowing { (currentUser: Models.User) -> Void in
                     guard currentUser.accessLevel == .Admin else {
                         throw LGNC.ContractError.GeneralError("Not authorized", 403)
@@ -22,7 +22,7 @@ public struct UpdateUserAccessLevelController {
                     }
                 }
                 .flatMap {
-                    Logic.User.get(by: request.IDUser, requestInfo: info)
+                    Logic.User.get(by: request.IDUser, context: context)
                 }
                 .flatMapThrowing { (maybeUser: Models.User?) throws -> (Models.User, Models.User.AccessLevel) in
                     guard let user = maybeUser else {
@@ -34,7 +34,7 @@ public struct UpdateUserAccessLevelController {
                     return (user, accessLevel)
                 }
                 .flatMap { (user: Models.User, accessLevel: Models.User.AccessLevel) -> Future<Void> in
-                    user.set(accessLevel: accessLevel, on: info.eventLoop)
+                    user.set(accessLevel: accessLevel, on: context.eventLoop)
                 }
                 .map { empty }
         }

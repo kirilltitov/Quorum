@@ -9,7 +9,7 @@ import Entita2FDB
 
 public typealias SQuorum = Services.Quorum
 public typealias SAuthor = Services.Author
-public typealias RequestInfo = LGNCore.RequestInfo
+public typealias context = LGNCore.Context
 
 public struct Models {}
 public struct Logic {}
@@ -17,7 +17,6 @@ public struct Logic {}
 LoggingSystem.bootstrap(LGNCore.Logger.init)
 LGNCore.Logger.logLevel = .trace
 
-LGNP.verbose = false
 Entita.KEY_DICTIONARIES_ENABLED = false
 
 let APP_ENV = AppEnv.detect()
@@ -133,7 +132,7 @@ let client: LGNCClient
 if APP_ENV == .local {
     client = LGNC.Client.Loopback(eventLoopGroup: eventLoopGroup)
 
-    SAuthor.Contracts.UserInfoInternal.guarantee { (request, requestInfo) throws -> Services.Shared.User in
+    SAuthor.Contracts.UserInfoInternal.guarantee { (request, context) throws -> Services.Shared.User in
         Services.Shared.User(
             ID: defaultUser.string,
             username: "teonoman",

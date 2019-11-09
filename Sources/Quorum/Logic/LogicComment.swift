@@ -56,7 +56,7 @@ public extension Logic {
         public static func getThrowingWithTransaction(
             by ID: Models.Comment.Identifier,
             on eventLoop: EventLoop
-        ) -> Future<(Models.Comment, FDB.Transaction)> {
+        ) -> Future<(Models.Comment, AnyFDBTransaction)> {
             return Models.Comment
                 .getUsingRefIDWithTransaction(by: ID, on: eventLoop)
                 .mapThrowing { maybeComment, transaction in
@@ -76,9 +76,9 @@ public extension Logic {
         public static func insert(
             comment: Models.Comment,
             as user: Models.User,
-            requestInfo: LGNCore.RequestInfo
+            context: LGNCore.Context
         ) -> Future<Models.Comment> {
-            let eventLoop = requestInfo.eventLoop
+            let eventLoop = context.eventLoop
             return eventLoop
                 .makeSucceededFuture()
                 .flatMapThrowing {
@@ -87,7 +87,7 @@ public extension Logic {
                     }
                     let dateLastCommentDiff = Date().timeIntervalSince1970 - user.dateLastComment.timeIntervalSince1970
                     guard dateLastCommentDiff > COMMENT_POST_COOLDOWN_SECONDS else {
-                        throw LGNC.ContractError.GeneralError("You're commenting too often".tr(requestInfo.locale), 429)
+                        throw LGNC.ContractError.GeneralError("You're commenting too often".tr(context.locale), 429)
                     }
                 }
                 .flatMap { _ in comment.insert(on: eventLoop) }
@@ -124,8 +124,8 @@ public extension Logic {
             return comment.save(on: eventLoop)
         }
 
-        public static func hide(comment: Models.Comment, requestInfo: LGNCore.RequestInfo) -> Future<Void> {
-            let eventLoop = requestInfo.eventLoop
+        public static func hide(comment: Models.Comment, context: LGNCore.Context) -> Future<Void> {
+            let eventLoop = context.eventLoop
             return eventLoop
                 .makeSucceededFuture()
                 .flatMap { () -> Future<[(ID: Models.Comment.Identifier, value: Models.Comment)]> in
@@ -135,7 +135,7 @@ public extension Logic {
                     for (_, _comment) in comments {
                         if _comment.IDReplyComment == comment.ID && _comment.status == .published {
                             throw LGNC.ContractError.GeneralError(
-                                "Cannot hide comment, it has parent published comment".tr(requestInfo.locale),
+                                "Cannot hide comment, it has parent published comment".tr(context.locale),
                                 401
                             )
                         }
@@ -149,14 +149,14 @@ public extension Logic {
                 .flatMap { Logic.Post.decrementCommentCounterForPost(ID: comment.IDPost, on: eventLoop) }
         }
 
-        public static func unhide(comment: Models.Comment, requestInfo: LGNCore.RequestInfo) -> Future<Void> {
-            let eventLoop = requestInfo.eventLoop
+        public static func unhide(comment: Models.Comment, context: LGNCore.Context) -> Future<Void> {
+            let eventLoop = context.eventLoop
             return eventLoop
                 .makeSucceededFuture()
                 .flatMapThrowing {
                     guard comment.status == .hidden else {
                         throw LGNC.ContractError.GeneralError(
-                            "Cannot unhide comment, it should be in 'hidden' state".tr(requestInfo.locale),
+                            "Cannot unhide comment, it should be in 'hidden' state".tr(context.locale),
                             401
                         )
                     }
@@ -198,7 +198,7 @@ public extension Logic {
             comment: Models.Comment,
             body: String,
             by user: Models.User,
-            within transaction: FDB.Transaction,
+            within transaction: AnyFDBTransaction,
             on eventLoop: EventLoop
         ) -> Future<Models.Comment> {
             let newBody = Logic.Comment.getProcessedBody(from: body)
@@ -210,7 +210,7 @@ public extension Logic {
 
             comment.body = newBody
 
-            return comment
+            let future: Future<Void> = comment
                 .save(commit: false, within: transaction, on: eventLoop)
                 .flatMap { _ in
                     Models.Comment.History.log(
@@ -222,8 +222,9 @@ public extension Logic {
                         on: eventLoop
                     )
                 }
-                .flatMap { transaction.commit() }
-                .map { comment }
+                .flatMap { (_: Void) -> Future<Void> in transaction.commit() }
+
+            return future.map { comment }
         }
 
         public static func approve(comment: Models.Comment, on eventLoop: EventLoop) -> Future<Models.Comment> {

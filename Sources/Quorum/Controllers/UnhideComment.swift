@@ -21,11 +21,11 @@ public struct UnhideController {
                 }
         }
 
-        Contract.guarantee { (request: Contract.Request, info: LGNCore.RequestInfo) -> Future<Contract.Response> in
-            let eventLoop = info.eventLoop
+        Contract.guarantee { (request: Contract.Request, context: LGNCore.Context) -> Future<Contract.Response> in
+            let eventLoop = context.eventLoop
 
             return Logic.User
-                .authenticate(token: request.token, requestInfo: info)
+                .authenticate(token: request.token, context: context)
                 .flatMap { user in
                     Logic.Comment
                         .getThrowing(by: request.IDComment, on: eventLoop)
@@ -38,7 +38,7 @@ public struct UnhideController {
                     guard comment.status == .hidden else {
                         throw LGNC.ContractError.GeneralError("Comment is not in hideable status", 400)
                     }
-                    return Logic.Comment.unhide(comment: comment, requestInfo: info)
+                    return Logic.Comment.unhide(comment: comment, context: context)
                 }
                 .map { _ in Contract.Response() }
         }

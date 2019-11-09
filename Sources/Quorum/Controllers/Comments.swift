@@ -13,19 +13,19 @@ public struct CommentsController {
     public static func setup() {
         Contract.guarantee { (
             request: Contract.Request,
-            info: LGNCore.RequestInfo
+            context: LGNCore.Context
         ) -> Future<Contract.Response> in
-            let eventLoop = info.eventLoop
+            let eventLoop = context.eventLoop
 
             return Logic.User
-                .maybeAuthenticate(token: request.token, requestInfo: info)
+                .maybeAuthenticate(token: request.token, context: context)
                 .flatMap { maybeUser in Logic.Post.getCommentsFor(ID: request.IDPost, as: maybeUser, on: eventLoop) }
                 .flatMap { (commentsWithLikes: [Logic.Post.CommentWithLikes]) -> Future<CommentsWithLikesAndUsers> in
                     EventLoopFuture<[Models.User.Identifier: Models.User]>.reduce(
                         into: [:],
                         Set(
                             commentsWithLikes.map { $0.comment.IDUser }
-                        ).map { Logic.User.get(by: $0, requestInfo: info) },
+                        ).map { Logic.User.get(by: $0, context: context) },
                         on: eventLoop,
                         { users, _user in
                             let user = _user ?? Models.User.unknown
@@ -52,8 +52,8 @@ public struct CommentsController {
                                 status: comment.status.rawValue,
                                 body: comment.body,
                                 likes: commentWithLikes.likes,
-                                dateCreated: comment.dateCreated.contractFormatted(locale: info.locale),
-                                dateUpdated: comment.dateUpdated.contractFormatted(locale: info.locale)
+                                dateCreated: comment.dateCreated.contractFormatted(locale: context.locale),
+                                dateUpdated: comment.dateUpdated.contractFormatted(locale: context.locale)
                             )
                         }
                     )

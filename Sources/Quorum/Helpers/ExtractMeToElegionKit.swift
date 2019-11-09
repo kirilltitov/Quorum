@@ -105,12 +105,6 @@ public func =><T: RawRepresentable & Equatable>(lhs: T, rhs: [T]) -> Bool {
 }
 
 //MARK:- Entita2FDB
-extension E2.ID: FDBTuplePackable where Value == UUID {
-    public func pack() -> Bytes {
-        return self._bytes.pack()
-    }
-}
-
 public extension E2FDBEntity {
     static var format: E2.Format {
         return .JSON
@@ -128,6 +122,25 @@ public extension E2FDBEntity {
 public protocol Model: E2FDBEntity where Identifier == E2.UUID {}
 public protocol ModelInt: E2FDBEntity where Identifier == Int {}
 
+public extension Model {
+    func insert(commit: Bool = true, within transaction: AnyFDBTransaction?, on eventLoop: EventLoop) -> Future<Void> {
+        self.insert(commit: commit, within: transaction as? AnyTransaction, on: eventLoop)
+    }
+
+    func save(
+        by ID: Identifier? = nil,
+        commit: Bool = true,
+        within transaction: AnyFDBTransaction?,
+        on eventLoop: EventLoop
+    ) -> Future<Void> {
+        self.save(by: ID, commit: commit, within: transaction as? AnyTransaction, on: eventLoop)
+    }
+
+    func delete(commit: Bool = true, within transaction: AnyFDBTransaction?, on eventLoop: EventLoop) -> Future<Void> {
+        self.delete(commit: commit, within: transaction as? AnyTransaction, on: eventLoop)
+    }
+}
+
 public extension ModelInt {
     static func getNextID(on eventLoop: EventLoop) -> Future<Self.Identifier> {
         return Self.storage.withTransaction(on: eventLoop) { transaction in
@@ -135,7 +148,7 @@ public extension ModelInt {
         }
     }
 
-    static func getNextID(commit: Bool = true, within transaction: FDB.Transaction) -> Future<Self.Identifier> {
+    static func getNextID(commit: Bool = true, within transaction: AnyFDBTransaction) -> Future<Self.Identifier> {
         let key = Self.subspace["idx"][Self.entityName]
         return transaction
             .atomic(.add, key: key, value: Int(1))

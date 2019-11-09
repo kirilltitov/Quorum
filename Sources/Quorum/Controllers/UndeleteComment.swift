@@ -9,12 +9,12 @@ class UndeleteController {
 
         func contractRoutine(
             request: Contract.Request,
-            info: LGNCore.RequestInfo
+            context: LGNCore.Context
         ) -> Future<Contract.Response> {
-            let eventLoop = info.eventLoop
+            let eventLoop = context.eventLoop
 
             return Logic.User
-                .authenticate(token: request.token, requestInfo: info)
+                .authenticate(token: request.token, context: context)
                 .flatMap { user in
                     Logic.Comment
                         .getThrowing(by: request.IDComment, on: eventLoop)
@@ -22,7 +22,7 @@ class UndeleteController {
                 }
                 .flatMapThrowing { (user: Models.User, comment: Models.Comment) throws -> Future<Models.Comment> in
                     guard user.isAtLeastModerator else {
-                        throw info.errorNotAuthenticated
+                        throw context.errorNotAuthenticated
                     }
                     guard comment.status == .deleted else {
                         throw LGNC.ContractError.GeneralError(
@@ -32,7 +32,7 @@ class UndeleteController {
                     }
                     return Logic.Comment.undelete(comment: comment, on: eventLoop)
                 }
-                .flatMap { comment in comment.getContractComment(requestInfo: info) }
+                .flatMap { comment in comment.getContractComment(context: context) }
         }
 
         Contract.guarantee(contractRoutine)

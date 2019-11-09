@@ -9,21 +9,21 @@ public struct ApproveCommentController {
     public static func setup() {
         func contractRoutine(
             request: Contact.Request,
-            info: LGNCore.RequestInfo
+            context: LGNCore.Context
         ) -> Future<Contact.Response> {
-            let eventLoop = info.eventLoop
+            let eventLoop = context.eventLoop
 
             return Logic.User
-                .authenticate(token: request.token, requestInfo: info)
+                .authenticate(token: request.token, context: context)
                 .mapThrowing { user in
                     guard user.accessLevel == .Admin || user.accessLevel == .Moderator else {
-                        throw info.errorNotAuthenticated
+                        throw context.errorNotAuthenticated
                     }
                     return
                 }
                 .flatMap { Logic.Comment.getThrowing(by: request.IDComment, on: eventLoop) }
                 .flatMap { comment in Logic.Comment.approve(comment: comment, on: eventLoop) }
-                .flatMap { comment in comment.getContractComment(requestInfo: info)}
+                .flatMap { comment in comment.getContractComment(context: context)}
         }
 
         Contact.guarantee(contractRoutine)
