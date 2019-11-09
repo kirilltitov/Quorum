@@ -1,6 +1,10 @@
 import Foundation
 import LGNCore
 
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
+
 func registerToConsul() throws {
     do {
         let tags: [String] = ["main"]
