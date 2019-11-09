@@ -2,6 +2,10 @@ import Foundation
 import LGNCore
 import NIO
 
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
+
 public class HTTPRequester {
     public enum Method: String {
         case GET, POST, PUT
