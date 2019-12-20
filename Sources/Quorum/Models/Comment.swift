@@ -90,7 +90,7 @@ public extension Models {
 
         public func getContractComment(
             loadLikes: Bool = true,
-            context: context
+            context: Context
         ) -> Future<Services.Shared.Comment> {
             let eventLoop = context.eventLoop
             let user = self.getUser(context: context)

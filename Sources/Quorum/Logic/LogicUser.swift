@@ -93,7 +93,7 @@ public extension Logic {
         public static func get(by ID: Models.User.Identifier) -> Future<Models.User?> {
             return self.get(
                 by: ID,
-                context: context(
+                context: Context(
                     remoteAddr: config[.PRIVATE_IP],
                     clientAddr: config[.PRIVATE_IP],
                     userAgent: "Quorum",

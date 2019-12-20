@@ -9,7 +9,7 @@ import Entita2FDB
 
 public typealias SQuorum = Services.Quorum
 public typealias SAuthor = Services.Author
-public typealias context = LGNCore.Context
+public typealias Context = LGNCore.Context
 
 public struct Models {}
 public struct Logic {}

@@ -53,7 +53,7 @@ public enum Services {
             }
 
             public func getDictionary() throws -> Entita.Dict {
-                return [
+                [
                     self.getDictionaryKey("map"): try self.encode(self.map),
                 ]
             }
@@ -116,7 +116,7 @@ public enum Services {
             }
 
             public func getDictionary() throws -> Entita.Dict {
-                return [
+                [
                     self.getDictionaryKey("Request"): try self.encode(self.Request),
                     self.getDictionaryKey("Response"): try self.encode(self.Response),
                 ]
@@ -169,7 +169,7 @@ public enum Services {
             }
 
             public func getDictionary() throws -> Entita.Dict {
-                return [
+                [
                     self.getDictionaryKey("map"): try self.encode(self.map),
                 ]
             }
@@ -226,7 +226,7 @@ public enum Services {
             }
 
             public func getDictionary() throws -> Entita.Dict {
-                return [
+                [
                     self.getDictionaryKey("monad"): try self.encode(self.monad),
                 ]
             }
@@ -283,7 +283,7 @@ public enum Services {
             }
 
             public func getDictionary() throws -> Entita.Dict {
-                return [
+                [
                     self.getDictionaryKey("event"): try self.encode(self.event),
                 ]
             }
@@ -532,7 +532,7 @@ public enum Services {
             }
 
             public func getDictionary() throws -> Entita.Dict {
-                return [
+                [
                     self.getDictionaryKey("username"): try self.encode(self.username),
                     self.getDictionaryKey("email"): try self.encode(self.email),
                     self.getDictionaryKey("password1"): try self.encode(self.password1),
@@ -676,7 +676,7 @@ public enum Services {
             }
 
             public func getDictionary() throws -> Entita.Dict {
-                return [
+                [
                     self.getDictionaryKey("type"): try self.encode(self.type),
                     self.getDictionaryKey("id"): try self.encode(self.id),
                     self.getDictionaryKey("name"): try self.encode(self.name),
@@ -777,7 +777,7 @@ public enum Services {
             }
 
             public func getDictionary() throws -> Entita.Dict {
-                return [
+                [
                     self.getDictionaryKey("name"): try self.encode(self.name),
                     self.getDictionaryKey("entities"): try self.encode(self.entities),
                 ]
@@ -841,7 +841,7 @@ public enum Services {
             }
 
             public func getDictionary() throws -> Entita.Dict {
-                return [
+                [
                     self.getDictionaryKey("result"): try self.encode(self.result),
                 ]
             }
@@ -962,7 +962,7 @@ public enum Services {
             }
 
             public func getDictionary() throws -> Entita.Dict {
-                return [
+                [
                     self.getDictionaryKey("type"): try self.encode(self.type),
                     self.getDictionaryKey("name"): try self.encode(self.name),
                     self.getDictionaryKey("port"): try self.encode(self.port),
@@ -1028,7 +1028,7 @@ public enum Services {
             }
 
             public func getDictionary() throws -> Entita.Dict {
-                return [
+                [
                     self.getDictionaryKey("result"): try self.encode(self.result),
                 ]
             }
@@ -1134,7 +1134,7 @@ public enum Services {
             }
 
             public func getDictionary() throws -> Entita.Dict {
-                return [
+                [
                     self.getDictionaryKey("email"): try self.encode(self.email),
                     self.getDictionaryKey("password"): try self.encode(self.password),
                     self.getDictionaryKey("portal"): try self.encode(self.portal),
@@ -1211,7 +1211,7 @@ public enum Services {
             }
 
             public func getDictionary() throws -> Entita.Dict {
-                return [
+                [
                     self.getDictionaryKey("token"): try self.encode(self.token),
                     self.getDictionaryKey("userID"): try self.encode(self.userID),
                 ]
@@ -1313,7 +1313,7 @@ public enum Services {
             }
 
             public func getDictionary() throws -> Entita.Dict {
-                return [
+                [
                     self.getDictionaryKey("ID"): try self.encode(self.ID),
                     self.getDictionaryKey("username"): try self.encode(self.username),
                     self.getDictionaryKey("accessLevel"): try self.encode(self.accessLevel),
@@ -1351,7 +1351,7 @@ public enum Services {
             }
 
             public func getDictionary() throws -> Entita.Dict {
-                return [:]
+                [:]
             }
         }
 
@@ -1583,7 +1583,7 @@ public enum Services {
             }
 
             public func getDictionary() throws -> Entita.Dict {
-                return [
+                [
                     self.getDictionaryKey("ID"): try self.encode(self.ID),
                     self.getDictionaryKey("user"): try self.encode(self.user),
                     self.getDictionaryKey("IDPost"): try self.encode(self.IDPost),
@@ -1888,7 +1888,7 @@ public enum Services {
             }
 
             public func getDictionary() throws -> Entita.Dict {
-                return [
+                [
                     self.getDictionaryKey("ID"): try self.encode(self.ID),
                     self.getDictionaryKey("username"): try self.encode(self.username),
                     self.getDictionaryKey("email"): try self.encode(self.email),

@@ -53,18 +53,25 @@ public extension Models {
             return value
         }
 
+        fileprivate static func unwrapLikeCountFrom(maybeBytes: Bytes?) -> Int {
+            guard let bytes = maybeBytes else {
+                return 0
+            }
+            do {
+                return try bytes.cast()
+            } catch {
+                defaultLogger.error("Could not unwrap Int from bytes \(bytes)")
+                return 0
+            }
+        }
+
         public static func getLikesFor(comment: Comment, on eventLoop: EventLoop) -> Future<Int> {
             return fdb
                 .begin(on: eventLoop)
                 .flatMap {
                     $0.get(key: self.getLikesCounterSubspaceFor(comment: comment), snapshot: true, commit: true)
                 }
-                .mapThrowing { (maybeBytes: Bytes?) in
-                    guard let bytes = maybeBytes else {
-                        return 0
-                    }
-                    return try bytes.cast()
-                }
+                .map(self.unwrapLikeCountFrom)
         }
 
         public static func getLikesForCommentsIn(
@@ -83,7 +90,7 @@ public extension Models {
                             let tuple = try? FDB.Tuple(from: record.key).tuple.compactMap { $0 },
                             let ID = tuple.last as? Comment.Identifier
                             else { continue }
-                        result[ID] = (result[ID] ?? 0) + 1
+                        result[ID] = self.unwrapLikeCountFrom(maybeBytes: record.value)
                     }
 
                     return result

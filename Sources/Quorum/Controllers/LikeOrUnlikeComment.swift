@@ -18,19 +18,17 @@ public class LikeController {
                 }
         }
 
-        Contract.guarantee { (request, context) -> Future<Contract.Response> in
-            let eventLoop = context.eventLoop
-
-            return Logic.User
+        Contract.guarantee { request, context -> Future<Contract.Response> in
+            Logic.User
                 .authenticate(token: request.token, context: context)
                 .flatMap { user in
                     Logic.Comment
-                        .getThrowing(by: request.IDComment, on: eventLoop)
+                        .getThrowing(by: request.IDComment, on: context.eventLoop)
                         .map { comment in (user, comment) }
                 }
                 .flatMap { user, comment in
                     Contract.Response.await(
-                        likes: Logic.Comment.likeOrUnlike(comment: comment, by: user, on: eventLoop)
+                        likes: Logic.Comment.likeOrUnlike(comment: comment, by: user, context: context)
                     )
                 }
         }
