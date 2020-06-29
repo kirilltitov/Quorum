@@ -4,6 +4,16 @@ import Entita2FDB
 import FDB
 import NIO
 
+public extension Data {
+    var _bytes: Bytes {
+        Bytes(self)
+    }
+
+    var _string: String {
+        self._bytes._string
+    }
+}
+
 public extension Date {
     static var now: Date {
         return Date()

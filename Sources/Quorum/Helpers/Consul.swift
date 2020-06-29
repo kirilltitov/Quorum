@@ -24,7 +24,7 @@ func registerToConsul() throws {
             ],
         ]
         defaultLogger.info(
-            "Registering in consul with payload '\(try! JSONSerialization.data(withJSONObject: params).bytes._string)'"
+            "Registering in consul with payload '\(try! JSONSerialization.data(withJSONObject: params)._string)'"
         )
         let (maybeData, maybeResponse, maybeError) = try HTTPRequester.requestJSON(
             method: .PUT,

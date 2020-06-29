@@ -80,7 +80,7 @@ public extension Models {
                     // Can't use results.records.map because skipping rows becomes unreasonably more difficult
                     for record in results.records {
                         guard
-                            let tuple = try? FDB.Tuple(from: record.key).tuple.compactMap { $0 },
+                            let tuple = try? FDB.Tuple(from: record.key).tuple.compactMap({$0}),
                             let ID = tuple.last as? Comment.Identifier
                             else { continue }
                         result[ID] = (result[ID] ?? 0) + 1

@@ -6,6 +6,10 @@ import LGNP
 import LGNS
 import Entita
 import Entita2FDB
+import AsyncHTTPClient
+import Backtrace
+
+Backtrace.install()
 
 public typealias SQuorum = Services.Quorum
 public typealias SAuthor = Services.Author
@@ -48,9 +52,9 @@ public enum ConfigKeys: String, AnyConfigKey {
     case HASHIDS_MIN_LENGTH
 }
 
-let config = try LGNCore.Config<ConfigKeys>(
-    env: APP_ENV,
+let config = try Config<ConfigKeys>(
     rawConfig: ProcessInfo.processInfo.environment,
+    isLocal: APP_ENV == .local,
     localConfig: [
         .SALT: "da kak tak",
         .KEY: "3858f62230ac3c91",
@@ -69,7 +73,7 @@ let config = try LGNCore.Config<ConfigKeys>(
 
 let defaultLogger = Logger(label: "Quorum.Default")
 
-guard let logLevel = Logger.Level(string: config[.LOG_LEVEL]) else {
+guard let logLevel = Logger.Level(rawValue: config[.LOG_LEVEL]) else {
     defaultLogger.critical("Invalid LOG_LEVEL value: \(config[.LOG_LEVEL])")
     fatalError()
 }
@@ -118,7 +122,7 @@ extension Int {
 let eventLoopCount = System.coreCount.clamped(min: 4)
 let eventLoopGroup: EventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: eventLoopCount)
 
-let cryptor = try LGNP.Cryptor(salt: config[.SALT], key: config[.KEY])
+let cryptor = try LGNP.Cryptor(key: config[.KEY])
 
 let fdb = FDB(clusterFile: "/opt/foundationdb/fdb.cluster")
 try fdb.connect()
@@ -126,7 +130,7 @@ try fdb.connect()
 let subspaceMain = FDB.Subspace(PORTAL_ID, SERVICE_ID)
 let subspaceCounter = subspaceMain["cnt"]
 
-let requiredBitmask: LGNP.Message.ControlBitmask = [.signatureSHA1, /*.encrypted,*/ .contentTypeMsgPack]
+let requiredBitmask: LGNP.Message.ControlBitmask = [.signatureSHA512, /*.encrypted,*/ .contentTypeMsgPack]
 
 let client: LGNCClient
 if APP_ENV == .local {
@@ -160,7 +164,8 @@ if APP_ENV == .local {
             cryptor: cryptor,
             controlBitmask: requiredBitmask,
             eventLoopGroup: eventLoopGroup
-        )
+        ),
+        clientHTTP: HTTPClient(eventLoopGroupProvider: .shared(eventLoopGroup))
     )
 }
 
@@ -190,33 +195,21 @@ let HTTP_PORT = Int(config[.HTTP_PORT])!
 
 DispatchQueue(label: "games.1711.server.http", qos: .userInteractive, attributes: .concurrent).async(group: dispatchGroup) {
     let address: LGNCore.Address = .ip(host: HOST, port: HTTP_PORT)
-    let promise: Promise<Void> = eventLoopGroup.eventLoop.makePromise()
-    promise.futureResult.whenComplete { _ in
-        defaultLogger.info("Quorum HTTP service on portal ID \(PORTAL_ID) started at \(address)")
-    }
-    try! SQuorum.serveHTTP(
-        at: address,
-        eventLoopGroup: eventLoopGroup,
-        promise: promise
-    )
+    let server: AnyServer = try! SQuorum.startServerHTTP(at: address, eventLoopGroup: eventLoopGroup).wait()
+    defaultLogger.info("Quorum HTTP service on portal ID \(PORTAL_ID) started at \(address)")
+    try! server.waitForStop()
 }
 
 DispatchQueue(label: "games.1711.server.lgns", qos: .userInteractive, attributes: .concurrent).async(group: dispatchGroup) {
     let address: LGNCore.Address = .ip(host: HOST, port: LGNS_PORT)
-    let promise: Promise<Void> = eventLoopGroup.eventLoop.makePromise()
-    promise.futureResult.whenComplete { _ in
-        defaultLogger.info("Quorum LGNS service on portal ID \(PORTAL_ID) started at \(address)")
-    }
-
-    try! Services.Quorum.serveLGNS(
+    let server: AnyServer = try! SQuorum.startServerLGNS(
         at: address,
         cryptor: cryptor,
         eventLoopGroup: eventLoopGroup,
-        requiredBitmask: requiredBitmask,
-        readTimeout: .seconds(60),
-        writeTimeout: .seconds(60),
-        promise: promise
-    )
+        requiredBitmask: requiredBitmask
+    ).wait()
+    defaultLogger.info("Quorum LGNS service on portal ID \(PORTAL_ID) started at \(address)")
+    try! server.waitForStop()
 }
 
 if config[.REGISTER_TO_CONSUL].bool == true {
