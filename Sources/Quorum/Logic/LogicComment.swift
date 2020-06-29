@@ -181,17 +181,20 @@ public extension Logic {
 
         public static func likeOrUnlike(
             comment: Models.Comment,
-            by user: Models.User,
-            on eventLoop: EventLoop
+            by currentUser: Models.User,
+            context: LGNCore.Context
         ) -> Future<Int> {
             guard comment.status == .published else {
-                return eventLoop.makeSucceededFuture(0)
-            }
-            guard comment.IDUser != user.ID else {
-                return Models.Like.getLikesFor(comment: comment, on: eventLoop)
+                context.logger.info("Comment is not published, cannot like or unlike")
+                return context.eventLoop.makeSucceededFuture(0)
             }
 
-            return Models.Like.likeOrUnlike(comment: comment, by: user, on: eventLoop)
+            guard comment.IDUser != currentUser.ID else {
+                context.logger.info("Cannot like own comment")
+                return Models.Like.getLikesFor(comment: comment, on: context.eventLoop)
+            }
+
+            return Models.Like.likeOrUnlike(comment: comment, by: currentUser, on: context.eventLoop)
         }
 
         public static func edit(
