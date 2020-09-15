@@ -27,7 +27,7 @@ public extension Logic {
         public static func authenticate(
             token: String,
             context: LGNCore.Context
-        ) -> Future<Models.User> {
+        ) -> EventLoopFuture<Models.User> {
             let eventLoop = context.eventLoop
 
             let exploded = token.split(separator: ".", maxSplits: 2).map { String($0) }
@@ -70,7 +70,7 @@ public extension Logic {
                 }
         }
 
-        public static func maybeAuthenticate(token: String?, context: LGNCore.Context) -> Future<Models.User?> {
+        public static func maybeAuthenticate(token: String?, context: LGNCore.Context) -> EventLoopFuture<Models.User?> {
             guard let token = token else {
                 return context.eventLoop.makeSucceededFuture(nil)
             }
@@ -80,7 +80,7 @@ public extension Logic {
                 .map { Optional($0) }
         }
 
-        public static func get(by IDString: String, context: LGNCore.Context) -> Future<Models.User?> {
+        public static func get(by IDString: String, context: LGNCore.Context) -> EventLoopFuture<Models.User?> {
             guard let ID = Models.User.Identifier(IDString) else {
                 return context.eventLoop.makeFailedFuture(
                     LGNC.ContractError.GeneralError("Invalid ID", 400)
@@ -90,7 +90,7 @@ public extension Logic {
             return self.get(by: ID, context: context)
         }
 
-        public static func get(by ID: Models.User.Identifier) -> Future<Models.User?> {
+        public static func get(by ID: Models.User.Identifier) -> EventLoopFuture<Models.User?> {
             return self.get(
                 by: ID,
                 context: Context(
@@ -109,7 +109,7 @@ public extension Logic {
         public static func get(
             by ID: Models.User.Identifier,
             context: LGNCore.Context
-        ) -> Future<Models.User?> {
+        ) -> EventLoopFuture<Models.User?> {
             let eventLoop = context.eventLoop
 
             return self.usersLRU.getOrSet(by: ID, on: eventLoop) {

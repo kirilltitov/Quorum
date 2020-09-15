@@ -46,7 +46,7 @@ public extension Logic {
             return self.hashids.encode(ID) ?? "invalid"
         }
 
-        public static func getPostStatus(_ ID: String, on eventLoop: EventLoop) -> Future<Status> {
+        public static func getPostStatus(_ ID: String, on eventLoop: EventLoop) -> EventLoopFuture<Status> {
             guard let ID = self.decodeHash(ID: ID) else {
                 return eventLoop.makeFailedFuture(LGNC.ContractError.GeneralError("Invalid post ID", 400))
             }
@@ -58,7 +58,7 @@ public extension Logic {
             ID: Models.Post.Identifier,
             count: Int,
             on eventLoop: EventLoop
-        ) -> Future<Void> {
+        ) -> EventLoopFuture<Void> {
             return fdb.withTransaction(on: eventLoop) { (transaction: AnyFDBTransaction) in
                 transaction
                     .atomic(.add, key: self.commentCounterSubspaceForPost(ID: ID), value: count)
@@ -70,7 +70,7 @@ public extension Logic {
             ID: Models.Post.Identifier,
             count: Int = 1,
             on eventLoop: EventLoop
-        ) -> Future<Void> {
+        ) -> EventLoopFuture<Void> {
             return self.updateCommentCounterForPost(ID: ID, count: count, on: eventLoop)
         }
 
@@ -78,14 +78,14 @@ public extension Logic {
             ID: Models.Post.Identifier,
             count: Int = -1,
             on eventLoop: EventLoop
-        ) -> Future<Void> {
+        ) -> EventLoopFuture<Void> {
             return self.updateCommentCounterForPost(ID: ID, count: count, on: eventLoop)
         }
 
         public static func getCommentCounterForPost(
             ID: Models.Post.Identifier,
             on eventLoop: EventLoop
-        ) -> Future<Int> {
+        ) -> EventLoopFuture<Int> {
             return fdb.withTransaction(on: eventLoop) { (transaction: AnyFDBTransaction) in
                 transaction
                     .get(key: self.commentCounterSubspaceForPost(ID: ID), snapshot: true, commit: true)
@@ -101,8 +101,8 @@ public extension Logic {
         public static func getCommentCountersForPosts(
             IDs: [Models.Post.Identifier],
             on eventLoop: EventLoop
-        ) -> Future<[Models.Post.Identifier: Int]> {
-            return Future.reduce(
+        ) -> EventLoopFuture<[Models.Post.Identifier: Int]> {
+            return EventLoopFuture.reduce(
                 into: [:],
                 IDs.map { ID in
                     self
@@ -118,7 +118,7 @@ public extension Logic {
         public static func getCommentCountersForPosts(
             IDs obfuscatedIDs: [String],
             on eventLoop: EventLoop
-        ) -> Future<[String: Int]> {
+        ) -> EventLoopFuture<[String: Int]> {
             return self
                 .getCommentCountersForPosts(
                     IDs: obfuscatedIDs
@@ -131,7 +131,7 @@ public extension Logic {
                 }
         }
 
-        public static func getPostStatus(_ ID: Models.Post.Identifier, on eventLoop: EventLoop) -> Future<Status> {
+        public static func getPostStatus(_ ID: Models.Post.Identifier, on eventLoop: EventLoop) -> EventLoopFuture<Status> {
             let url = "\(config[.WEBSITE_DOMAIN])/post/exists/\(ID)"
 
             return HTTPRequester
@@ -157,7 +157,7 @@ public extension Logic {
             ID: String,
             as maybeUser: Models.User? = nil,
             on eventLoop: EventLoop
-        ) -> Future<[CommentWithLikes]> {
+        ) -> EventLoopFuture<[CommentWithLikes]> {
             guard let ID = self.decodeHash(ID: ID) else {
                 return eventLoop.makeFailedFuture(LGNC.ContractError.GeneralError("Invalid post ID", 400))
             }
@@ -169,7 +169,7 @@ public extension Logic {
             ID: Models.Post.Identifier,
             on eventLoop: EventLoop,
             within transaction: AnyFDBTransaction? = nil
-        ) -> Future<[(ID: Models.Comment.Identifier, value: Models.Comment)]> {
+        ) -> EventLoopFuture<[(ID: Models.Comment.Identifier, value: Models.Comment)]> {
             return eventLoop
                 .makeSucceededFuture()
                 .flatMap {
@@ -192,7 +192,7 @@ public extension Logic {
             ID: Models.Post.Identifier,
             as maybeUser: Models.User? = nil,
             on eventLoop: EventLoop
-        ) -> Future<[CommentWithLikes]> {
+        ) -> EventLoopFuture<[CommentWithLikes]> {
             return fdb.withTransaction(on: eventLoop) { transaction in
                 let isAtLeastModerator = maybeUser != nil && maybeUser?.isAtLeastModerator == true
 

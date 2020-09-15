@@ -21,7 +21,7 @@ public struct HideController {
                 }
         }
 
-        Contract.guarantee { (request: Contract.Request, context: LGNCore.Context) -> Future<Contract.Response> in
+        Contract.guarantee { (request: Contract.Request, context: LGNCore.Context) -> EventLoopFuture<Contract.Response> in
             let eventLoop = context.eventLoop
 
             return Logic.User
@@ -31,7 +31,7 @@ public struct HideController {
                         .getThrowing(by: request.IDComment, on: eventLoop)
                         .map { comment in (user, comment) }
                 }
-                .flatMapThrowing { (user: Models.User, comment: Models.Comment) throws -> Future<Void> in
+                .flatMapThrowing { (user: Models.User, comment: Models.Comment) throws -> EventLoopFuture<Void> in
                     guard user.isAtLeastModerator else {
                         throw LGNC.ContractError.GeneralError("You have no authority to hide this comment", 403)
                     }

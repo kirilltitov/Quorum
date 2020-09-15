@@ -35,14 +35,14 @@ public extension Logic {
             return (self.formatters[locale] ?? defaultFormatter).string(from: date)
         }
 
-        public static func get(by ID: Models.Comment.Identifier, on eventLoop: EventLoop) -> Future<Models.Comment?> {
+        public static func get(by ID: Models.Comment.Identifier, on eventLoop: EventLoop) -> EventLoopFuture<Models.Comment?> {
             return Models.Comment.getUsingRefID(by: ID, on: eventLoop)
         }
 
         public static func getThrowing(
             by ID: Models.Comment.Identifier,
             on eventLoop: EventLoop
-        ) -> Future<Models.Comment> {
+        ) -> EventLoopFuture<Models.Comment> {
             return Models.Comment
                 .getUsingRefID(by: ID, on: eventLoop)
                 .mapThrowing { maybeComment in
@@ -56,7 +56,7 @@ public extension Logic {
         public static func getThrowingWithTransaction(
             by ID: Models.Comment.Identifier,
             on eventLoop: EventLoop
-        ) -> Future<(Models.Comment, AnyFDBTransaction)> {
+        ) -> EventLoopFuture<(Models.Comment, AnyFDBTransaction)> {
             return Models.Comment
                 .getUsingRefIDWithTransaction(by: ID, on: eventLoop)
                 .mapThrowing { maybeComment, transaction in
@@ -67,7 +67,7 @@ public extension Logic {
                 }
         }
 
-        public static func doExists(ID: Int, on eventLoop: EventLoop) -> Future<Bool> {
+        public static func doExists(ID: Int, on eventLoop: EventLoop) -> EventLoopFuture<Bool> {
             return self
                 .get(by: ID, on: eventLoop)
                 .map { $0 != nil }
@@ -77,7 +77,7 @@ public extension Logic {
             comment: Models.Comment,
             as user: Models.User,
             context: LGNCore.Context
-        ) -> Future<Models.Comment> {
+        ) -> EventLoopFuture<Models.Comment> {
             let eventLoop = context.eventLoop
             return eventLoop
                 .makeSucceededFuture()
@@ -108,7 +108,7 @@ public extension Logic {
                 .map { comment }
         }
 
-        public static func save(comment: Models.Comment, on eventLoop: EventLoop) -> Future<Models.Comment> {
+        public static func save(comment: Models.Comment, on eventLoop: EventLoop) -> EventLoopFuture<Models.Comment> {
             return comment
                 .save(on: eventLoop)
                 .map { _ in comment }
@@ -118,17 +118,17 @@ public extension Logic {
             return string
         }
 
-        public static func delete(comment: Models.Comment, on eventLoop: EventLoop) -> Future<Void> {
+        public static func delete(comment: Models.Comment, on eventLoop: EventLoop) -> EventLoopFuture<Void> {
             comment.status = .deleted
 
             return comment.save(on: eventLoop)
         }
 
-        public static func hide(comment: Models.Comment, context: LGNCore.Context) -> Future<Void> {
+        public static func hide(comment: Models.Comment, context: LGNCore.Context) -> EventLoopFuture<Void> {
             let eventLoop = context.eventLoop
             return eventLoop
                 .makeSucceededFuture()
-                .flatMap { () -> Future<[(ID: Models.Comment.Identifier, value: Models.Comment)]> in
+                .flatMap { () -> EventLoopFuture<[(ID: Models.Comment.Identifier, value: Models.Comment)]> in
                     Logic.Post.getRawCommentsFor(ID: comment.IDPost, on: eventLoop)
                 }
                 .mapThrowing { comments in
@@ -149,7 +149,7 @@ public extension Logic {
                 .flatMap { Logic.Post.decrementCommentCounterForPost(ID: comment.IDPost, on: eventLoop) }
         }
 
-        public static func unhide(comment: Models.Comment, context: LGNCore.Context) -> Future<Void> {
+        public static func unhide(comment: Models.Comment, context: LGNCore.Context) -> EventLoopFuture<Void> {
             let eventLoop = context.eventLoop
             return eventLoop
                 .makeSucceededFuture()
@@ -171,7 +171,7 @@ public extension Logic {
         public static func undelete(
             comment: Models.Comment,
             on eventLoop: EventLoop
-        ) -> Future<Models.Comment> {
+        ) -> EventLoopFuture<Models.Comment> {
             comment.status = .published
 
             return comment
@@ -183,7 +183,7 @@ public extension Logic {
             comment: Models.Comment,
             by currentUser: Models.User,
             context: LGNCore.Context
-        ) -> Future<Int> {
+        ) -> EventLoopFuture<Int> {
             guard comment.status == .published else {
                 context.logger.info("Comment is not published, cannot like or unlike")
                 return context.eventLoop.makeSucceededFuture(0)
@@ -203,7 +203,7 @@ public extension Logic {
             by user: Models.User,
             within transaction: AnyFDBTransaction,
             on eventLoop: EventLoop
-        ) -> Future<Models.Comment> {
+        ) -> EventLoopFuture<Models.Comment> {
             let newBody = Logic.Comment.getProcessedBody(from: body)
             let oldBody = comment.body
 
@@ -213,7 +213,7 @@ public extension Logic {
 
             comment.body = newBody
 
-            let future: Future<Void> = comment
+            let future: EventLoopFuture<Void> = comment
                 .save(commit: false, within: transaction, on: eventLoop)
                 .flatMap { _ in
                     Models.Comment.History.log(
@@ -225,12 +225,12 @@ public extension Logic {
                         on: eventLoop
                     )
                 }
-                .flatMap { (_: Void) -> Future<Void> in transaction.commit() }
+                .flatMap { (_: Void) -> EventLoopFuture<Void> in transaction.commit() }
 
             return future.map { comment }
         }
 
-        public static func approve(comment: Models.Comment, on eventLoop: EventLoop) -> Future<Models.Comment> {
+        public static func approve(comment: Models.Comment, on eventLoop: EventLoop) -> EventLoopFuture<Models.Comment> {
             guard comment.status == .pending else {
                 return eventLoop.makeSucceededFuture(comment)
             }
@@ -244,7 +244,7 @@ public extension Logic {
                 .map { comment }
         }
 
-        public static func reject(comment: Models.Comment, on eventLoop: EventLoop) -> Future<Void> {
+        public static func reject(comment: Models.Comment, on eventLoop: EventLoop) -> EventLoopFuture<Void> {
             guard comment.status == .pending else {
                 return eventLoop.makeFuture()
             }

@@ -10,7 +10,7 @@ public struct UpdateUserAccessLevelController {
     typealias Contract = Services.Quorum.Contracts.UpdateUserAccessLevel
 
     public static func setup() {
-        Contract.guarantee { (request: Contract.Request, context: LGNCore.Context) -> Future<Contract.Response> in
+        Contract.guarantee { (request: Contract.Request, context: LGNCore.Context) -> EventLoopFuture<Contract.Response> in
             Logic.User
                 .authenticate(token: request.token, context: context)
                 .flatMapThrowing { (currentUser: Models.User) -> Void in
@@ -33,7 +33,7 @@ public struct UpdateUserAccessLevelController {
                     }
                     return (user, accessLevel)
                 }
-                .flatMap { (user: Models.User, accessLevel: Models.User.AccessLevel) -> Future<Void> in
+                .flatMap { (user: Models.User, accessLevel: Models.User.AccessLevel) -> EventLoopFuture<Void> in
                     user.set(accessLevel: accessLevel, on: context.eventLoop)
                 }
                 .map { empty }

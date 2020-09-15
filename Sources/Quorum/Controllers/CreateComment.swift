@@ -34,7 +34,7 @@ public struct CreateController {
                 }
         }
 
-        Contract.guarantee { (request: Contract.Request, context: LGNCore.Context) -> Future<Contract.Response> in
+        Contract.guarantee { (request: Contract.Request, context: LGNCore.Context) -> EventLoopFuture<Contract.Response> in
             let eventLoop = context.eventLoop
             let user = Logic.User.authenticate(token: request.token, context: context)
 

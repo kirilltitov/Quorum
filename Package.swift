@@ -11,8 +11,8 @@ let package = Package(
     ],
     dependencies: [
         .package(name: "LGNKit", url: "git@github.com:1711-games/LGNKit-Swift.git", .branch("master")),
-        .package(url: "git@github.com:kirilltitov/Entita2FDB.git", .branch("master")),
-        .package(url: "https://github.com/swift-server/swift-backtrace.git", from: "1.1.1"),
+        .package(url: "git@github.com:1711-Games/Entita2FDB.git", .branch("master")),
+        .package(url: "https://github.com/swift-server/swift-service-lifecycle.git", from: "1.0.0-alpha.4"),
     ],
     targets: [
         .target(
@@ -21,7 +21,8 @@ let package = Package(
                 .target(name: "Generated"),
                 .product(name: "LGNC", package: "LGNKit"),
                 .product(name: "Entita2FDB", package: "Entita2FDB"),
-                .product(name: "Backtrace", package: "swift-backtrace"),
+                .product(name: "Lifecycle", package: "swift-service-lifecycle"),
+                .product(name: "LifecycleNIOCompat", package: "swift-service-lifecycle"),
             ]
         ),
         .target(

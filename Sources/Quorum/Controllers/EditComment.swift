@@ -23,12 +23,12 @@ public struct EditController {
         func contractRoutine(
             request: Contract.Request,
             context: LGNCore.Context
-        ) -> Future<Contract.Response> {
+        ) -> EventLoopFuture<Contract.Response> {
             let eventLoop = context.eventLoop
             
             return Logic.User
                 .authenticate(token: request.token, context: context)
-                .flatMap { (user: Models.User) -> Future<(Models.Comment, Models.User, AnyFDBTransaction)> in
+                .flatMap { (user: Models.User) -> EventLoopFuture<(Models.Comment, Models.User, AnyFDBTransaction)> in
                     Logic.Comment
                         .getThrowingWithTransaction(by: request.IDComment, on: eventLoop)
                         .flatMap { (comment, transaction) in

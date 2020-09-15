@@ -7,9 +7,8 @@ import LGNS
 import Entita
 import Entita2FDB
 import AsyncHTTPClient
-import Backtrace
-
-Backtrace.install()
+import Lifecycle
+import LifecycleNIOCompat
 
 public typealias SQuorum = Services.Quorum
 public typealias SAuthor = Services.Author
@@ -27,29 +26,6 @@ let APP_ENV = AppEnv.detect()
 
 public enum E: Error {
     case Consul(String)
-}
-
-public enum ConfigKeys: String, AnyConfigKey {
-    /// Salt used for all encryptions
-    case SALT
-
-    /// AES encryption key
-    case KEY
-
-    /// Portal ID (used for separation FDB paths within one cluster)
-    case REALM
-
-    /// Website address (it's pretty much always https://kirilltitov.com)
-    case WEBSITE_DOMAIN
-
-    case AUTHOR_LGNS_PORT
-    case LOG_LEVEL
-    case LGNS_PORT
-    case HTTP_PORT
-    case PRIVATE_IP
-    case REGISTER_TO_CONSUL
-    case HASHIDS_SALT
-    case HASHIDS_MIN_LENGTH
 }
 
 let config = try Config<ConfigKeys>(
@@ -107,25 +83,21 @@ let defaultUser = E2.UUID("00000000-1637-0034-1711-000000000000")!
 let adminUserID = defaultUser
 let empty = LGNC.Entity.Empty()
 
-extension Int {
-    func clamped(min: Int? = nil, max: Int? = nil) -> Int {
-        if let min = min, self < min {
-            return min
-        }
-        if let max = max, self > max {
-            return max
-        }
-        return self
-    }
-}
+let lifecycle = ServiceLifecycle()
 
+// this const is also used in Logic.User.usersLRU initialization
 let eventLoopCount = System.coreCount.clamped(min: 4)
 let eventLoopGroup: EventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: eventLoopCount)
+lifecycle.registerShutdown(label: "eventLoopGroup", .sync(eventLoopGroup.syncShutdownGracefully))
 
 let cryptor = try LGNP.Cryptor(key: config[.KEY])
 
 let fdb = FDB(clusterFile: "/opt/foundationdb/fdb.cluster")
 try fdb.connect()
+lifecycle.registerShutdown(
+    label: "FDB",
+    .sync(fdb.disconnect)
+)
 
 let subspaceMain = FDB.Subspace(PORTAL_ID, SERVICE_ID)
 let subspaceCounter = subspaceMain["cnt"]
@@ -135,28 +107,7 @@ let requiredBitmask: LGNP.Message.ControlBitmask = [.signatureSHA512, /*.encrypt
 let client: LGNCClient
 if APP_ENV == .local {
     client = LGNC.Client.Loopback(eventLoopGroup: eventLoopGroup)
-
-    SAuthor.Contracts.UserInfoInternal.guarantee { (request, context) throws -> Services.Shared.User in
-        Services.Shared.User(
-            ID: defaultUser.string,
-            username: "teonoman",
-            email: "teo.noman@gmail.com",
-            password: "sdfdfg",
-            sex: "Male",
-            isBanned: false,
-            ip: "195.248.161.225",
-            country: "RU",
-            dateUnsuccessfulLogin: Date.distantPast.formatted,
-            dateSignup: Date().formatted,
-            dateLogin: Date().formatted,
-            authorName: "viktor",
-            accessLevel: "Admin"
-        )
-    }
-
-    SAuthor.Contracts.Authenticate.guarantee { (request, info) -> SAuthor.Contracts.Authenticate.Response in
-        .init(IDUser: defaultUser.string)
-    }
+    guaranteeLocalAuthorContracts()
 } else {
     client = LGNC.Client.Dynamic(
         eventLoopGroup: eventLoopGroup,
@@ -187,44 +138,43 @@ RejectCommentController.setup()
 UpdateUserAccessLevelController.setup()
 UserInfoController.setup()
 
-let dispatchGroup = DispatchGroup()
-
 let HOST = "0.0.0.0"
 let LGNS_PORT = Int(config[.LGNS_PORT])!
 let HTTP_PORT = Int(config[.HTTP_PORT])!
 
-DispatchQueue(label: "games.1711.server.http", qos: .userInteractive, attributes: .concurrent).async(group: dispatchGroup) {
-    let address: LGNCore.Address = .ip(host: HOST, port: HTTP_PORT)
-    let server: AnyServer = try! SQuorum.startServerHTTP(at: address, eventLoopGroup: eventLoopGroup).wait()
-    defaultLogger.info("Quorum HTTP service on portal ID \(PORTAL_ID) started at \(address)")
-    try! server.waitForStop()
-}
+let serverHTTP = try SQuorum.getServerHTTP(
+    at: .ip(host: HOST, port: HTTP_PORT),
+    eventLoopGroup: eventLoopGroup
+)
+lifecycle.register(
+    label: "HTTP Server",
+    start: .eventLoopFuture(serverHTTP.bind),
+    shutdown: .eventLoopFuture(serverHTTP.shutdown)
+)
 
-DispatchQueue(label: "games.1711.server.lgns", qos: .userInteractive, attributes: .concurrent).async(group: dispatchGroup) {
-    let address: LGNCore.Address = .ip(host: HOST, port: LGNS_PORT)
-    let server: AnyServer = try! SQuorum.startServerLGNS(
-        at: address,
-        cryptor: cryptor,
-        eventLoopGroup: eventLoopGroup,
-        requiredBitmask: requiredBitmask
-    ).wait()
-    defaultLogger.info("Quorum LGNS service on portal ID \(PORTAL_ID) started at \(address)")
-    try! server.waitForStop()
-}
+let serverLGNS = try SQuorum.getServerLGNS(
+    at: .ip(host: HOST, port: LGNS_PORT),
+    cryptor: cryptor,
+    eventLoopGroup: eventLoopGroup,
+    requiredBitmask: requiredBitmask
+)
+lifecycle.register(
+    label: "LGNS Server",
+    start: .eventLoopFuture(serverLGNS.bind),
+    shutdown: .eventLoopFuture(serverLGNS.shutdown)
+)
 
 if config[.REGISTER_TO_CONSUL].bool == true {
     try registerToConsul()
 }
 
-let trap: @convention(c) (Int32) -> Void = { s in
-    print("Received signal \(s)")
-    _  = try! SignalObserver.fire(signal: s).wait()
-    print("Shutdown routines done")
+lifecycle.start { maybeError in
+    if let error = maybeError {
+        defaultLogger.critical("Could not start Quorum: \(error)")
+    } else {
+        defaultLogger.info("Quorum successfully started!")
+    }
 }
-
-signal(SIGINT, trap)
-signal(SIGTERM, trap)
-
-dispatchGroup.wait()
+lifecycle.wait()
 
 defaultLogger.info("Bye")

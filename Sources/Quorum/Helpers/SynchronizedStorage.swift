@@ -11,13 +11,13 @@ public protocol SyncStorage {
     func getOrSet(
         by key: Key,
         on eventLoop: EventLoop,
-        _ getter: @escaping () -> Future<Value?>
-    ) -> Future<Value?>
+        _ getter: @escaping () -> EventLoopFuture<Value?>
+    ) -> EventLoopFuture<Value?>
 
-    func has(key: Key, on eventLoop: EventLoop) -> Future<Bool>
-    func get(by key: Key, on eventLoop: EventLoop) -> Future<Value?>
-    func set(by key: Key, value: Value, on eventLoop: EventLoop) -> Future<Void>
-    @discardableResult func remove(by key: Key, on eventLoop: EventLoop) -> Future<Value?>
+    func has(key: Key, on eventLoop: EventLoop) -> EventLoopFuture<Bool>
+    func get(by key: Key, on eventLoop: EventLoop) -> EventLoopFuture<Value?>
+    func set(by key: Key, value: Value, on eventLoop: EventLoop) -> EventLoopFuture<Void>
+    @discardableResult func remove(by key: Key, on eventLoop: EventLoop) -> EventLoopFuture<Value?>
 
     func has0(key: Key) -> Bool
     func get0(by key: Key) -> Value?
@@ -38,7 +38,7 @@ public extension SyncStorage {
         return self.get0(by: key) != nil
     }
 
-    func has(key: Key, on eventLoop: EventLoop) -> Future<Bool> {
+    func has(key: Key, on eventLoop: EventLoop) -> EventLoopFuture<Bool> {
         return self
             .getEventLoop(key: key)
             .makeFuture()
@@ -46,7 +46,7 @@ public extension SyncStorage {
             .hop(to: eventLoop)
     }
 
-    func get(by key: Key, on eventLoop: EventLoop) -> Future<Value?> {
+    func get(by key: Key, on eventLoop: EventLoop) -> EventLoopFuture<Value?> {
         return self
             .getEventLoop(key: key)
             .makeFuture()
@@ -54,7 +54,7 @@ public extension SyncStorage {
             .hop(to: eventLoop)
     }
 
-    func set(by key: Key, value: Value, on eventLoop: EventLoop) -> Future<Void> {
+    func set(by key: Key, value: Value, on eventLoop: EventLoop) -> EventLoopFuture<Void> {
         return self
             .getEventLoop(key: key)
             .makeFuture()
@@ -87,7 +87,7 @@ public extension SyncStorage {
             .hop(to: eventLoop)
     }
 
-    @discardableResult func remove(by key: Key, on eventLoop: EventLoop) -> Future<Value?> {
+    @discardableResult func remove(by key: Key, on eventLoop: EventLoop) -> EventLoopFuture<Value?> {
         return self
             .getEventLoop(key: key)
             .makeFuture()

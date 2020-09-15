@@ -41,7 +41,7 @@ public class HTTPRequester {
         params: Any? = nil,
         headers: [String: String] = [:],
         on eventLoop: EventLoop
-    ) -> Future<(Data?, URLResponse?, Error?)> {
+    ) -> EventLoopFuture<(Data?, URLResponse?, Error?)> {
         return self.request(
             method: method,
             contentType: .JSON,
@@ -59,8 +59,8 @@ public class HTTPRequester {
         params: Any? = nil,
         headers: [String: String] = [:],
         on eventLoop: EventLoop
-    ) -> Future<(Data?, URLResponse?, Error?)> {
-        let promise: Promise<(Data?, URLResponse?, Error?)> = eventLoop.makePromise()
+    ) -> EventLoopFuture<(Data?, URLResponse?, Error?)> {
+        let promise: EventLoopPromise<(Data?, URLResponse?, Error?)> = eventLoop.makePromise()
 
         guard let url = URL(string: urlString) else {
             promise.fail(E.InvalidURL)

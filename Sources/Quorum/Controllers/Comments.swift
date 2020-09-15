@@ -14,13 +14,13 @@ public struct CommentsController {
         Contract.guarantee { (
             request: Contract.Request,
             context: LGNCore.Context
-        ) -> Future<Contract.Response> in
+        ) -> EventLoopFuture<Contract.Response> in
             let eventLoop = context.eventLoop
 
             return Logic.User
                 .maybeAuthenticate(token: request.token, context: context)
                 .flatMap { maybeUser in Logic.Post.getCommentsFor(ID: request.IDPost, as: maybeUser, on: eventLoop) }
-                .flatMap { (commentsWithLikes: [Logic.Post.CommentWithLikes]) -> Future<CommentsWithLikesAndUsers> in
+                .flatMap { (commentsWithLikes: [Logic.Post.CommentWithLikes]) -> EventLoopFuture<CommentsWithLikesAndUsers> in
                     EventLoopFuture<[Models.User.Identifier: Models.User]>.reduce(
                         into: [:],
                         Set(

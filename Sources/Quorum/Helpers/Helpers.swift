@@ -4,6 +4,19 @@ import Entita2FDB
 import FDB
 import NIO
 
+//MARK:- General
+extension Int {
+    func clamped(min: Int? = nil, max: Int? = nil) -> Int {
+        if let min = min, self < min {
+            return min
+        }
+        if let max = max, self > max {
+            return max
+        }
+        return self
+    }
+}
+
 public extension Data {
     var _bytes: Bytes {
         Bytes(self)
@@ -42,12 +55,12 @@ public extension AnyFDBKey {
 }
 
 //MARK:- EventLoopFuture
-public extension Future {
+public extension EventLoopFuture {
     func flatMapThrowing<NewValue>(
         file: StaticString = #file,
         line: UInt = #line,
-        _ callback: @escaping (Value) throws -> Future<NewValue>
-    ) -> Future<NewValue> {
+        _ callback: @escaping (Value) throws -> EventLoopFuture<NewValue>
+    ) -> EventLoopFuture<NewValue> {
         return self.flatMap(file: file, line: line) {
             do {
                 return try callback($0)
@@ -61,15 +74,15 @@ public extension Future {
         file: StaticString = #file,
         line: UInt = #line,
         _ callback: @escaping (Value) throws -> NewValue
-    ) -> Future<NewValue> {
+    ) -> EventLoopFuture<NewValue> {
         return self.flatMapThrowing(file: file, line: line, callback)
     }
 
     func flatMapIfErrorThrowing(
         file: StaticString = #file,
         line: UInt = #line,
-        _ callback: @escaping (Error) throws -> Future<Value>
-    ) -> Future<Value> {
+        _ callback: @escaping (Error) throws -> EventLoopFuture<Value>
+    ) -> EventLoopFuture<Value> {
         return self.flatMapError(file: file, line: line) {
             do {
                 return try callback($0)
@@ -133,7 +146,7 @@ public protocol Model: E2FDBEntity where Identifier == E2.UUID {}
 public protocol ModelInt: E2FDBEntity where Identifier == Int {}
 
 public extension Model {
-    func insert(commit: Bool = true, within transaction: AnyFDBTransaction?, on eventLoop: EventLoop) -> Future<Void> {
+    func insert(commit: Bool = true, within transaction: AnyFDBTransaction?, on eventLoop: EventLoop) -> EventLoopFuture<Void> {
         self.insert(commit: commit, within: transaction as? AnyTransaction, on: eventLoop)
     }
 
@@ -142,23 +155,23 @@ public extension Model {
         commit: Bool = true,
         within transaction: AnyFDBTransaction?,
         on eventLoop: EventLoop
-    ) -> Future<Void> {
+    ) -> EventLoopFuture<Void> {
         self.save(by: ID, commit: commit, within: transaction as? AnyTransaction, on: eventLoop)
     }
 
-    func delete(commit: Bool = true, within transaction: AnyFDBTransaction?, on eventLoop: EventLoop) -> Future<Void> {
+    func delete(commit: Bool = true, within transaction: AnyFDBTransaction?, on eventLoop: EventLoop) -> EventLoopFuture<Void> {
         self.delete(commit: commit, within: transaction as? AnyTransaction, on: eventLoop)
     }
 }
 
 public extension ModelInt {
-    static func getNextID(on eventLoop: EventLoop) -> Future<Self.Identifier> {
+    static func getNextID(on eventLoop: EventLoop) -> EventLoopFuture<Self.Identifier> {
         return Self.storage.withTransaction(on: eventLoop) { transaction in
             return Self.getNextID(commit: true, within: transaction)
         }
     }
 
-    static func getNextID(commit: Bool = true, within transaction: AnyFDBTransaction) -> Future<Self.Identifier> {
+    static func getNextID(commit: Bool = true, within transaction: AnyFDBTransaction) -> EventLoopFuture<Self.Identifier> {
         let key = Self.subspace["idx"][Self.entityName]
         return transaction
             .atomic(.add, key: key, value: Int(1))
@@ -208,4 +221,3 @@ func runMigrations(_ migrations: Migrations, on fdb: FDB) {
         }
     }
 }
-

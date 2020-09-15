@@ -77,7 +77,7 @@ public extension Models {
             self.dateUpdated = .distantPast
         }
 
-        public func getUser(context: LGNCore.Context) -> Future<User> {
+        public func getUser(context: LGNCore.Context) -> EventLoopFuture<User> {
             return Logic.User
                 .get(by: self.IDUser, context: context)
                 .map {
@@ -91,7 +91,7 @@ public extension Models {
         public func getContractComment(
             loadLikes: Bool = true,
             context: Context
-        ) -> Future<Services.Shared.Comment> {
+        ) -> EventLoopFuture<Services.Shared.Comment> {
             let eventLoop = context.eventLoop
             let user = self.getUser(context: context)
 
@@ -119,14 +119,14 @@ public extension Models {
         public static func getUsingRefID(
             by ID: Comment.Identifier,
             on eventLoop: EventLoop
-        ) -> Future<Models.Comment?> {
+        ) -> EventLoopFuture<Models.Comment?> {
             return self.loadByIndex(key: .ID, value: ID, on: eventLoop)
         }
 
         public static func getUsingRefIDWithTransaction(
             by ID: Comment.Identifier,
             on eventLoop: EventLoop
-        ) -> Future<(Models.Comment?, AnyFDBTransaction)> {
+        ) -> EventLoopFuture<(Models.Comment?, AnyFDBTransaction)> {
             return fdb.withTransaction(on: eventLoop) { transaction in
                 self
                     .loadByIndex(key: .ID, value: ID, within: transaction, on: eventLoop)
@@ -157,12 +157,12 @@ public extension Models {
 
         public static func await(
             on eventLoop: EventLoop,
-            ID IDFuture: Future<Models.Comment.Identifier>,
-            IDUser IDUserFuture: Future<User.Identifier>,
+            ID IDFuture: EventLoopFuture<Models.Comment.Identifier>,
+            IDUser IDUserFuture: EventLoopFuture<User.Identifier>,
             IDPost: String,
             IDReplyComment: Int?,
             body: String
-        ) -> Future<Comment> {
+        ) -> EventLoopFuture<Comment> {
             guard let IDPost = Logic.Post.decodeHash(ID: IDPost) else {
                 return eventLoop.makeFailedFuture(LGNC.ContractError.GeneralError("Invalid post ID", 400))
             }
@@ -223,7 +223,7 @@ public extension Models {
                 by user: Models.User,
                 within transaction: AnyFDBTransaction,
                 on eventLoop: EventLoop
-            ) -> Future<Void> {
+            ) -> EventLoopFuture<Void> {
                 return History
                     .getNextID(commit: false, within: transaction)
                     .map { (ID: Int) -> History in

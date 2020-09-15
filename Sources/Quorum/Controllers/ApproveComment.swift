@@ -10,7 +10,7 @@ public struct ApproveCommentController {
         func contractRoutine(
             request: Contact.Request,
             context: LGNCore.Context
-        ) -> Future<Contact.Response> {
+        ) -> EventLoopFuture<Contact.Response> {
             let eventLoop = context.eventLoop
 
             return Logic.User

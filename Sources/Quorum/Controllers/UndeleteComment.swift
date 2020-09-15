@@ -10,7 +10,7 @@ class UndeleteController {
         func contractRoutine(
             request: Contract.Request,
             context: LGNCore.Context
-        ) -> Future<Contract.Response> {
+        ) -> EventLoopFuture<Contract.Response> {
             let eventLoop = context.eventLoop
 
             return Logic.User
@@ -20,7 +20,7 @@ class UndeleteController {
                         .getThrowing(by: request.IDComment, on: eventLoop)
                         .map { comment in (user, comment) }
                 }
-                .flatMapThrowing { (user: Models.User, comment: Models.Comment) throws -> Future<Models.Comment> in
+                .flatMapThrowing { (user: Models.User, comment: Models.Comment) throws -> EventLoopFuture<Models.Comment> in
                     guard user.isAtLeastModerator else {
                         throw context.errorNotAuthenticated
                     }

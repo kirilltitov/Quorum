@@ -9,7 +9,7 @@ class PendingCommentsController {
         func contractRoutine(
             request: Contract.Request,
             context: LGNCore.Context
-        ) -> Future<Contract.Response> {
+        ) -> EventLoopFuture<Contract.Response> {
             let eventLoop = context.eventLoop
 
             return Logic.User
@@ -22,7 +22,7 @@ class PendingCommentsController {
                 }
                 .flatMap { Models.PendingComment.getUnapprovedComments(on: eventLoop) }
                 .flatMap { comments in
-                    Future.reduce(
+                    EventLoopFuture.reduce(
                         into: [Services.Shared.Comment](),
                         comments.map { $0.getContractComment(context: context) },
                         on: eventLoop
@@ -42,7 +42,7 @@ class PendingCommentsCountController {
         func contractRoutine(
             request: Contract.Request,
             context: LGNCore.Context
-        ) -> Future<Contract.Response> {
+        ) -> EventLoopFuture<Contract.Response> {
             let eventLoop = context.eventLoop
 
             return Logic.User

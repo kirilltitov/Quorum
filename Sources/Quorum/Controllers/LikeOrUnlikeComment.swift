@@ -18,7 +18,7 @@ public class LikeController {
                 }
         }
 
-        Contract.guarantee { request, context -> Future<Contract.Response> in
+        Contract.guarantee { request, context -> EventLoopFuture<Contract.Response> in
             Logic.User
                 .authenticate(token: request.token, context: context)
                 .flatMap { user in

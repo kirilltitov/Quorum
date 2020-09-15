@@ -16,7 +16,7 @@ public extension Models {
             self.ID = ID
         }
 
-        public static func savePending(comment: Models.Comment, on eventLoop: EventLoop) -> Future<Void> {
+        public static func savePending(comment: Models.Comment, on eventLoop: EventLoop) -> EventLoopFuture<Void> {
             return self.storage.withTransaction(on: eventLoop) { transaction in
                 transaction
                     .set(key: self.IDAsKey(ID: comment.ID), value: comment.getIDAsKey())
@@ -25,7 +25,7 @@ public extension Models {
             }
         }
 
-        public static func clearRoutine(comment: Models.Comment, on eventLoop: EventLoop) -> Future<Void> {
+        public static func clearRoutine(comment: Models.Comment, on eventLoop: EventLoop) -> EventLoopFuture<Void> {
             return self.storage.withTransaction(on: eventLoop) { transaction in
                 transaction
                     .clear(key: self.IDAsKey(ID: comment.ID))
@@ -34,15 +34,15 @@ public extension Models {
             }
         }
 
-        private static func incrementPendingCounter(within transaction: AnyFDBTransaction) -> Future<AnyFDBTransaction> {
+        private static func incrementPendingCounter(within transaction: AnyFDBTransaction) -> EventLoopFuture<AnyFDBTransaction> {
             return transaction.atomic(.add, key: self.counterSubspace, value: Int(1))
         }
 
-        private static func decrementPendingCounter(within transaction: AnyFDBTransaction) -> Future<AnyFDBTransaction> {
+        private static func decrementPendingCounter(within transaction: AnyFDBTransaction) -> EventLoopFuture<AnyFDBTransaction> {
             return transaction.atomic(.add, key: self.counterSubspace, value: Int(-1))
         }
 
-        public static func getPendingCount(on eventLoop: EventLoop) -> Future<Int> {
+        public static func getPendingCount(on eventLoop: EventLoop) -> EventLoopFuture<Int> {
             return self.storage
                 .withTransaction(on: eventLoop) { $0.get(key: self.counterSubspace, snapshot: true, commit: true) }
                 .flatMapThrowing { (maybeBytes: Bytes?) -> Int in
@@ -53,12 +53,12 @@ public extension Models {
                 }
         }
 
-        public static func getUnapprovedComments(on eventLoop: EventLoop) -> Future<[Models.Comment]> {
+        public static func getUnapprovedComments(on eventLoop: EventLoop) -> EventLoopFuture<[Models.Comment]> {
             return self.storage.withTransaction(on: eventLoop) { transaction in
                 transaction
                     .get(range: self.subspacePrefix.range)
-                    .flatMap { (results, _) -> Future<[Models.Comment?]> in
-                        Future.reduce(
+                    .flatMap { (results, _) -> EventLoopFuture<[Models.Comment?]> in
+                        EventLoopFuture.reduce(
                             into: [Models.Comment?](),
                             results.records.map { kv in Models.Comment.loadByRaw(IDBytes: kv.value, on: eventLoop) },
                             on: eventLoop

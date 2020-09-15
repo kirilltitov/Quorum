@@ -10,7 +10,7 @@ public struct RejectCommentController {
         func contractRoutine(
             request: Contract.Request,
             context: LGNCore.Context
-        ) -> Future<Contract.Response> {
+        ) -> EventLoopFuture<Contract.Response> {
             let eventLoop = context.eventLoop
             return Logic.User
                 .authenticate(token: request.token, context: context)

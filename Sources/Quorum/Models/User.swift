@@ -67,7 +67,7 @@ public extension Models {
             self.dateLastComment = .distantPast
         }
 
-        public func set(accessLevel: AccessLevel, on eventLoop: EventLoop) -> Future<Void> {
+        public func set(accessLevel: AccessLevel, on eventLoop: EventLoop) -> EventLoopFuture<Void> {
             self.accessLevel = accessLevel
 
             return self.save(on: eventLoop)
