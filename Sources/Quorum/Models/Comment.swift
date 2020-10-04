@@ -200,7 +200,7 @@ public extension Models {
             public let IDUser: Models.User.Identifier
             public let oldBody: String
             public let newBody: String
-            public let date: Date = .now
+            public let date: Date
 
             public init(
                 ID: History.Identifier,
@@ -214,6 +214,7 @@ public extension Models {
                 self.IDUser = IDUser
                 self.oldBody = oldBody
                 self.newBody = newBody
+                self.date = .now
             }
 
             public static func log(

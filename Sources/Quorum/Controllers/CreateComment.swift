@@ -5,11 +5,13 @@ import LGNS
 import LGNC
 import Entita2
 
-public struct CreateController {
-    typealias Contract = Services.Quorum.Contracts.CreateComment
+fileprivate typealias Contract = Services.Quorum.Contracts.CreateComment
 
+extension Contract.Request: AnyEntityWithSession {}
+
+public struct CreateController {
     public static func setup() {
-        Contract.Request.validateIdpost { ID, eventLoop in
+        Contract.Request.validateIDPost { ID, eventLoop in
             Logic.Post
                 .getPostStatus(ID, on: eventLoop)
                 .map { status in
@@ -23,7 +25,7 @@ public struct CreateController {
                 }
         }
 
-        Contract.Request.validateIdreplycomment { ID, eventLoop in
+        Contract.Request.validateIDReplyComment { ID, eventLoop in
             Logic.Comment
                 .doExists(ID: ID, on: eventLoop)
                 .map {
@@ -36,7 +38,7 @@ public struct CreateController {
 
         Contract.guarantee { (request: Contract.Request, context: LGNCore.Context) -> EventLoopFuture<Contract.Response> in
             let eventLoop = context.eventLoop
-            let user = Logic.User.authenticate(token: request.token, context: context)
+            let user = Logic.User.authenticate(request: request, context: context)
 
             return Models.Comment.await(
                 on: eventLoop,

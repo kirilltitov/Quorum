@@ -6,8 +6,11 @@ import LGNS
 import Entita2
 import NIO
 
+fileprivate typealias Contract = Services.Quorum.Contracts.Comments
+
+extension Contract.Request: AnyEntityWithMaybeSession {}
+
 public struct CommentsController {
-    typealias Contract = Services.Quorum.Contracts.Comments
     typealias CommentsWithLikesAndUsers = ([Logic.Post.CommentWithLikes], [Models.User.Identifier: Models.User])
 
     public static func setup() {
@@ -18,7 +21,7 @@ public struct CommentsController {
             let eventLoop = context.eventLoop
 
             return Logic.User
-                .maybeAuthenticate(token: request.token, context: context)
+                .maybeAuthenticate(request: request, context: context)
                 .flatMap { maybeUser in Logic.Post.getCommentsFor(ID: request.IDPost, as: maybeUser, on: eventLoop) }
                 .flatMap { (commentsWithLikes: [Logic.Post.CommentWithLikes]) -> EventLoopFuture<CommentsWithLikesAndUsers> in
                     EventLoopFuture<[Models.User.Identifier: Models.User]>.reduce(

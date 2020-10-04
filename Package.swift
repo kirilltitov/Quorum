@@ -10,7 +10,7 @@ let package = Package(
         .library(name: "Generated", targets: ["Generated"]),
     ],
     dependencies: [
-        .package(name: "LGNKit", url: "git@github.com:1711-games/LGNKit-Swift.git", .branch("master")),
+        .package(name: "LGNC-Swift", url: "git@github.com:1711-games/LGNC-Swift.git", .branch("master")),
         .package(url: "git@github.com:1711-Games/Entita2FDB.git", .branch("master")),
         .package(url: "https://github.com/swift-server/swift-service-lifecycle.git", from: "1.0.0-alpha.4"),
     ],
@@ -19,7 +19,7 @@ let package = Package(
             name: "Quorum",
             dependencies: [
                 .target(name: "Generated"),
-                .product(name: "LGNC", package: "LGNKit"),
+                .product(name: "LGNC", package: "LGNC-Swift"),
                 .product(name: "Entita2FDB", package: "Entita2FDB"),
                 .product(name: "Lifecycle", package: "swift-service-lifecycle"),
                 .product(name: "LifecycleNIOCompat", package: "swift-service-lifecycle"),
@@ -28,8 +28,8 @@ let package = Package(
         .target(
             name: "Generated",
             dependencies: [
-                .product(name: "LGNC", package: "LGNKit"),
-                .product(name: "Entita", package: "LGNKit"),
+                .product(name: "LGNC", package: "LGNC-Swift"),
+                .product(name: "Entita", package: "LGNC-Swift"),
             ]
         ),
         .testTarget(name: "QuorumTests", dependencies: ["Quorum"]),

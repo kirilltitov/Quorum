@@ -5,12 +5,14 @@ import LGNS
 import LGNC
 import Entita2
 
+fileprivate typealias Contract = Services.Quorum.Contracts.DeleteComment
+
+extension Contract.Request: AnyEntityWithSession {}
+
 /// Moves comment from `published` status to `deleted` status (when displayed, body should be empty)
 public struct DeleteController {
-    typealias Contract = Services.Quorum.Contracts.DeleteComment
-
     public static func setup() {
-        Contract.Request.validateIdcomment { ID, eventLoop in
+        Contract.Request.validateIDComment { ID, eventLoop in
             Logic.Comment
                 .get(by: ID, on: eventLoop)
                 .map {
@@ -25,7 +27,7 @@ public struct DeleteController {
             let eventLoop = context.eventLoop
 
             return Logic.User
-                .authenticate(token: request.token, context: context)
+                .authenticate(request: request, context: context)
                 .flatMap { user in
                     Logic.Comment
                         .getThrowing(by: request.IDComment, on: eventLoop)

@@ -2,10 +2,12 @@ import Generated
 import LGNCore
 import LGNC
 
+fileprivate typealias Contract = Services.Quorum.Contracts.PendingComments
+
+extension Contract.Request: AnyEntityWithSession {}
+
 class PendingCommentsController {
     public static func setup() {
-        typealias Contract = Services.Quorum.Contracts.PendingComments
-
         func contractRoutine(
             request: Contract.Request,
             context: LGNCore.Context
@@ -13,7 +15,7 @@ class PendingCommentsController {
             let eventLoop = context.eventLoop
 
             return Logic.User
-                .authenticate(token: request.token, context: context)
+                .authenticate(request: request, context: context)
                 .mapThrowing { user in
                     guard user.isAtLeastModerator else {
                         throw context.errorNotAuthenticated
@@ -35,18 +37,21 @@ class PendingCommentsController {
     }
 }
 
+fileprivate typealias ContractCount = Services.Quorum.Contracts.PendingCommentsCount
+
+extension ContractCount.Request: AnyEntityWithSession {}
+
 class PendingCommentsCountController {
     public static func setup() {
-        typealias Contract = Services.Quorum.Contracts.PendingCommentsCount
 
         func contractRoutine(
-            request: Contract.Request,
+            request: ContractCount.Request,
             context: LGNCore.Context
-        ) -> EventLoopFuture<Contract.Response> {
+        ) -> EventLoopFuture<ContractCount.Response> {
             let eventLoop = context.eventLoop
 
             return Logic.User
-                .authenticate(token: request.token, context: context)
+                .authenticate(request: request, context: context)
                 .mapThrowing { user in
                     guard user.isAtLeastModerator else {
                         throw context.errorNotAuthenticated
@@ -54,9 +59,9 @@ class PendingCommentsCountController {
                     return
                 }
                 .flatMap { Models.PendingComment.getPendingCount(on: eventLoop) }
-                .map { Contract.Response(count: $0) }
+                .map { ContractCount.Response(count: $0) }
         }
 
-        Contract.guarantee(contractRoutine)
+        ContractCount.guarantee(contractRoutine)
     }
 }

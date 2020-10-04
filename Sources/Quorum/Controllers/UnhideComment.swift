@@ -5,12 +5,14 @@ import LGNS
 import LGNC
 import Entita2
 
+fileprivate typealias Contract = Services.Quorum.Contracts.UnhideComment
+
+extension Contract.Request: AnyEntityWithSession {}
+
 /// Moves comment from `hidden` status to `published` status (restores the comment)
 public struct UnhideController {
-    typealias Contract = Services.Quorum.Contracts.UnhideComment
-
     public static func setup() {
-        Contract.Request.validateIdcomment { ID, eventLoop in
+        Contract.Request.validateIDComment { ID, eventLoop in
             Logic.Comment
                 .get(by: ID, on: eventLoop)
                 .map {
@@ -25,7 +27,7 @@ public struct UnhideController {
             let eventLoop = context.eventLoop
 
             return Logic.User
-                .authenticate(token: request.token, context: context)
+                .authenticate(request: request, context: context)
                 .flatMap { user in
                     Logic.Comment
                         .getThrowing(by: request.IDComment, on: eventLoop)

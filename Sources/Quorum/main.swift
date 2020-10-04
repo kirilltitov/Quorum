@@ -172,7 +172,7 @@ lifecycle.start { maybeError in
     if let error = maybeError {
         defaultLogger.critical("Could not start Quorum: \(error)")
     } else {
-        defaultLogger.info("Quorum successfully started!")
+        defaultLogger.info("Quorum is up!")
     }
 }
 lifecycle.wait()

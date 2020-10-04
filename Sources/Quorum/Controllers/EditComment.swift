@@ -5,11 +5,13 @@ import LGNS
 import LGNC
 import Entita2FDB
 
-public struct EditController {
-    typealias Contract = Services.Quorum.Contracts.EditComment
+fileprivate typealias Contract = Services.Quorum.Contracts.EditComment
 
+extension Contract.Request: AnyEntityWithSession {}
+
+public struct EditController {
     public static func setup() {
-        Contract.Request.validateIdcomment { ID, eventLoop in
+        Contract.Request.validateIDComment { ID, eventLoop in
             Logic.Comment
                 .get(by: ID, on: eventLoop)
                 .map {
@@ -27,7 +29,7 @@ public struct EditController {
             let eventLoop = context.eventLoop
             
             return Logic.User
-                .authenticate(token: request.token, context: context)
+                .authenticate(request: request, context: context)
                 .flatMap { (user: Models.User) -> EventLoopFuture<(Models.Comment, Models.User, AnyFDBTransaction)> in
                     Logic.Comment
                         .getThrowingWithTransaction(by: request.IDComment, on: eventLoop)

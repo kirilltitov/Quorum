@@ -25,25 +25,35 @@ public extension Logic {
         )
 
         public static func authenticate(
-            token: String,
+            request: AnyEntityWithSession,
             context: LGNCore.Context
         ) -> EventLoopFuture<Models.User> {
-            let eventLoop = context.eventLoop
+            self.authenticate(
+                session: request.session.value,
+                portal: request.portal.value,
+                author: request.author.value,
+                context: context
+            )
+        }
 
-            let exploded = token.split(separator: ".", maxSplits: 2).map { String($0) }
-            guard exploded.count == 3 else {
-                return eventLoop.makeFailedFuture(context.errorNotAuthenticated)
-            }
-
-            return Services.Author.Contracts.Authenticate
+        private static func authenticate(
+            session: String,
+            portal: String,
+            author: String,
+            context: LGNCore.Context
+        ) -> EventLoopFuture<Models.User> {
+            Services.Author.Contracts.Authenticate
                 .execute(
                     at: .node(
                         service: "author",
-                        name: exploded[1],
+                        name: author,
                         realm: PORTAL_ID,
                         port: AUTHOR_PORT
                     ),
-                    with: .init(portal: exploded[0], token: exploded[2]),
+                    with: .init(
+                        portal: LGNC.Entity.Cookie(name: "portal", value: portal),
+                        session: LGNC.Entity.Cookie(name: "session", value: session)
+                    ),
                     using: client,
                     context: context
                 )
@@ -70,13 +80,27 @@ public extension Logic {
                 }
         }
 
-        public static func maybeAuthenticate(token: String?, context: LGNCore.Context) -> EventLoopFuture<Models.User?> {
-            guard let token = token else {
+        public static func maybeAuthenticate(
+            request: AnyEntityWithMaybeSession,
+            context: LGNCore.Context
+        ) -> EventLoopFuture<Models.User?> {
+            guard let session = request.session?.value else {
+                return context.eventLoop.makeSucceededFuture(nil)
+            }
+            guard let portal = request.portal?.value else {
+                return context.eventLoop.makeSucceededFuture(nil)
+            }
+            guard let author = request.author?.value else {
                 return context.eventLoop.makeSucceededFuture(nil)
             }
 
             return self
-                .authenticate(token: token, context: context)
+                .authenticate(
+                    session: session,
+                    portal: portal,
+                    author: author,
+                    context: context
+                )
                 .map { Optional($0) }
         }
 
@@ -101,6 +125,7 @@ public extension Logic {
                     uuid: UUID(),
                     isSecure: true,
                     transport: .LGNS,
+                    meta: [:],
                     eventLoop: eventLoopGroup.eventLoop
                 )
             )

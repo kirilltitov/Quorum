@@ -3,11 +3,13 @@ import Generated
 import LGNCore
 import LGNC
 
-public class LikeController {
-    typealias Contract = Services.Quorum.Contracts.LikeComment
+fileprivate typealias Contract = Services.Quorum.Contracts.LikeComment
 
+extension Contract.Request: AnyEntityWithSession {}
+
+public class LikeController {
     public static func setup() {
-        Contract.Request.validateIdcomment { ID, eventLoop in
+        Contract.Request.validateIDComment { ID, eventLoop in
             Logic.Comment
                 .get(by: ID, on: eventLoop)
                 .map {
@@ -20,7 +22,7 @@ public class LikeController {
 
         Contract.guarantee { request, context -> EventLoopFuture<Contract.Response> in
             Logic.User
-                .authenticate(token: request.token, context: context)
+                .authenticate(request: request, context: context)
                 .flatMap { user in
                     Logic.Comment
                         .getThrowing(by: request.IDComment, on: context.eventLoop)

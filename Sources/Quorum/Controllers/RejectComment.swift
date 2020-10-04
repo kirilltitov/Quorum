@@ -2,10 +2,12 @@ import LGNCore
 import Generated
 import LGNC
 
+fileprivate typealias Contract = Services.Quorum.Contracts.RejectComment
+
+extension Contract.Request: AnyEntityWithSession {}
+
 /// Rejects and DELETES the comment from storage (rejected premoderation)
 public struct RejectCommentController {
-    typealias Contract = Services.Quorum.Contracts.RejectComment
-
     public static func setup() {
         func contractRoutine(
             request: Contract.Request,
@@ -13,7 +15,7 @@ public struct RejectCommentController {
         ) -> EventLoopFuture<Contract.Response> {
             let eventLoop = context.eventLoop
             return Logic.User
-                .authenticate(token: request.token, context: context)
+                .authenticate(request: request, context: context)
                 .mapThrowing { user in
                     guard user.accessLevel == .Admin || user.accessLevel == .Moderator else {
                         throw context.errorNotAuthenticated

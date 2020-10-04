@@ -29,6 +29,15 @@ public extension Services.Shared {
         ) -> EventLoopFuture<FieldMapping> {
             let eventLoop = context.eventLoop
 
+            if let error = self.ensureNecessaryItems(
+                in: dictionary,
+                necessaryItems: [
+                    "map",
+                ]
+            ) {
+                return eventLoop.makeFailedFuture(error)
+            }
+
             let map: [String:String]? = try? (self.extract(param: "map", from: dictionary) as [String:String])
 
             let validatorFutures: [String: EventLoopFuture<Void>] = [
@@ -44,7 +53,7 @@ public extension Services.Shared {
                 .reduce(validators: validatorFutures, context: context)
                 .flatMapThrowing {
                     guard $0.count == 0 else {
-                        throw LGNC.E.DecodeError($0.mapValues { [$0] })
+                        throw LGNC.E.DecodeError($0)
                     }
 
                     return self.init(
@@ -70,10 +79,10 @@ public extension Services.Shared {
     final class ServiceFieldMapping: ContractEntity {
         public static let keyDictionary: [String: String] = [:]
 
-        public let Request: FieldMapping
-        public let Response: FieldMapping
+        public let Request: Services.Shared.FieldMapping
+        public let Response: Services.Shared.FieldMapping
 
-        public init(Request: FieldMapping, Response: FieldMapping) {
+        public init(Request: Services.Shared.FieldMapping, Response: Services.Shared.FieldMapping) {
             self.Request = Request
             self.Response = Response
         }
@@ -83,8 +92,18 @@ public extension Services.Shared {
         ) -> EventLoopFuture<ServiceFieldMapping> {
             let eventLoop = context.eventLoop
 
-            let Request: FieldMapping? = try? (self.extract(param: "Request", from: dictionary) as FieldMapping)
-            let Response: FieldMapping? = try? (self.extract(param: "Response", from: dictionary) as FieldMapping)
+            if let error = self.ensureNecessaryItems(
+                in: dictionary,
+                necessaryItems: [
+                    "Request",
+                    "Response",
+                ]
+            ) {
+                return eventLoop.makeFailedFuture(error)
+            }
+
+            let Request: Services.Shared.FieldMapping? = try? (self.extract(param: "Request", from: dictionary) as Services.Shared.FieldMapping)
+            let Response: Services.Shared.FieldMapping? = try? (self.extract(param: "Response", from: dictionary) as Services.Shared.FieldMapping)
 
             let validatorFutures: [String: EventLoopFuture<Void>] = [
                 "Request": eventLoop
@@ -105,7 +124,7 @@ public extension Services.Shared {
                 .reduce(validators: validatorFutures, context: context)
                 .flatMapThrowing {
                     guard $0.count == 0 else {
-                        throw LGNC.E.DecodeError($0.mapValues { [$0] })
+                        throw LGNC.E.DecodeError($0)
                     }
 
                     return self.init(
@@ -134,9 +153,9 @@ public extension Services.Shared {
     final class ServiceFieldMappings: ContractEntity {
         public static let keyDictionary: [String: String] = [:]
 
-        public let map: [String:ServiceFieldMapping]
+        public let map: [String:Services.Shared.ServiceFieldMapping]
 
-        public init(map: [String:ServiceFieldMapping]) {
+        public init(map: [String:Services.Shared.ServiceFieldMapping]) {
             self.map = map
         }
 
@@ -145,7 +164,16 @@ public extension Services.Shared {
         ) -> EventLoopFuture<ServiceFieldMappings> {
             let eventLoop = context.eventLoop
 
-            let map: [String:ServiceFieldMapping]? = try? (self.extract(param: "map", from: dictionary) as [String:ServiceFieldMapping])
+            if let error = self.ensureNecessaryItems(
+                in: dictionary,
+                necessaryItems: [
+                    "map",
+                ]
+            ) {
+                return eventLoop.makeFailedFuture(error)
+            }
+
+            let map: [String:Services.Shared.ServiceFieldMapping]? = try? (self.extract(param: "map", from: dictionary) as [String:Services.Shared.ServiceFieldMapping])
 
             let validatorFutures: [String: EventLoopFuture<Void>] = [
                 "map": eventLoop
@@ -160,7 +188,7 @@ public extension Services.Shared {
                 .reduce(validators: validatorFutures, context: context)
                 .flatMapThrowing {
                     guard $0.count == 0 else {
-                        throw LGNC.E.DecodeError($0.mapValues { [$0] })
+                        throw LGNC.E.DecodeError($0)
                     }
 
                     return self.init(
@@ -197,6 +225,15 @@ public extension Services.Shared {
         ) -> EventLoopFuture<CharacterInfo> {
             let eventLoop = context.eventLoop
 
+            if let error = self.ensureNecessaryItems(
+                in: dictionary,
+                necessaryItems: [
+                    "monad",
+                ]
+            ) {
+                return eventLoop.makeFailedFuture(error)
+            }
+
             let monad: String? = try? (self.extract(param: "monad", from: dictionary) as String)
 
             let validatorFutures: [String: EventLoopFuture<Void>] = [
@@ -212,7 +249,7 @@ public extension Services.Shared {
                 .reduce(validators: validatorFutures, context: context)
                 .flatMapThrowing {
                     guard $0.count == 0 else {
-                        throw LGNC.E.DecodeError($0.mapValues { [$0] })
+                        throw LGNC.E.DecodeError($0)
                     }
 
                     return self.init(
@@ -249,6 +286,15 @@ public extension Services.Shared {
         ) -> EventLoopFuture<EventRequest> {
             let eventLoop = context.eventLoop
 
+            if let error = self.ensureNecessaryItems(
+                in: dictionary,
+                necessaryItems: [
+                    "event",
+                ]
+            ) {
+                return eventLoop.makeFailedFuture(error)
+            }
+
             let event: String? = try? (self.extract(param: "event", from: dictionary) as String)
 
             let validatorFutures: [String: EventLoopFuture<Void>] = [
@@ -264,7 +310,7 @@ public extension Services.Shared {
                 .reduce(validators: validatorFutures, context: context)
                 .flatMapThrowing {
                     guard $0.count == 0 else {
-                        throw LGNC.E.DecodeError($0.mapValues { [$0] })
+                        throw LGNC.E.DecodeError($0)
                     }
 
                     return self.init(
@@ -298,9 +344,9 @@ public extension Services.Shared {
 
             case UserWithGivenUsernameAlreadyExists = "User with given username already exists"
 
-            public func getErrorTuple() -> (message: String, code: Int) {
+            public func getErrorTuple() -> ErrorTuple {
                 switch self {
-                    case .UserWithGivenUsernameAlreadyExists: return (message: self.rawValue, code: 10001)
+                    case .UserWithGivenUsernameAlreadyExists: return (code: 10001, message: self.rawValue)
                 }
             }
         }
@@ -310,9 +356,9 @@ public extension Services.Shared {
 
             case UserWithGivenEmailAlreadyExists = "User with given email already exists"
 
-            public func getErrorTuple() -> (message: String, code: Int) {
+            public func getErrorTuple() -> ErrorTuple {
                 switch self {
-                    case .UserWithGivenEmailAlreadyExists: return (message: self.rawValue, code: 10001)
+                    case .UserWithGivenEmailAlreadyExists: return (code: 10001, message: self.rawValue)
                 }
             }
         }
@@ -348,6 +394,21 @@ public extension Services.Shared {
         ) -> EventLoopFuture<UserSignupRequest> {
             let eventLoop = context.eventLoop
 
+            if let error = self.ensureNecessaryItems(
+                in: dictionary,
+                necessaryItems: [
+                    "username",
+                    "email",
+                    "password1",
+                    "password2",
+                    "sex",
+                    "language",
+                    "recaptchaToken",
+                ]
+            ) {
+                return eventLoop.makeFailedFuture(error)
+            }
+
             let username: String? = try? (self.extract(param: "username", from: dictionary) as String)
             let email: String? = try? (self.extract(param: "email", from: dictionary) as String)
             let password1: String? = try? (self.extract(param: "password1", from: dictionary) as String)
@@ -362,28 +423,31 @@ public extension Services.Shared {
                         guard let _ = username else {
                             throw Validation.Error.MissingValue(context.locale)
                         }
+                    }.flatMap {
+                        Validation.cumulative(
+                            [
+                                {
+                                    if let error = Validation.Regexp(pattern: "^[\\p{L}\\d_\\- ]+$", message: "Username must only consist of letters, numbers and underscores").validate(username!, context.locale) {
+                                        return eventLoop.makeFailedFuture(error)
+                                    }
+                                    return eventLoop.makeSucceededFuture()
+                                }(),
+                                {
+                                    if let error = Validation.Length.Min(length: 3).validate(username!, context.locale) {
+                                        return eventLoop.makeFailedFuture(error)
+                                    }
+                                    return eventLoop.makeSucceededFuture()
+                                }(),
+                                {
+                                    if let error = Validation.Length.Max(length: 24).validate(username!, context.locale) {
+                                        return eventLoop.makeFailedFuture(error)
+                                    }
+                                    return eventLoop.makeSucceededFuture()
+                                }(),
+                            ],
+                            on: eventLoop
+                        )
                     }
-                    .flatMap {
-                        if let error = Validation.Regexp(pattern: "^[a-zA-Zа-яА-Я0-9_\\- ]+$", message: "Username must only consist of letters, numbers and underscores").validate(username!, context.locale) {
-                            return eventLoop.makeFailedFuture(error)
-                        }
-                        return eventLoop.makeSucceededFuture()
-                    }
-
-                    .flatMap {
-                        if let error = Validation.Length.Min(length: 3).validate(username!, context.locale) {
-                            return eventLoop.makeFailedFuture(error)
-                        }
-                        return eventLoop.makeSucceededFuture()
-                    }
-
-                    .flatMap {
-                        if let error = Validation.Length.Max(length: 24).validate(username!, context.locale) {
-                            return eventLoop.makeFailedFuture(error)
-                        }
-                        return eventLoop.makeSucceededFuture()
-                    }
-
                     .flatMap {
                         guard let validator = self.validatorUsernameClosure else {
                             return eventLoop.makeSucceededFuture()
@@ -399,14 +463,12 @@ public extension Services.Shared {
                         guard let _ = email else {
                             throw Validation.Error.MissingValue(context.locale)
                         }
-                    }
-                    .flatMap {
+                    }.flatMap {
                         if let error = Validation.Regexp(pattern: "^.+@.+\\..+$", message: "Invalid email format").validate(email!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     }
-
                     .flatMap {
                         guard let validator = self.validatorEmailClosure else {
                             return eventLoop.makeSucceededFuture()
@@ -422,14 +484,12 @@ public extension Services.Shared {
                         guard let _ = password1 else {
                             throw Validation.Error.MissingValue(context.locale)
                         }
-                    }
-                    .flatMap {
+                    }.flatMap {
                         if let error = Validation.Length.Min(length: 6, message: "Password must be at least 6 characters long").validate(password1!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     }
-
                     .flatMap {
                         if let error = Validation.Length.Max(length: 64, message: "Password must be less than 64 characters long").validate(password1!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
@@ -441,8 +501,7 @@ public extension Services.Shared {
                         guard let _ = password2 else {
                             throw Validation.Error.MissingValue(context.locale)
                         }
-                    }
-                    .flatMap {
+                    }.flatMap {
                         if let error = Validation.Identical(right: password1!, message: "Passwords must match").validate(password2!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
@@ -453,8 +512,7 @@ public extension Services.Shared {
                         guard let _ = sex else {
                             throw Validation.Error.MissingValue(context.locale)
                         }
-                    }
-                    .flatMap {
+                    }.flatMap {
                         if let error = Validation.In(allowedValues: ["Male", "Female", "Attack helicopter"]).validate(sex!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
@@ -465,8 +523,7 @@ public extension Services.Shared {
                         guard let _ = language else {
                             throw Validation.Error.MissingValue(context.locale)
                         }
-                    }
-                    .flatMap {
+                    }.flatMap {
                         if let error = Validation.In(allowedValues: ["en", "ru"]).validate(language!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
@@ -484,7 +541,7 @@ public extension Services.Shared {
                 .reduce(validators: validatorFutures, context: context)
                 .flatMapThrowing {
                     guard $0.count == 0 else {
-                        throw LGNC.E.DecodeError($0.mapValues { [$0] })
+                        throw LGNC.E.DecodeError($0)
                     }
 
                     return self.init(
@@ -547,9 +604,9 @@ public extension Services.Shared {
 
             case NodeWithGivenNameAlreadyCheckedIn = "Node with given name already checked in"
 
-            public func getErrorTuple() -> (message: String, code: Int) {
+            public func getErrorTuple() -> ErrorTuple {
                 switch self {
-                    case .NodeWithGivenNameAlreadyCheckedIn: return (message: self.rawValue, code: 409)
+                    case .NodeWithGivenNameAlreadyCheckedIn: return (code: 409, message: self.rawValue)
                 }
             }
         }
@@ -570,6 +627,18 @@ public extension Services.Shared {
             from dictionary: Entita.Dict, context: LGNCore.Context
         ) -> EventLoopFuture<NodeInfo> {
             let eventLoop = context.eventLoop
+
+            if let error = self.ensureNecessaryItems(
+                in: dictionary,
+                necessaryItems: [
+                    "type",
+                    "id",
+                    "name",
+                    "port",
+                ]
+            ) {
+                return eventLoop.makeFailedFuture(error)
+            }
 
             let type: String? = try? (self.extract(param: "type", from: dictionary) as String)
             let id: String? = try? (self.extract(param: "id", from: dictionary) as String)
@@ -594,8 +663,7 @@ public extension Services.Shared {
                         guard let _ = name else {
                             throw Validation.Error.MissingValue(context.locale)
                         }
-                    }
-                    .flatMap {
+                    }.flatMap {
                         guard let validator = self.validatorNameClosure else {
                             return eventLoop.makeSucceededFuture()
                         }
@@ -617,7 +685,7 @@ public extension Services.Shared {
                 .reduce(validators: validatorFutures, context: context)
                 .flatMapThrowing {
                     guard $0.count == 0 else {
-                        throw LGNC.E.DecodeError($0.mapValues { [$0] })
+                        throw LGNC.E.DecodeError($0)
                     }
 
                     return self.init(
@@ -665,9 +733,9 @@ public extension Services.Shared {
 
             case NodeWithGivenNameIsNotCheckedIn = "Node with given name is not checked in"
 
-            public func getErrorTuple() -> (message: String, code: Int) {
+            public func getErrorTuple() -> ErrorTuple {
                 switch self {
-                    case .NodeWithGivenNameIsNotCheckedIn: return (message: self.rawValue, code: 404)
+                    case .NodeWithGivenNameIsNotCheckedIn: return (code: 404, message: self.rawValue)
                 }
             }
         }
@@ -685,6 +753,16 @@ public extension Services.Shared {
         ) -> EventLoopFuture<PingRequest> {
             let eventLoop = context.eventLoop
 
+            if let error = self.ensureNecessaryItems(
+                in: dictionary,
+                necessaryItems: [
+                    "name",
+                    "entities",
+                ]
+            ) {
+                return eventLoop.makeFailedFuture(error)
+            }
+
             let name: String? = try? (self.extract(param: "name", from: dictionary) as String)
             let entities: Int? = try? (self.extract(param: "entities", from: dictionary) as Int)
 
@@ -694,8 +772,7 @@ public extension Services.Shared {
                         guard let _ = name else {
                             throw Validation.Error.MissingValue(context.locale)
                         }
-                    }
-                    .flatMap {
+                    }.flatMap {
                         guard let validator = self.validatorNameClosure else {
                             return eventLoop.makeSucceededFuture()
                         }
@@ -717,7 +794,7 @@ public extension Services.Shared {
                 .reduce(validators: validatorFutures, context: context)
                 .flatMapThrowing {
                     guard $0.count == 0 else {
-                        throw LGNC.E.DecodeError($0.mapValues { [$0] })
+                        throw LGNC.E.DecodeError($0)
                     }
 
                     return self.init(
@@ -763,6 +840,15 @@ public extension Services.Shared {
         ) -> EventLoopFuture<PingResponse> {
             let eventLoop = context.eventLoop
 
+            if let error = self.ensureNecessaryItems(
+                in: dictionary,
+                necessaryItems: [
+                    "result",
+                ]
+            ) {
+                return eventLoop.makeFailedFuture(error)
+            }
+
             let result: String? = try? (self.extract(param: "result", from: dictionary) as String)
 
             let validatorFutures: [String: EventLoopFuture<Void>] = [
@@ -778,7 +864,7 @@ public extension Services.Shared {
                 .reduce(validators: validatorFutures, context: context)
                 .flatMapThrowing {
                     guard $0.count == 0 else {
-                        throw LGNC.E.DecodeError($0.mapValues { [$0] })
+                        throw LGNC.E.DecodeError($0)
                     }
 
                     return self.init(
@@ -811,9 +897,9 @@ public extension Services.Shared {
 
             case NodeWithGivenNameAlreadyCheckedIn = "Node with given name already checked in"
 
-            public func getErrorTuple() -> (message: String, code: Int) {
+            public func getErrorTuple() -> ErrorTuple {
                 switch self {
-                    case .NodeWithGivenNameAlreadyCheckedIn: return (message: self.rawValue, code: 409)
+                    case .NodeWithGivenNameAlreadyCheckedIn: return (code: 409, message: self.rawValue)
                 }
             }
         }
@@ -835,6 +921,18 @@ public extension Services.Shared {
         ) -> EventLoopFuture<CheckinRequest> {
             let eventLoop = context.eventLoop
 
+            if let error = self.ensureNecessaryItems(
+                in: dictionary,
+                necessaryItems: [
+                    "type",
+                    "name",
+                    "port",
+                    "entities",
+                ]
+            ) {
+                return eventLoop.makeFailedFuture(error)
+            }
+
             let type: String? = try? (self.extract(param: "type", from: dictionary) as String)
             let name: String? = try? (self.extract(param: "name", from: dictionary) as String)
             let port: Int? = try? (self.extract(param: "port", from: dictionary) as Int)
@@ -852,8 +950,7 @@ public extension Services.Shared {
                         guard let _ = name else {
                             throw Validation.Error.MissingValue(context.locale)
                         }
-                    }
-                    .flatMap {
+                    }.flatMap {
                         guard let validator = self.validatorNameClosure else {
                             return eventLoop.makeSucceededFuture()
                         }
@@ -881,7 +978,7 @@ public extension Services.Shared {
                 .reduce(validators: validatorFutures, context: context)
                 .flatMapThrowing {
                     guard $0.count == 0 else {
-                        throw LGNC.E.DecodeError($0.mapValues { [$0] })
+                        throw LGNC.E.DecodeError($0)
                     }
 
                     return self.init(
@@ -933,6 +1030,15 @@ public extension Services.Shared {
         ) -> EventLoopFuture<CheckinResponse> {
             let eventLoop = context.eventLoop
 
+            if let error = self.ensureNecessaryItems(
+                in: dictionary,
+                necessaryItems: [
+                    "result",
+                ]
+            ) {
+                return eventLoop.makeFailedFuture(error)
+            }
+
             let result: String? = try? (self.extract(param: "result", from: dictionary) as String)
 
             let validatorFutures: [String: EventLoopFuture<Void>] = [
@@ -948,7 +1054,7 @@ public extension Services.Shared {
                 .reduce(validators: validatorFutures, context: context)
                 .flatMapThrowing {
                     guard $0.count == 0 else {
-                        throw LGNC.E.DecodeError($0.mapValues { [$0] })
+                        throw LGNC.E.DecodeError($0)
                     }
 
                     return self.init(
@@ -991,6 +1097,18 @@ public extension Services.Shared {
         ) -> EventLoopFuture<LoginRequest> {
             let eventLoop = context.eventLoop
 
+            if let error = self.ensureNecessaryItems(
+                in: dictionary,
+                necessaryItems: [
+                    "email",
+                    "password",
+                    "portal",
+                    "recaptchaToken",
+                ]
+            ) {
+                return eventLoop.makeFailedFuture(error)
+            }
+
             let email: String? = try? (self.extract(param: "email", from: dictionary) as String)
             let password: String? = try? (self.extract(param: "password", from: dictionary) as String)
             let portal: String? = try? (self.extract(param: "portal", from: dictionary) as String)
@@ -1030,7 +1148,7 @@ public extension Services.Shared {
                 .reduce(validators: validatorFutures, context: context)
                 .flatMapThrowing {
                     guard $0.count == 0 else {
-                        throw LGNC.E.DecodeError($0.mapValues { [$0] })
+                        throw LGNC.E.DecodeError($0)
                     }
 
                     return self.init(
@@ -1065,12 +1183,23 @@ public extension Services.Shared {
     final class LoginResponse: ContractEntity {
         public static let keyDictionary: [String: String] = [:]
 
-        public let token: String
-        public let userID: String
+        public static let hasCookieFields: Bool = true
 
-        public init(token: String, userID: String) {
-            self.token = token
-            self.userID = userID
+        public let session: LGNC.Entity.Cookie
+        public let portal: LGNC.Entity.Cookie
+        public let author: LGNC.Entity.Cookie
+        public let IDUser: String
+
+        public init(
+            session: LGNC.Entity.Cookie,
+            portal: LGNC.Entity.Cookie,
+            author: LGNC.Entity.Cookie,
+            IDUser: String
+        ) {
+            self.session = session
+            self.portal = portal
+            self.author = author
+            self.IDUser = IDUser
         }
 
         public static func initWithValidation(
@@ -1078,19 +1207,60 @@ public extension Services.Shared {
         ) -> EventLoopFuture<LoginResponse> {
             let eventLoop = context.eventLoop
 
-            let token: String? = try? (self.extract(param: "token", from: dictionary) as String)
-            let userID: String? = try? (self.extract(param: "userID", from: dictionary) as String)
+            if let error = self.ensureNecessaryItems(
+                in: dictionary,
+                necessaryItems: [
+                    "session",
+                    "portal",
+                    "author",
+                    "IDUser",
+                ]
+            ) {
+                return eventLoop.makeFailedFuture(error)
+            }
+
+            let session: LGNC.Entity.Cookie?
+            do {
+                session = try self.extractCookie(param: "session", from: dictionary, context: context)
+            } catch {
+                return eventLoop.makeFailedFuture(error)
+            }
+            let portal: LGNC.Entity.Cookie?
+            do {
+                portal = try self.extractCookie(param: "portal", from: dictionary, context: context)
+            } catch {
+                return eventLoop.makeFailedFuture(error)
+            }
+            let author: LGNC.Entity.Cookie?
+            do {
+                author = try self.extractCookie(param: "author", from: dictionary, context: context)
+            } catch {
+                return eventLoop.makeFailedFuture(error)
+            }
+            let IDUser: String? = try? (self.extract(param: "IDUser", from: dictionary) as String)
 
             let validatorFutures: [String: EventLoopFuture<Void>] = [
-                "token": eventLoop
+                "session": eventLoop
                     .submit {
-                        guard let _ = token else {
+                        guard let _ = session else {
                             throw Validation.Error.MissingValue(context.locale)
                         }
                     },
-                "userID": eventLoop
+                "portal": eventLoop
                     .submit {
-                        guard let _ = userID else {
+                        guard let _ = portal else {
+                            throw Validation.Error.MissingValue(context.locale)
+                        }
+                    },
+                "author": eventLoop
+                    .submit {
+                        guard let _ = author else {
+                            throw Validation.Error.MissingValue(context.locale)
+                        }
+                    },
+                "IDUser": eventLoop
+                    .submit {
+                        guard let _ = IDUser else {
                             throw Validation.Error.MissingValue(context.locale)
                         }
                     },
@@ -1100,27 +1270,33 @@ public extension Services.Shared {
                 .reduce(validators: validatorFutures, context: context)
                 .flatMapThrowing {
                     guard $0.count == 0 else {
-                        throw LGNC.E.DecodeError($0.mapValues { [$0] })
+                        throw LGNC.E.DecodeError($0)
                     }
 
                     return self.init(
-                        token: token!,
-                        userID: userID!
+                        session: session!,
+                        portal: portal!,
+                        author: author!,
+                        IDUser: IDUser!
                     )
                 }
         }
 
         public convenience init(from dictionary: Entita.Dict) throws {
             self.init(
-                token: try LoginResponse.extract(param: "token", from: dictionary),
-                userID: try LoginResponse.extract(param: "userID", from: dictionary)
+                session: try LoginResponse.extract(param: "session", from: dictionary),
+                portal: try LoginResponse.extract(param: "portal", from: dictionary),
+                author: try LoginResponse.extract(param: "author", from: dictionary),
+                IDUser: try LoginResponse.extract(param: "IDUser", from: dictionary)
             )
         }
 
         public func getDictionary() throws -> Entita.Dict {
             [
-                self.getDictionaryKey("token"): try self.encode(self.token),
-                self.getDictionaryKey("userID"): try self.encode(self.userID),
+                self.getDictionaryKey("session"): try self.encode(self.session),
+                self.getDictionaryKey("portal"): try self.encode(self.portal),
+                self.getDictionaryKey("author"): try self.encode(self.author),
+                self.getDictionaryKey("IDUser"): try self.encode(self.IDUser),
             ]
         }
 
@@ -1144,6 +1320,17 @@ public extension Services.Shared {
         ) -> EventLoopFuture<CommentUserInfo> {
             let eventLoop = context.eventLoop
 
+            if let error = self.ensureNecessaryItems(
+                in: dictionary,
+                necessaryItems: [
+                    "ID",
+                    "username",
+                    "accessLevel",
+                ]
+            ) {
+                return eventLoop.makeFailedFuture(error)
+            }
+
             let ID: String? = try? (self.extract(param: "ID", from: dictionary) as String)
             let username: String? = try? (self.extract(param: "username", from: dictionary) as String)
             let accessLevel: String? = try? (self.extract(param: "accessLevel", from: dictionary) as String)
@@ -1154,8 +1341,7 @@ public extension Services.Shared {
                         guard let _ = ID else {
                             throw Validation.Error.MissingValue(context.locale)
                         }
-                    }
-                    .flatMap {
+                    }.flatMap {
                         if let error = Validation.UUID().validate(ID!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
@@ -1172,8 +1358,7 @@ public extension Services.Shared {
                         guard let _ = accessLevel else {
                             throw Validation.Error.MissingValue(context.locale)
                         }
-                    }
-                    .flatMap {
+                    }.flatMap {
                         if let error = Validation.In(allowedValues: ["User", "PowerUser", "Moderator", "Admin"]).validate(accessLevel!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
@@ -1185,7 +1370,7 @@ public extension Services.Shared {
                 .reduce(validators: validatorFutures, context: context)
                 .flatMapThrowing {
                     guard $0.count == 0 else {
-                        throw LGNC.E.DecodeError($0.mapValues { [$0] })
+                        throw LGNC.E.DecodeError($0)
                     }
 
                     return self.init(
@@ -1218,7 +1403,7 @@ public extension Services.Shared {
         public static let keyDictionary: [String: String] = [:]
 
         public let ID: Int
-        public let user: CommentUserInfo
+        public let user: Services.Shared.CommentUserInfo
         public let IDPost: String
         public let IDReplyComment: Int?
         public let isEditable: Bool
@@ -1230,7 +1415,7 @@ public extension Services.Shared {
 
         public init(
             ID: Int,
-            user: CommentUserInfo,
+            user: Services.Shared.CommentUserInfo,
             IDPost: String,
             IDReplyComment: Int? = nil,
             isEditable: Bool,
@@ -1254,7 +1439,7 @@ public extension Services.Shared {
 
         public static func await(
             ID: Int,
-            user: CommentUserInfo,
+            user: Services.Shared.CommentUserInfo,
             IDPost: String,
             IDReplyComment: Int? = nil,
             isEditable: Bool,
@@ -1288,8 +1473,26 @@ public extension Services.Shared {
         ) -> EventLoopFuture<Comment> {
             let eventLoop = context.eventLoop
 
+            if let error = self.ensureNecessaryItems(
+                in: dictionary,
+                necessaryItems: [
+                    "ID",
+                    "user",
+                    "IDPost",
+                    "IDReplyComment",
+                    "isEditable",
+                    "status",
+                    "body",
+                    "likes",
+                    "dateCreated",
+                    "dateUpdated",
+                ]
+            ) {
+                return eventLoop.makeFailedFuture(error)
+            }
+
             let ID: Int? = try? (self.extract(param: "ID", from: dictionary) as Int)
-            let user: CommentUserInfo? = try? (self.extract(param: "user", from: dictionary) as CommentUserInfo)
+            let user: Services.Shared.CommentUserInfo? = try? (self.extract(param: "user", from: dictionary) as Services.Shared.CommentUserInfo)
             let IDPost: String? = try? (self.extract(param: "IDPost", from: dictionary) as String)
             let IDReplyComment: Int?? = try? (self.extract(param: "IDReplyComment", from: dictionary, isOptional: true) as Int?)
             let isEditable: Bool? = try? (self.extract(param: "isEditable", from: dictionary) as Bool)
@@ -1338,8 +1541,7 @@ public extension Services.Shared {
                         guard let _ = status else {
                             throw Validation.Error.MissingValue(context.locale)
                         }
-                    }
-                    .flatMap {
+                    }.flatMap {
                         if let error = Validation.In(allowedValues: ["pending", "deleted", "hidden", "published"]).validate(status!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
@@ -1362,8 +1564,7 @@ public extension Services.Shared {
                         guard let _ = dateCreated else {
                             throw Validation.Error.MissingValue(context.locale)
                         }
-                    }
-                    .flatMap {
+                    }.flatMap {
                         if let error = Validation.Date(format: "yyyy-MM-dd kk:mm:ss.SSSSxxx").validate(dateCreated!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
@@ -1374,8 +1575,7 @@ public extension Services.Shared {
                         guard let _ = dateUpdated else {
                             throw Validation.Error.MissingValue(context.locale)
                         }
-                    }
-                    .flatMap {
+                    }.flatMap {
                         if let error = Validation.Date(format: "yyyy-MM-dd kk:mm:ss.SSSSxxx").validate(dateUpdated!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
@@ -1387,7 +1587,7 @@ public extension Services.Shared {
                 .reduce(validators: validatorFutures, context: context)
                 .flatMapThrowing {
                     guard $0.count == 0 else {
-                        throw LGNC.E.DecodeError($0.mapValues { [$0] })
+                        throw LGNC.E.DecodeError($0)
                     }
 
                     return self.init(
@@ -1489,6 +1689,27 @@ public extension Services.Shared {
         ) -> EventLoopFuture<User> {
             let eventLoop = context.eventLoop
 
+            if let error = self.ensureNecessaryItems(
+                in: dictionary,
+                necessaryItems: [
+                    "ID",
+                    "username",
+                    "email",
+                    "password",
+                    "sex",
+                    "isBanned",
+                    "ip",
+                    "country",
+                    "dateUnsuccessfulLogin",
+                    "dateSignup",
+                    "dateLogin",
+                    "authorName",
+                    "accessLevel",
+                ]
+            ) {
+                return eventLoop.makeFailedFuture(error)
+            }
+
             let ID: String? = try? (self.extract(param: "ID", from: dictionary) as String)
             let username: String? = try? (self.extract(param: "username", from: dictionary) as String)
             let email: String? = try? (self.extract(param: "email", from: dictionary) as String)
@@ -1509,8 +1730,7 @@ public extension Services.Shared {
                         guard let _ = ID else {
                             throw Validation.Error.MissingValue(context.locale)
                         }
-                    }
-                    .flatMap {
+                    }.flatMap {
                         if let error = Validation.UUID().validate(ID!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
@@ -1527,14 +1747,12 @@ public extension Services.Shared {
                         guard let _ = email else {
                             throw Validation.Error.MissingValue(context.locale)
                         }
-                    }
-                    .flatMap {
+                    }.flatMap {
                         if let error = Validation.Regexp(pattern: "^.+@.+\\..+$", message: "Invalid email format").validate(email!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
                         return eventLoop.makeSucceededFuture()
                     }
-
                     .flatMap {
                         if let error = Validation.Length.Min(length: 6).validate(email!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
@@ -1552,8 +1770,7 @@ public extension Services.Shared {
                         guard let _ = sex else {
                             throw Validation.Error.MissingValue(context.locale)
                         }
-                    }
-                    .flatMap {
+                    }.flatMap {
                         if let error = Validation.In(allowedValues: ["Male", "Female", "Attack helicopter"]).validate(sex!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
@@ -1582,8 +1799,7 @@ public extension Services.Shared {
                         guard let _ = dateUnsuccessfulLogin else {
                             throw Validation.Error.MissingValue(context.locale)
                         }
-                    }
-                    .flatMap {
+                    }.flatMap {
                         if let error = Validation.Date(format: "yyyy-MM-dd kk:mm:ss.SSSSxxx").validate(dateUnsuccessfulLogin!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
@@ -1594,8 +1810,7 @@ public extension Services.Shared {
                         guard let _ = dateSignup else {
                             throw Validation.Error.MissingValue(context.locale)
                         }
-                    }
-                    .flatMap {
+                    }.flatMap {
                         if let error = Validation.Date(format: "yyyy-MM-dd kk:mm:ss.SSSSxxx").validate(dateSignup!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
@@ -1606,8 +1821,7 @@ public extension Services.Shared {
                         guard let _ = dateLogin else {
                             throw Validation.Error.MissingValue(context.locale)
                         }
-                    }
-                    .flatMap {
+                    }.flatMap {
                         if let error = Validation.Date(format: "yyyy-MM-dd kk:mm:ss.SSSSxxx").validate(dateLogin!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
@@ -1624,8 +1838,7 @@ public extension Services.Shared {
                         guard let _ = accessLevel else {
                             throw Validation.Error.MissingValue(context.locale)
                         }
-                    }
-                    .flatMap {
+                    }.flatMap {
                         if let error = Validation.In(allowedValues: ["User", "Admin"]).validate(accessLevel!, context.locale) {
                             return eventLoop.makeFailedFuture(error)
                         }
@@ -1637,7 +1850,7 @@ public extension Services.Shared {
                 .reduce(validators: validatorFutures, context: context)
                 .flatMapThrowing {
                     guard $0.count == 0 else {
-                        throw LGNC.E.DecodeError($0.mapValues { [$0] })
+                        throw LGNC.E.DecodeError($0)
                     }
 
                     return self.init(

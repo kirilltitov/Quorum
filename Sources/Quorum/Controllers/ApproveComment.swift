@@ -2,19 +2,21 @@ import LGNCore
 import Generated
 import LGNC
 
+fileprivate typealias Contract = Services.Quorum.Contracts.ApproveComment
+
+extension Contract.Request: AnyEntityWithSession {}
+
 /// Moves comment from `pending` status to `published` status (premoderation)
 public struct ApproveCommentController {
-    typealias Contact = Services.Quorum.Contracts.ApproveComment
-
     public static func setup() {
         func contractRoutine(
-            request: Contact.Request,
+            request: Contract.Request,
             context: LGNCore.Context
-        ) -> EventLoopFuture<Contact.Response> {
+        ) -> EventLoopFuture<Contract.Response> {
             let eventLoop = context.eventLoop
 
             return Logic.User
-                .authenticate(token: request.token, context: context)
+                .authenticate(request: request, context: context)
                 .mapThrowing { user in
                     guard user.accessLevel == .Admin || user.accessLevel == .Moderator else {
                         throw context.errorNotAuthenticated
@@ -26,6 +28,6 @@ public struct ApproveCommentController {
                 .flatMap { comment in comment.getContractComment(context: context)}
         }
 
-        Contact.guarantee(contractRoutine)
+        Contract.guarantee(contractRoutine)
     }
 }

@@ -5,14 +5,16 @@ import LGNS
 import LGNC
 import Entita2
 
+fileprivate typealias Contract = Services.Quorum.Contracts.UpdateUserAccessLevel
+
+extension Contract.Request: AnyEntityWithSession {}
+
 /// Sets user accessLevel in Quorum and in Author
 public struct UpdateUserAccessLevelController {
-    typealias Contract = Services.Quorum.Contracts.UpdateUserAccessLevel
-
     public static func setup() {
         Contract.guarantee { (request: Contract.Request, context: LGNCore.Context) -> EventLoopFuture<Contract.Response> in
             Logic.User
-                .authenticate(token: request.token, context: context)
+                .authenticate(request: request, context: context)
                 .flatMapThrowing { (currentUser: Models.User) -> Void in
                     guard currentUser.accessLevel == .Admin else {
                         throw LGNC.ContractError.GeneralError("Not authorized", 403)
