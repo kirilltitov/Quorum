@@ -4,6 +4,9 @@ import Entita2FDB
 
 public extension Models {
     final class User: Model, Entita2FDBIndexedEntity {
+        public typealias Identifier = E2.UUID
+        public typealias Storage = FDB
+
         public enum IndexKey: String, AnyIndexKey {
             case username
 
@@ -67,10 +70,10 @@ public extension Models {
             self.dateLastComment = .distantPast
         }
 
-        public func set(accessLevel: AccessLevel, on eventLoop: EventLoop) -> EventLoopFuture<Void> {
+        public func set(accessLevel: AccessLevel, storage: User.Storage, on eventLoop: EventLoop) -> EventLoopFuture<Void> {
             self.accessLevel = accessLevel
 
-            return self.save(on: eventLoop)
+            return self.save(storage: storage, on: eventLoop)
         }
     }
 }

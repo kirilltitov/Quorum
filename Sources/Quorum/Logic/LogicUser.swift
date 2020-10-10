@@ -152,7 +152,7 @@ public extension Logic {
                     )
                     .flatMap { (user: Services.Author.Contracts.UserInfoInternal.Response) in
                         Models.User
-                            .load(by: ID, on: eventLoop)
+                            .load(by: ID, storage: fdb, on: eventLoop)
                             .flatMap { maybeInnerUser in
                                 if let innerUser = maybeInnerUser {
                                     return eventLoop.makeSucceededFuture(innerUser)
@@ -163,7 +163,7 @@ public extension Logic {
                                     accessLevel: Models.User.AccessLevel(rawValue: user.accessLevel) ?? .User
                                 )
                                 return innerUser
-                                    .save(on: eventLoop)
+                                    .save(storage: fdb, on: eventLoop)
                                     .map { innerUser }
                             }
                     }

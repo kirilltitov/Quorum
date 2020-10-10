@@ -22,7 +22,7 @@ class PendingCommentsController {
                     }
                     return
                 }
-                .flatMap { Models.PendingComment.getUnapprovedComments(on: eventLoop) }
+                .flatMap { Models.PendingComment.getUnapprovedComments(storage: fdb, on: eventLoop) }
                 .flatMap { comments in
                     EventLoopFuture.reduce(
                         into: [Services.Shared.Comment](),
@@ -58,7 +58,7 @@ class PendingCommentsCountController {
                     }
                     return
                 }
-                .flatMap { Models.PendingComment.getPendingCount(on: eventLoop) }
+                .flatMap { Models.PendingComment.getPendingCount(storage: fdb, on: eventLoop) }
                 .map { ContractCount.Response(count: $0) }
         }
 

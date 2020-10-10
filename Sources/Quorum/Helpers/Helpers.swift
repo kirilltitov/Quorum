@@ -101,7 +101,7 @@ public extension EventLoop {
     ///     - result: the value that is used by the `EventLoopFuture`.
     /// - returns: a succeeded `EventLoopFuture`.
     func makeSucceededFuture(file: StaticString = #file, line: UInt = #line) -> EventLoopFuture<Void> {
-        return self.makeSucceededFuture((), file: file, line: line)
+        self.makeSucceededFuture((), file: file, line: line)
     }
 
     /// Creates and returns a new void `EventLoopFuture` that is already marked as success.
@@ -111,14 +111,14 @@ public extension EventLoop {
     ///     - result: the value that is used by the `EventLoopFuture`.
     /// - returns: a succeeded `EventLoopFuture`.
     func makeFuture(file: StaticString = #file, line: UInt = #line) -> EventLoopFuture<Void> {
-        return self.makeSucceededFuture(file: file, line: line)
+        self.makeSucceededFuture(file: file, line: line)
     }
 }
 
 //MARK:- General
 public extension EventLoopGroup {
     var eventLoop: EventLoop {
-        return self.next()
+        self.next()
     }
 }
 
@@ -129,54 +129,66 @@ public func =><T: RawRepresentable & Equatable>(lhs: T, rhs: [T]) -> Bool {
 
 //MARK:- Entita2FDB
 public extension E2FDBEntity {
-    static var format: E2.Format {
-        return .JSON
-    }
-
-    static var storage: FDB {
-        return fdb
-    }
-
-    static var subspace: FDB.Subspace {
-        return subspaceMain
-    }
+    static var format: E2.Format { .JSON }
+    static var subspace: FDB.Subspace { subspaceMain }
 }
 
-public protocol Model: E2FDBEntity where Identifier == E2.UUID {}
-public protocol ModelInt: E2FDBEntity where Identifier == Int {}
+public protocol Model: E2FDBEntity {
+    associatedtype Storage = FDB
+    associatedtype Identifier = E2.UUID
+}
+
+public protocol ModelInt: E2FDBEntity {
+    associatedtype Storage = FDB
+    associatedtype Identifier = Int
+}
 
 public extension Model {
-    func insert(commit: Bool = true, within transaction: AnyFDBTransaction?, on eventLoop: EventLoop) -> EventLoopFuture<Void> {
-        self.insert(commit: commit, within: transaction as? AnyTransaction, on: eventLoop)
+    func insert(
+        commit: Bool = true,
+        within transaction: AnyFDBTransaction?,
+        storage: Storage,
+        on eventLoop: EventLoop
+    ) -> EventLoopFuture<Void> {
+        self.insert(commit: commit, within: transaction as? AnyTransaction, storage: storage, on: eventLoop)
     }
 
     func save(
         by ID: Identifier? = nil,
         commit: Bool = true,
         within transaction: AnyFDBTransaction?,
+        storage: Storage,
         on eventLoop: EventLoop
     ) -> EventLoopFuture<Void> {
-        self.save(by: ID, commit: commit, within: transaction as? AnyTransaction, on: eventLoop)
+        self.save(by: ID, commit: commit, within: transaction as? AnyTransaction, storage: storage, on: eventLoop)
     }
 
-    func delete(commit: Bool = true, within transaction: AnyFDBTransaction?, on eventLoop: EventLoop) -> EventLoopFuture<Void> {
-        self.delete(commit: commit, within: transaction as? AnyTransaction, on: eventLoop)
+    func delete(
+        commit: Bool = true,
+        within transaction: AnyFDBTransaction?,
+        storage: Storage,
+        on eventLoop: EventLoop
+    ) -> EventLoopFuture<Void> {
+        self.delete(commit: commit, within: transaction as? AnyTransaction, storage: storage, on: eventLoop)
     }
 }
 
 public extension ModelInt {
-    static func getNextID(on eventLoop: EventLoop) -> EventLoopFuture<Self.Identifier> {
-        return Self.storage.withTransaction(on: eventLoop) { transaction in
-            return Self.getNextID(commit: true, within: transaction)
+    static func getNextID(storage: Storage, on eventLoop: EventLoop) -> EventLoopFuture<Int> {
+        storage.withTransaction(on: eventLoop) { transaction in
+            Self.getNextID(commit: true, within: transaction)
         }
     }
 
-    static func getNextID(commit: Bool = true, within transaction: AnyFDBTransaction) -> EventLoopFuture<Self.Identifier> {
+    static func getNextID(
+        commit: Bool = true,
+        within transaction: AnyFDBTransaction
+    ) -> EventLoopFuture<Int> {
         let key = Self.subspace["idx"][Self.entityName]
         return transaction
             .atomic(.add, key: key, value: Int(1))
             .flatMap { $0.get(key: key, commit: commit) }
-            .flatMapThrowing { (maybeBytes, _) -> Int in
+            .flatMapThrowing { (maybeBytes: Bytes?, _) -> Int in
                 let result: Int = try maybeBytes!.cast()
                 return result
             }

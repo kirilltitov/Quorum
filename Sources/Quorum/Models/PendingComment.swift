@@ -5,9 +5,7 @@ import Entita2FDB
 public extension Models {
     final class PendingComment: ModelInt {
         public static var IDKey: KeyPath<PendingComment, Int> = \.ID
-
         public static var fullEntityName = false
-
         private static let counterSubspace = subspaceCounter["unapproved"]
 
         public let ID: Int
@@ -16,8 +14,12 @@ public extension Models {
             self.ID = ID
         }
 
-        public static func savePending(comment: Models.Comment, on eventLoop: EventLoop) -> EventLoopFuture<Void> {
-            return self.storage.withTransaction(on: eventLoop) { transaction in
+        public static func savePending(
+            comment: Models.Comment,
+            storage: Storage,
+            on eventLoop: EventLoop
+        ) -> EventLoopFuture<Void> {
+            storage.withTransaction(on: eventLoop) { transaction in
                 transaction
                     .set(key: self.IDAsKey(ID: comment.ID), value: comment.getIDAsKey())
                     .flatMap { self.incrementPendingCounter(within: $0) }
@@ -25,8 +27,12 @@ public extension Models {
             }
         }
 
-        public static func clearRoutine(comment: Models.Comment, on eventLoop: EventLoop) -> EventLoopFuture<Void> {
-            return self.storage.withTransaction(on: eventLoop) { transaction in
+        public static func clearRoutine(
+            comment: Models.Comment,
+            storage: Storage,
+            on eventLoop: EventLoop
+        ) -> EventLoopFuture<Void> {
+            storage.withTransaction(on: eventLoop) { transaction in
                 transaction
                     .clear(key: self.IDAsKey(ID: comment.ID))
                     .flatMap { self.decrementPendingCounter(within: $0) }
@@ -34,16 +40,20 @@ public extension Models {
             }
         }
 
-        private static func incrementPendingCounter(within transaction: AnyFDBTransaction) -> EventLoopFuture<AnyFDBTransaction> {
-            return transaction.atomic(.add, key: self.counterSubspace, value: Int(1))
+        private static func incrementPendingCounter(
+            within transaction: AnyFDBTransaction
+        ) -> EventLoopFuture<AnyFDBTransaction> {
+            transaction.atomic(.add, key: self.counterSubspace, value: Int(1))
         }
 
-        private static func decrementPendingCounter(within transaction: AnyFDBTransaction) -> EventLoopFuture<AnyFDBTransaction> {
-            return transaction.atomic(.add, key: self.counterSubspace, value: Int(-1))
+        private static func decrementPendingCounter(
+            within transaction: AnyFDBTransaction
+        ) -> EventLoopFuture<AnyFDBTransaction> {
+            transaction.atomic(.add, key: self.counterSubspace, value: Int(-1))
         }
 
-        public static func getPendingCount(on eventLoop: EventLoop) -> EventLoopFuture<Int> {
-            return self.storage
+        public static func getPendingCount(storage: Storage, on eventLoop: EventLoop) -> EventLoopFuture<Int> {
+            storage
                 .withTransaction(on: eventLoop) { $0.get(key: self.counterSubspace, snapshot: true, commit: true) }
                 .flatMapThrowing { (maybeBytes: Bytes?) -> Int in
                     guard let bytes = maybeBytes else {
@@ -53,14 +63,19 @@ public extension Models {
                 }
         }
 
-        public static func getUnapprovedComments(on eventLoop: EventLoop) -> EventLoopFuture<[Models.Comment]> {
-            return self.storage.withTransaction(on: eventLoop) { transaction in
+        public static func getUnapprovedComments(
+            storage: Storage,
+            on eventLoop: EventLoop
+        ) -> EventLoopFuture<[Models.Comment]> {
+            storage.withTransaction(on: eventLoop) { transaction in
                 transaction
                     .get(range: self.subspacePrefix.range)
                     .flatMap { (results, _) -> EventLoopFuture<[Models.Comment?]> in
                         EventLoopFuture.reduce(
                             into: [Models.Comment?](),
-                            results.records.map { kv in Models.Comment.loadByRaw(IDBytes: kv.value, on: eventLoop) },
+                            results.records.map { kv in
+                                Models.Comment.loadByRaw(IDBytes: kv.value, storage: storage, on: eventLoop)
+                            },
                             on: eventLoop
                         ) { $0.append($1) }
                     }

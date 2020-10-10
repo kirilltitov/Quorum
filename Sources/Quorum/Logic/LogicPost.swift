@@ -183,6 +183,7 @@ public extension Logic {
                         bySubspace: Models.Comment._getPostPrefix(ID),
                         within: transaction,
                         snapshot: true,
+                        storage: fdb,
                         on: eventLoop
                     )
                 }

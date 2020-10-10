@@ -36,7 +36,7 @@ public extension Logic {
         }
 
         public static func get(by ID: Models.Comment.Identifier, on eventLoop: EventLoop) -> EventLoopFuture<Models.Comment?> {
-            return Models.Comment.getUsingRefID(by: ID, on: eventLoop)
+            return Models.Comment.getUsingRefID(by: ID, storage: fdb, on: eventLoop)
         }
 
         public static func getThrowing(
@@ -44,7 +44,7 @@ public extension Logic {
             on eventLoop: EventLoop
         ) -> EventLoopFuture<Models.Comment> {
             return Models.Comment
-                .getUsingRefID(by: ID, on: eventLoop)
+                .getUsingRefID(by: ID, storage: fdb, on: eventLoop)
                 .mapThrowing { maybeComment in
                     guard let comment = maybeComment else {
                         throw LGNC.ContractError.GeneralError("Comment not found (it should)", 404)
@@ -58,7 +58,7 @@ public extension Logic {
             on eventLoop: EventLoop
         ) -> EventLoopFuture<(Models.Comment, AnyFDBTransaction)> {
             return Models.Comment
-                .getUsingRefIDWithTransaction(by: ID, on: eventLoop)
+                .getUsingRefIDWithTransaction(by: ID, storage: fdb, on: eventLoop)
                 .mapThrowing { maybeComment, transaction in
                     guard let comment = maybeComment else {
                         throw LGNC.ContractError.GeneralError("Comment not found (it should)", 404)
@@ -90,8 +90,8 @@ public extension Logic {
                         throw LGNC.ContractError.GeneralError("You're commenting too often".tr(context.locale), 429)
                     }
                 }
-                .flatMap { _ in comment.insert(on: eventLoop) }
-                .flatMap { Models.PendingComment.savePending(comment: comment, on: eventLoop) }
+                .flatMap { _ in comment.insert(storage: fdb, on: eventLoop) }
+                .flatMap { Models.PendingComment.savePending(comment: comment, storage: fdb, on: eventLoop) }
                 .flatMap {
                     if user.shouldSkipPremoderation {
                         return Logic.Comment
@@ -103,14 +103,14 @@ public extension Logic {
                 .flatMap {
                     user.dateLastComment = .now
 
-                    return user.save(on: eventLoop)
+                    return user.save(storage: fdb, on: eventLoop)
                 }
                 .map { comment }
         }
 
         public static func save(comment: Models.Comment, on eventLoop: EventLoop) -> EventLoopFuture<Models.Comment> {
             return comment
-                .save(on: eventLoop)
+                .save(storage: fdb, on: eventLoop)
                 .map { _ in comment }
         }
 
@@ -121,7 +121,7 @@ public extension Logic {
         public static func delete(comment: Models.Comment, on eventLoop: EventLoop) -> EventLoopFuture<Void> {
             comment.status = .deleted
 
-            return comment.save(on: eventLoop)
+            return comment.save(storage: fdb, on: eventLoop)
         }
 
         public static func hide(comment: Models.Comment, context: LGNCore.Context) -> EventLoopFuture<Void> {
@@ -144,7 +144,7 @@ public extension Logic {
                 .flatMap {
                     comment.status = .hidden
 
-                    return comment.save(on: eventLoop)
+                    return comment.save(storage: fdb, on: eventLoop)
                 }
                 .flatMap { Logic.Post.decrementCommentCounterForPost(ID: comment.IDPost, on: eventLoop) }
         }
@@ -163,7 +163,7 @@ public extension Logic {
                     
                     comment.status = .published
                     
-                    return comment.save(on: eventLoop)
+                    return comment.save(storage: fdb, on: eventLoop)
                 }
                 .flatMap { Logic.Post.incrementCommentCounterForPost(ID: comment.IDPost, on: eventLoop) }
         }
@@ -175,7 +175,7 @@ public extension Logic {
             comment.status = .published
 
             return comment
-                .save(on: eventLoop)
+                .save(storage: fdb, on: eventLoop)
                 .map { _ in comment }
         }
 
@@ -214,7 +214,7 @@ public extension Logic {
             comment.body = newBody
 
             let future: EventLoopFuture<Void> = comment
-                .save(commit: false, within: transaction, on: eventLoop)
+                .save(commit: false, within: transaction, storage: fdb, on: eventLoop)
                 .flatMap { _ in
                     Models.Comment.History.log(
                         comment: comment,
@@ -238,8 +238,8 @@ public extension Logic {
             comment.status = .published
 
             return comment
-                .save(on: eventLoop)
-                .flatMap { Models.PendingComment.clearRoutine(comment: comment, on: eventLoop) }
+                .save(storage: fdb, on: eventLoop)
+                .flatMap { Models.PendingComment.clearRoutine(comment: comment, storage: fdb, on: eventLoop) }
                 .flatMap { Logic.Post.incrementCommentCounterForPost(ID: comment.IDPost, on: eventLoop) }
                 .map { comment }
         }
@@ -250,8 +250,8 @@ public extension Logic {
             }
 
             return comment
-                .delete(on: eventLoop)
-                .flatMap { Models.PendingComment.clearRoutine(comment: comment, on: eventLoop) }
+                .delete(storage: fdb, on: eventLoop)
+                .flatMap { Models.PendingComment.clearRoutine(comment: comment, storage: fdb, on: eventLoop) }
         }
     }
 }

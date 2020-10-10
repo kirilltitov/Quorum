@@ -36,7 +36,7 @@ public struct UpdateUserAccessLevelController {
                     return (user, accessLevel)
                 }
                 .flatMap { (user: Models.User, accessLevel: Models.User.AccessLevel) -> EventLoopFuture<Void> in
-                    user.set(accessLevel: accessLevel, on: context.eventLoop)
+                    user.set(accessLevel: accessLevel, storage: fdb, on: context.eventLoop)
                 }
                 .map { empty }
         }

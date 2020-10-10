@@ -11,7 +11,7 @@ let package = Package(
     ],
     dependencies: [
         .package(name: "LGNC-Swift", url: "git@github.com:1711-games/LGNC-Swift.git", .branch("master")),
-        .package(url: "git@github.com:1711-Games/Entita2FDB.git", .branch("master")),
+        .package(url: "git@github.com:1711-Games/Entita2FDB.git", .branch("develop")),
         .package(url: "https://github.com/swift-server/swift-service-lifecycle.git", from: "1.0.0-alpha.4"),
     ],
     targets: [

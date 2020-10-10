@@ -118,18 +118,20 @@ public extension Models {
 
         public static func getUsingRefID(
             by ID: Comment.Identifier,
+            storage: Storage,
             on eventLoop: EventLoop
         ) -> EventLoopFuture<Models.Comment?> {
-            return self.loadByIndex(key: .ID, value: ID, on: eventLoop)
+            self.loadByIndex(key: .ID, value: ID, storage: storage, on: eventLoop)
         }
 
         public static func getUsingRefIDWithTransaction(
             by ID: Comment.Identifier,
+            storage: Storage,
             on eventLoop: EventLoop
         ) -> EventLoopFuture<(Models.Comment?, AnyFDBTransaction)> {
             return fdb.withTransaction(on: eventLoop) { transaction in
                 self
-                    .loadByIndex(key: .ID, value: ID, within: transaction, on: eventLoop)
+                    .loadByIndex(key: .ID, value: ID, within: transaction, storage: storage, on: eventLoop)
                     .map { maybeComment in (maybeComment, transaction) }
             }
         }
@@ -230,7 +232,7 @@ public extension Models {
                     .map { (ID: Int) -> History in
                         History(ID: ID, IDComment: comment.ID, IDUser: user.ID, oldBody: oldBody, newBody: newBody)
                     }
-                    .flatMap { model in model.save(commit: false, within: transaction, on: eventLoop) }
+                    .flatMap { model in model.save(commit: false, within: transaction, storage: fdb, on: eventLoop) }
             }
 
             public func getIDAsKey() -> Bytes {

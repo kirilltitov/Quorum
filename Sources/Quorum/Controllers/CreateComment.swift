@@ -42,7 +42,7 @@ public struct CreateController {
 
             return Models.Comment.await(
                 on: eventLoop,
-                ID: Models.Comment.getNextID(on: eventLoop),
+                ID: Models.Comment.getNextID(storage: fdb, on: eventLoop),
                 IDUser: user.map(\.ID),
                 IDPost: request.IDPost,
                 IDReplyComment: request.IDReplyComment,
