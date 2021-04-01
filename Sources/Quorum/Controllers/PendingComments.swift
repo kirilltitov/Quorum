@@ -8,29 +8,17 @@ extension Contract.Request: AnyEntityWithSession {}
 
 class PendingCommentsController {
     public static func setup() {
-        func contractRoutine(
-            request: Contract.Request,
-            context: LGNCore.Context
-        ) -> EventLoopFuture<Contract.Response> {
-            let eventLoop = context.eventLoop
+        func contractRoutine(request: Contract.Request) async throws -> Contract.Response {
+            let user = try await Logic.User.authenticate(request: request)
+            guard user.isAtLeastModerator else {
+                throw Task.local(\.context).errorNotAuthenticated
+            }
 
-            return Logic.User
-                .authenticate(request: request, context: context)
-                .mapThrowing { user in
-                    guard user.isAtLeastModerator else {
-                        throw context.errorNotAuthenticated
-                    }
-                    return
-                }
-                .flatMap { Models.PendingComment.getUnapprovedComments(storage: fdb, on: eventLoop) }
-                .flatMap { comments in
-                    EventLoopFuture.reduce(
-                        into: [Services.Shared.Comment](),
-                        comments.map { $0.getContractComment(context: context) },
-                        on: eventLoop
-                    ) { $0.append($1) }
-                }
-                .map { Contract.Response(comments: $0) }
+            let comments = try await Models.PendingComment.getUnapprovedComments()
+
+            return Contract.Response(
+                comments: try await comments.map { comment in try await comment.getContractComment() }
+            )
         }
 
         Contract.guarantee(contractRoutine)
@@ -44,22 +32,13 @@ extension ContractCount.Request: AnyEntityWithSession {}
 class PendingCommentsCountController {
     public static func setup() {
 
-        func contractRoutine(
-            request: ContractCount.Request,
-            context: LGNCore.Context
-        ) -> EventLoopFuture<ContractCount.Response> {
-            let eventLoop = context.eventLoop
+        func contractRoutine(request: ContractCount.Request) async throws -> ContractCount.Response {
+            let user = try await Logic.User.authenticate(request: request)
+            guard user.isAtLeastModerator else {
+                throw Task.local(\.context).errorNotAuthenticated
+            }
 
-            return Logic.User
-                .authenticate(request: request, context: context)
-                .mapThrowing { user in
-                    guard user.isAtLeastModerator else {
-                        throw context.errorNotAuthenticated
-                    }
-                    return
-                }
-                .flatMap { Models.PendingComment.getPendingCount(storage: fdb, on: eventLoop) }
-                .map { ContractCount.Response(count: $0) }
+            return ContractCount.Response(count: try await Models.PendingComment.getPendingCount())
         }
 
         ContractCount.guarantee(contractRoutine)

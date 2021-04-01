@@ -2,7 +2,6 @@ import Foundation
 import LGNCore
 import Entita2FDB
 import FDB
-import NIO
 
 //MARK:- General
 extension Int {
@@ -28,8 +27,8 @@ public extension Data {
 }
 
 public extension Date {
-    static var now: Date {
-        return Date()
+    static var now: Self {
+        Self()
     }
 }
 
@@ -54,74 +53,7 @@ public extension AnyFDBKey {
     }
 }
 
-//MARK:- EventLoopFuture
-public extension EventLoopFuture {
-    func flatMapThrowing<NewValue>(
-        file: StaticString = #file,
-        line: UInt = #line,
-        _ callback: @escaping (Value) throws -> EventLoopFuture<NewValue>
-    ) -> EventLoopFuture<NewValue> {
-        return self.flatMap(file: file, line: line) {
-            do {
-                return try callback($0)
-            } catch {
-                return self.eventLoop.makeFailedFuture(error)
-            }
-        }
-    }
-
-    func mapThrowing<NewValue>(
-        file: StaticString = #file,
-        line: UInt = #line,
-        _ callback: @escaping (Value) throws -> NewValue
-    ) -> EventLoopFuture<NewValue> {
-        return self.flatMapThrowing(file: file, line: line, callback)
-    }
-
-    func flatMapIfErrorThrowing(
-        file: StaticString = #file,
-        line: UInt = #line,
-        _ callback: @escaping (Error) throws -> EventLoopFuture<Value>
-    ) -> EventLoopFuture<Value> {
-        return self.flatMapError(file: file, line: line) {
-            do {
-                return try callback($0)
-            } catch {
-                return self.eventLoop.makeFailedFuture(error)
-            }
-        }
-    }
-}
-
-public extension EventLoop {
-    /// Creates and returns a new void `EventLoopFuture` that is already marked as success.
-    /// Notifications will be done using this `EventLoop` as execution `NIOThread`.
-    ///
-    /// - parameters:
-    ///     - result: the value that is used by the `EventLoopFuture`.
-    /// - returns: a succeeded `EventLoopFuture`.
-    func makeSucceededFuture(file: StaticString = #file, line: UInt = #line) -> EventLoopFuture<Void> {
-        self.makeSucceededFuture((), file: file, line: line)
-    }
-
-    /// Creates and returns a new void `EventLoopFuture` that is already marked as success.
-    /// Notifications will be done using this `EventLoop` as execution `NIOThread`.
-    ///
-    /// - parameters:
-    ///     - result: the value that is used by the `EventLoopFuture`.
-    /// - returns: a succeeded `EventLoopFuture`.
-    func makeFuture(file: StaticString = #file, line: UInt = #line) -> EventLoopFuture<Void> {
-        self.makeSucceededFuture(file: file, line: line)
-    }
-}
-
 //MARK:- General
-public extension EventLoopGroup {
-    var eventLoop: EventLoop {
-        self.next()
-    }
-}
-
 infix operator =>
 public func =><T: RawRepresentable & Equatable>(lhs: T, rhs: [T]) -> Bool {
     return rhs.contains(lhs)
@@ -131,83 +63,68 @@ public func =><T: RawRepresentable & Equatable>(lhs: T, rhs: [T]) -> Bool {
 public extension E2FDBEntity {
     static var format: E2.Format { .JSON }
     static var subspace: FDB.Subspace { subspaceMain }
+    static var storage: some E2FDBStorage { fdb }
 }
 
 public protocol Model: E2FDBEntity {
-    associatedtype Storage = FDB
-    associatedtype Identifier = E2.UUID
+    override associatedtype Identifier = E2.UUID
 }
 
 public protocol ModelInt: E2FDBEntity {
-    associatedtype Storage = FDB
-    associatedtype Identifier = Int
+    override associatedtype Identifier = Int
 }
 
 public extension Model {
-    func insert(
-        commit: Bool = true,
-        within transaction: AnyFDBTransaction?,
-        storage: Storage,
-        on eventLoop: EventLoop
-    ) -> EventLoopFuture<Void> {
-        self.insert(commit: commit, within: transaction as? AnyTransaction, storage: storage, on: eventLoop)
+    func insert(within transaction: AnyFDBTransaction?, commit: Bool = true) async throws {
+        try await self.insert(within: transaction as? AnyTransaction, commit: commit)
     }
 
-    func save(
-        by ID: Identifier? = nil,
-        commit: Bool = true,
-        within transaction: AnyFDBTransaction?,
-        storage: Storage,
-        on eventLoop: EventLoop
-    ) -> EventLoopFuture<Void> {
-        self.save(by: ID, commit: commit, within: transaction as? AnyTransaction, storage: storage, on: eventLoop)
+    func save(by ID: Identifier? = nil, within transaction: AnyFDBTransaction?, commit: Bool = true) async throws {
+        try await self.save(by: ID, within: transaction as? AnyTransaction, commit: commit)
     }
 
-    func delete(
-        commit: Bool = true,
-        within transaction: AnyFDBTransaction?,
-        storage: Storage,
-        on eventLoop: EventLoop
-    ) -> EventLoopFuture<Void> {
-        self.delete(commit: commit, within: transaction as? AnyTransaction, storage: storage, on: eventLoop)
+    func delete(within transaction: AnyFDBTransaction?, commit: Bool = true) async throws {
+        try await self.delete(within: transaction as? AnyTransaction, commit: commit)
     }
 }
 
 public extension ModelInt {
-    static func getNextID(storage: Storage, on eventLoop: EventLoop) -> EventLoopFuture<Int> {
-        storage.withTransaction(on: eventLoop) { transaction in
-            Self.getNextID(commit: true, within: transaction)
+    static func getNextID() async throws -> Int {
+        try await Self.storage.withTransaction { transaction in
+            try await Self.getNextID(commit: true, within: transaction)
         }
     }
 
-    static func getNextID(
-        commit: Bool = true,
-        within transaction: AnyFDBTransaction
-    ) -> EventLoopFuture<Int> {
+    static func getNextID(commit: Bool = true, within transaction: AnyFDBTransaction) async throws -> Int {
         let key = Self.subspace["idx"][Self.entityName]
-        return transaction
-            .atomic(.add, key: key, value: Int(1))
-            .flatMap { $0.get(key: key, commit: commit) }
-            .flatMapThrowing { (maybeBytes: Bytes?, _) -> Int in
-                let result: Int = try maybeBytes!.cast()
-                return result
-            }
+
+        transaction.atomic(.add, key: key, value: Int(1))
+
+        let maybeBytes = try await transaction.get(key: key)
+
+        if commit {
+            try await transaction.commit()
+        }
+
+        return try maybeBytes!.cast()
     }
 }
 
-//MARK- Migrations
+//MARK:- Migrations
 
-public typealias Migrations = [() throws -> Void]
+public typealias Migrations = [() async throws -> Void]
 
-func runMigrations(_ migrations: Migrations, on fdb: FDB) {
+func runMigrations(_ migrations: Migrations, on fdb: FDB) async {
     let logger = Logger(label: "Quorum.Migrations")
     let key = subspaceMain["migration"]
     var lastState: Int
     do {
-        let lastMigration = try fdb.get(key: key)
+        logger.info("Loading last migration state at key \(key)")
+        let lastMigration = try await fdb.get(key: key)
+        logger.info("Last migration state loaded: \(String(describing: lastMigration))")
         if lastMigration == nil {
             let initial: Int = 0
-            try fdb.set(key: key, value: LGNCore.getBytes(initial))
+            try await fdb.set(key: key, value: LGNCore.getBytes(initial))
             lastState = initial
         } else {
             lastState = try lastMigration!.cast()
@@ -224,12 +141,42 @@ func runMigrations(_ migrations: Migrations, on fdb: FDB) {
         let migration = migrations[idx]
         do {
             logger.info("Trying to apply migration #\(idx)")
-            try migration()
-            try fdb.set(key: key, value: LGNCore.getBytes(idx + 1))
+            try await migration()
+            try await fdb.set(key: key, value: LGNCore.getBytes(idx + 1))
             logger.info("Successfully applied migration #\(idx)")
         } catch {
             logger.critical("Could not run migration #\(idx): \(error)")
             exit(1)
         }
+    }
+}
+
+//MARK:- Sequence
+
+public extension Sequence {
+    @inlinable
+    func map<T>(_ transform: (Element) async throws -> T) async rethrows -> [T] {
+        let initialCapacity = self.underestimatedCount
+        var result = ContiguousArray<T>()
+        result.reserveCapacity(initialCapacity)
+
+        var iterator = self.makeIterator()
+
+        // Add elements up to the initial capacity without checking for regrowth.
+        for _ in 0..<initialCapacity {
+            result.append(try await transform(iterator.next()!))
+        }
+        // Add remaining elements, if any.
+        while let element = iterator.next() {
+            result.append(try await transform(element))
+        }
+        return Array(result)
+    }
+
+    @inlinable
+    func compactMap<T>(_ transform: (Element) async throws -> T?) async rethrows -> [T] {
+        try await self
+            .map(transform)
+            .compactMap { $0 }
     }
 }

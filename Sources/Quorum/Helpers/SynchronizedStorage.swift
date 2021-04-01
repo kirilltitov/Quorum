@@ -1,23 +1,19 @@
 import Foundation
 import LGNCore
-import NIO
 
 public protocol SyncStorage {
     associatedtype Key: Hashable
     associatedtype Value
 
-    var eventLoops: [EventLoop] { get }
-
     func getOrSet(
         by key: Key,
-        on eventLoop: EventLoop,
-        _ getter: @escaping () -> EventLoopFuture<Value?>
-    ) -> EventLoopFuture<Value?>
+        _ getter: @escaping () async throws -> Value?
+    ) async rethrows -> Value?
 
-    func has(key: Key, on eventLoop: EventLoop) -> EventLoopFuture<Bool>
-    func get(by key: Key, on eventLoop: EventLoop) -> EventLoopFuture<Value?>
-    func set(by key: Key, value: Value, on eventLoop: EventLoop) -> EventLoopFuture<Void>
-    @discardableResult func remove(by key: Key, on eventLoop: EventLoop) -> EventLoopFuture<Value?>
+    func has(key: Key) async -> Bool
+    func get(by key: Key) async -> Value?
+    func set(by key: Key, value: Value) async -> Void
+    @discardableResult func remove(by key: Key) async -> Value?
 
     func has0(key: Key) -> Bool
     func get0(by key: Key) -> Value?
@@ -25,83 +21,49 @@ public protocol SyncStorage {
     func remove0(by key: Key) -> Value?
 }
 
-fileprivate func initEventLoops(from eventLoopGroup: EventLoopGroup, eventLoopCount: Int) -> [EventLoop] {
-    return (0 ..< eventLoopCount).map { _ in eventLoopGroup.next() }
-}
-
 public extension SyncStorage {
-    func getEventLoop(key: Key) -> EventLoop {
-        return self.eventLoops[Int(key.hashValue.magnitude % UInt(self.eventLoops.count))]
-    }
-
     func has0(key: Key) -> Bool {
-        return self.get0(by: key) != nil
+        self.get0(by: key) != nil
     }
 
-    func has(key: Key, on eventLoop: EventLoop) -> EventLoopFuture<Bool> {
-        return self
-            .getEventLoop(key: key)
-            .makeFuture()
-            .map { self.has0(key: key) }
-            .hop(to: eventLoop)
+    func has(key: Key) async -> Bool {
+        self.has0(key: key)
     }
 
-    func get(by key: Key, on eventLoop: EventLoop) -> EventLoopFuture<Value?> {
-        return self
-            .getEventLoop(key: key)
-            .makeFuture()
-            .map { self.get0(by: key) }
-            .hop(to: eventLoop)
+    func get(by key: Key) async -> Value? {
+        self.get0(by: key)
     }
 
-    func set(by key: Key, value: Value, on eventLoop: EventLoop) -> EventLoopFuture<Void> {
-        return self
-            .getEventLoop(key: key)
-            .makeFuture()
-            .map { self.set0(by: key, value: value) }
-            .hop(to: eventLoop)
+    func set(by key: Key, value: Value) async {
+        self.set0(by: key, value: value)
     }
 
     func getOrSet(
         by key: Key,
-        on eventLoop: EventLoop,
-        _ getter: @escaping () -> EventLoopFuture<Value?>
-    ) -> EventLoopFuture<Value?> {
+        _ getter: @escaping () async throws -> Value?
+    ) async rethrows -> Value? {
+        if let value = self.get0(by: key) {
+            return value
+        }
 
-        let keyEventLoop = self.getEventLoop(key: key)
-
-        return keyEventLoop
-            .makeSucceededFuture()
-            .flatMap {
-                if let value = self.get0(by: key) {
-                    return keyEventLoop.makeSucceededFuture(value)
-                }
-
-                return getter().map { maybeResult in
-                    if let result = maybeResult {
-                        self.set0(by: key, value: result)
-                    }
-                    return maybeResult
-                }
-            }
-            .hop(to: eventLoop)
+        if let result = try await getter() {
+            self.set0(by: key, value: result)
+        }
+        
+        return nil
     }
 
-    @discardableResult func remove(by key: Key, on eventLoop: EventLoop) -> EventLoopFuture<Value?> {
-        return self
-            .getEventLoop(key: key)
-            .makeFuture()
-            .map { self.remove0(by: key) }
-            .hop(to: eventLoop)
+    @discardableResult
+    func remove(by key: Key) async -> Value? {
+        self.remove0(by: key)
     }
 }
 
 public final class SyncDict<Key: Hashable, Value>: SyncStorage {
-    public let eventLoops: [EventLoop] = []
     private var storage: [Key: Value] = [:]
 
     public func get0(by key: Key) -> Value? {
-        return self.storage[key]
+        self.storage[key]
     }
 
     public func set0(by key: Key, value: Value) {
@@ -109,7 +71,7 @@ public final class SyncDict<Key: Hashable, Value>: SyncStorage {
     }
 
     public func remove0(by key: Key) -> Value? {
-        return self.storage.removeValue(forKey: key)
+        self.storage.removeValue(forKey: key)
     }
 }
 
@@ -205,10 +167,7 @@ final public class CacheLRU<Key: Hashable, Value>: SyncStorage {
     private let list = DoublyLinkedList<Box>()
     private var nodesDict: [Key: DoublyLinkedList<Box>.Node] = [:]
 
-    public let eventLoops: [EventLoop]
-
-    public init(capacity: Int, eventLoopGroup: EventLoopGroup, eventLoopCount: Int) {
-        self.eventLoops = initEventLoops(from: eventLoopGroup, eventLoopCount: eventLoopCount)
+    public init(capacity: Int) {
         self.capacity = max(0, capacity)
     }
 

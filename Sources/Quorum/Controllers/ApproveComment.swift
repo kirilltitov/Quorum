@@ -9,23 +9,15 @@ extension Contract.Request: AnyEntityWithSession {}
 /// Moves comment from `pending` status to `published` status (premoderation)
 public struct ApproveCommentController {
     public static func setup() {
-        func contractRoutine(
-            request: Contract.Request,
-            context: LGNCore.Context
-        ) -> EventLoopFuture<Contract.Response> {
-            let eventLoop = context.eventLoop
+        func contractRoutine(request: Contract.Request) async throws -> Contract.Response {
+            let user = try await Logic.User.authenticate(request: request)
+            guard user.accessLevel == .Admin || user.accessLevel == .Moderator else {
+                throw Task.local(\.context).errorNotAuthenticated
+            }
 
-            return Logic.User
-                .authenticate(request: request, context: context)
-                .mapThrowing { user in
-                    guard user.accessLevel == .Admin || user.accessLevel == .Moderator else {
-                        throw context.errorNotAuthenticated
-                    }
-                    return
-                }
-                .flatMap { Logic.Comment.getThrowing(by: request.IDComment, on: eventLoop) }
-                .flatMap { comment in Logic.Comment.approve(comment: comment, on: eventLoop) }
-                .flatMap { comment in comment.getContractComment(context: context)}
+            let comment = try await Logic.Comment.getThrowing(by: request.IDComment)
+            try await Logic.Comment.approve(comment: comment)
+            return try await comment.getContractComment()
         }
 
         Contract.guarantee(contractRoutine)

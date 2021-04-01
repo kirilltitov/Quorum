@@ -2,7 +2,7 @@ import Foundation
 import Generated
 
 func guaranteeLocalAuthorContracts() {
-    SAuthor.Contracts.UserInfoInternal.guarantee { (request, context) throws -> Services.Shared.User in
+    SAuthor.Contracts.UserInfoInternal.guarantee { (request) -> Services.Shared.User in
         Services.Shared.User(
             ID: defaultUser.string,
             username: "teonoman",
@@ -20,7 +20,7 @@ func guaranteeLocalAuthorContracts() {
         )
     }
 
-    SAuthor.Contracts.Authenticate.guarantee { (request, info) -> SAuthor.Contracts.Authenticate.Response in
+    SAuthor.Contracts.Authenticate.guarantee { (request) -> SAuthor.Contracts.Authenticate.Response in
         .init(IDUser: defaultUser.string)
     }
 }

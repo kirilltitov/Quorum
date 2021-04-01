@@ -9,6 +9,7 @@ import Entita2FDB
 import AsyncHTTPClient
 import Lifecycle
 import LifecycleNIOCompat
+import _Concurrency
 
 public typealias SQuorum = Services.Quorum
 public typealias SAuthor = Services.Author
@@ -84,20 +85,36 @@ let adminUserID = defaultUser
 let empty = LGNC.Entity.Empty()
 
 let lifecycle = ServiceLifecycle()
+defaultLogger.info("Lifecycle installed")
 
 // this const is also used in Logic.User.usersLRU initialization
 let eventLoopCount = System.coreCount.clamped(min: 4)
 let eventLoopGroup: EventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: eventLoopCount)
+defaultLogger.info("EventLoopGroup of \(eventLoopCount) event loops started")
+
 lifecycle.registerShutdown(label: "eventLoopGroup", .sync(eventLoopGroup.syncShutdownGracefully))
 
 let cryptor = try LGNP.Cryptor(key: config[.KEY])
 
-let fdb = FDB(clusterFile: "/opt/foundationdb/fdb.cluster")
+let clusterFile: String
+#if os(macOS)
+clusterFile = "/usr/local/etc/foundationdb/fdb.cluster"
+#else
+clusterFile = "/opt/foundationdb/fdb.cluster"
+#endif
+
+let fdb = FDB(clusterFile: clusterFile)
+FDB.logger = defaultLogger
+defaultLogger.info("FDB created")
+
 try fdb.connect()
+defaultLogger.info("FDB connected")
+
 lifecycle.registerShutdown(
     label: "FDB",
     .sync(fdb.disconnect)
 )
+defaultLogger.info("FDB shutdown registered")
 
 let subspaceMain = FDB.Subspace(PORTAL_ID, SERVICE_ID)
 let subspaceCounter = subspaceMain["cnt"]
@@ -119,62 +136,81 @@ if APP_ENV == .local {
         clientHTTP: HTTPClient(eventLoopGroupProvider: .shared(eventLoopGroup))
     )
 }
+defaultLogger.info("Client created")
 
-runMigrations(migrations, on: fdb)
-
-CreateController.setup()
-CommentsController.setup()
-CommentsCountersController.setup()
-EditController.setup()
-DeleteController.setup()
-UndeleteController.setup()
-HideController.setup()
-UnhideController.setup()
-LikeController.setup()
-ApproveCommentController.setup()
-PendingCommentsController.setup()
-PendingCommentsCountController.setup()
-RejectCommentController.setup()
-UpdateUserAccessLevelController.setup()
-UserInfoController.setup()
+public extension LifecycleHandler {
+    init(_ handler: @escaping () async throws -> Void) {
+        self = LifecycleHandler { callback in
+            Task.runDetached {
+                do {
+                    try await handler()
+                    callback(nil)
+                } catch {
+                    callback(error)
+                }
+            }
+        }
+    }
+}
 
 let HOST = "0.0.0.0"
 let LGNS_PORT = Int(config[.LGNS_PORT])!
 let HTTP_PORT = Int(config[.HTTP_PORT])!
 
-let serverHTTP = try SQuorum.getServerHTTP(
-    at: .ip(host: HOST, port: HTTP_PORT),
-    eventLoopGroup: eventLoopGroup
-)
-lifecycle.register(
-    label: "HTTP Server",
-    start: .eventLoopFuture(serverHTTP.bind),
-    shutdown: .eventLoopFuture(serverHTTP.shutdown)
-)
+_runAsyncMain {
+    await runMigrations(migrations, on: fdb)
+    defaultLogger.info("Migrations run")
 
-let serverLGNS = try SQuorum.getServerLGNS(
-    at: .ip(host: HOST, port: LGNS_PORT),
-    cryptor: cryptor,
-    eventLoopGroup: eventLoopGroup,
-    requiredBitmask: requiredBitmask
-)
-lifecycle.register(
-    label: "LGNS Server",
-    start: .eventLoopFuture(serverLGNS.bind),
-    shutdown: .eventLoopFuture(serverLGNS.shutdown)
-)
+    CreateController.setup()
+    CommentsController.setup()
+    CommentsCountersController.setup()
+    EditController.setup()
+    DeleteController.setup()
+    UndeleteController.setup()
+    HideController.setup()
+    UnhideController.setup()
+    LikeController.setup()
+    ApproveCommentController.setup()
+    PendingCommentsController.setup()
+    PendingCommentsCountController.setup()
+    RejectCommentController.setup()
+    UpdateUserAccessLevelController.setup()
+    UserInfoController.setup()
 
-if config[.REGISTER_TO_CONSUL].bool == true {
-    try registerToConsul()
-}
+    let serverHTTP = try SQuorum.getServerHTTP(
+        at: .ip(host: HOST, port: HTTP_PORT),
+        eventLoopGroup: eventLoopGroup
+    )
+    lifecycle.register(
+        label: "HTTP Server",
+        start: .init(serverHTTP.bind),
+        shutdown: .init(serverHTTP.shutdown)
+    )
 
-lifecycle.start { maybeError in
-    if let error = maybeError {
-        defaultLogger.critical("Could not start Quorum: \(error)")
-    } else {
-        defaultLogger.info("Quorum is up!")
+    let serverLGNS = try SQuorum.getServerLGNS(
+        at: .ip(host: HOST, port: LGNS_PORT),
+        cryptor: cryptor,
+        eventLoopGroup: eventLoopGroup,
+        requiredBitmask: requiredBitmask
+    )
+    lifecycle.register(
+        label: "LGNS Server",
+        start: .init(serverLGNS.bind),
+        shutdown: .init(serverLGNS.shutdown)
+    )
+
+    if config[.REGISTER_TO_CONSUL].bool == true {
+        try await registerToConsul()
     }
-}
-lifecycle.wait()
 
-defaultLogger.info("Bye")
+    lifecycle.start { maybeError in
+        if let error = maybeError {
+            defaultLogger.critical("Could not start Quorum: \(error)")
+        } else {
+            defaultLogger.info("Quorum is up!")
+        }
+    }
+    lifecycle.wait()
+
+    defaultLogger.info("Bye")
+}

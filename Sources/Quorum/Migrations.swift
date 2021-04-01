@@ -26,9 +26,9 @@ let migrations: Migrations = [
 //            body: "Second"
 //        )
 //
-//        let _ = try Logic.Comment.insert(comment: comment, as: _defaultUser, on: eventLoopGroup.eventLoop).wait()
-//        let _ = try Logic.Comment.approve(comment: comment, on: eventLoopGroup.eventLoop).wait()
-//        let _ = try Logic.Comment.insert(comment: comment2, as: _defaultUser, on: eventLoopGroup.eventLoop).wait()
+//        let _ = try Logic.Comment.insert(comment: comment, as: _defaultUserGroup.eventLoop).wait()
+//        let _ = try Logic.Comment.approve(comment: commentGroup.eventLoop).wait()
+//        let _ = try Logic.Comment.insert(comment: comment2, as: _defaultUserGroup.eventLoop).wait()
 //        let _ = try Logic.Comment.likeOrUnlike(
 //            comment: comment,
 //            by: Models.User(ID: defaultUser, username: "Kirill Titov", accessLevel: .Admin),
@@ -46,7 +46,7 @@ let migrations: Migrations = [
 //        ).wait()
     },
     {
-        try fdb.get(range: Models.Comment._getPrefix().range).records.forEach { row in
+        for row in try await fdb.get(range: Models.Comment._getPrefix().range).records {
             let tuple = try FDB.Tuple(from: row.key)
             if tuple.tuple.count != 6 {
                 return
@@ -54,11 +54,11 @@ let migrations: Migrations = [
             guard let IDPost: Int = tuple.tuple[3] as? Int else {
                 return
             }
-            try Logic.Post.incrementCommentCounterForPost(ID: IDPost, on: eventLoopGroup.eventLoop).wait()
+            try await Logic.Post.incrementCommentCounterForPost(ID: IDPost)
         }
     },
     {
-        try fdb.get(range: Models.Like.getRootPrefix().range).records.forEach { row in
+        for row in try await fdb.get(range: Models.Like.getRootPrefix().range).records {
             let tuple = try FDB.Tuple(from: row.key).tuple
             guard 1 == 1
                 && tuple.count >= 5
@@ -67,19 +67,19 @@ let migrations: Migrations = [
                 let IDPost = tuple[tuple.count - 4] as? Int,
                 let IDComment = tuple[tuple.count - 2] as? Int
             else { return }
-            let transaction = try fdb.begin(on: eventLoopGroup.eventLoop).wait()
-            _ = try Models.Like.incrementLikesCounterFor(
+            let transaction: AnyFDBTransaction = try fdb.begin()
+            Models.Like.incrementLikesCounterFor(
                 comment: Models.Comment(ID: IDComment, IDUser: defaultUser, IDPost: IDPost, IDReplyComment: nil, body: ""),
                 within: transaction
-            ).wait()
-            try transaction.commit().wait()
+            )
+            try await transaction.commit()
         }
     },
     {
-        try fdb.get(range: Models.User.subspacePrefix.range).records.forEach { row in
+        for row in try await fdb.get(range: Models.User.subspacePrefix.range).records {
             var dict: Entita.Dict = try row.value.unpackFromJSON()
             dict["dateLastComment"] = Int(0)
-            try fdb.set(key: row.key, value: dict.pack(to: .JSON))
+            try await fdb.set(key: row.key, value: dict.pack(to: .JSON))
         }
     },
 ]

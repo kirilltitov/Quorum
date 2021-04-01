@@ -11,46 +11,37 @@ extension Contract.Request: AnyEntityWithSession {}
 
 public struct CreateController {
     public static func setup() {
-        Contract.Request.validateIDPost { ID, eventLoop in
-            Logic.Post
-                .getPostStatus(ID, on: eventLoop)
-                .map { status in
-                    if status == .NotFound {
-                        return .PostNotFound
-                    }
-                    if status == .NotCommentable {
-                        return .PostIsReadOnly
-                    }
-                    return nil
-                }
+        Contract.Request.validateIDPost { ID in
+            switch try await Logic.Post.getPostStatus(ID) {
+            case .NotFound: return .PostNotFound
+            case .NotCommentable: return .PostIsReadOnly
+            default: return nil
+            }
         }
 
-        Contract.Request.validateIDReplyComment { ID, eventLoop in
-            Logic.Comment
-                .doExists(ID: ID, on: eventLoop)
-                .map {
-                    guard $0 == true else {
-                        return .ReplyingCommentNotFound
-                    }
-                    return nil
-                }
+        Contract.Request.validateIDReplyComment { ID in
+            guard try await Logic.Comment.doExists(ID: ID) == true else {
+                return .ReplyingCommentNotFound
+            }
+            return nil
         }
 
-        Contract.guarantee { (request: Contract.Request, context: LGNCore.Context) -> EventLoopFuture<Contract.Response> in
-            let eventLoop = context.eventLoop
-            let user = Logic.User.authenticate(request: request, context: context)
+        Contract.guarantee { (request: Contract.Request) async throws -> Contract.Response in
+            let user = try await Logic.User.authenticate(request: request)
 
-            return Models.Comment.await(
-                on: eventLoop,
-                ID: Models.Comment.getNextID(storage: fdb, on: eventLoop),
-                IDUser: user.map(\.ID),
-                IDPost: request.IDPost,
+            guard let IDPost = Logic.Post.decodeHash(ID: request.IDPost) else {
+                throw LGNC.ContractError.GeneralError("Invalid post ID", 400)
+            }
+
+            let comment = Models.Comment(
+                ID: try await Models.Comment.getNextID(),
+                IDUser: user.ID,
+                IDPost: IDPost,
                 IDReplyComment: request.IDReplyComment,
                 body: Logic.Comment.getProcessedBody(from: request.body)
             )
-            .flatMap { comment in user.map { (comment, $0) } }
-            .flatMap { comment, user in Logic.Comment.insert(comment: comment, as: user, context: context) }
-            .flatMap { comment in comment.getContractComment(context: context) }
+            try await Logic.Comment.insert(comment: comment, as: user)
+            return try await comment.getContractComment()
         }
     }
 }

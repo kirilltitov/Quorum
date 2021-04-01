@@ -7,10 +7,8 @@ public enum CommentsCountersController {
     typealias Contract = Services.Quorum.Contracts.CommentsCounters
 
     public static func setup() {
-        Contract.guarantee { (request: Contract.Request, context: LGNCore.Context) -> EventLoopFuture<Contract.Response> in
-            Logic.Post
-                .getCommentCountersForPosts(IDs: request.IDs, on: context.eventLoop)
-                .map { Contract.Response(counters: $0) }
+        Contract.guarantee { (request: Contract.Request) async throws -> Contract.Response in
+            Contract.Response(counters: try await Logic.Post.getCommentCountersForPosts(IDs: request.IDs))
         }
     }
 }

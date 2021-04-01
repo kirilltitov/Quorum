@@ -5,7 +5,7 @@ import LGNCore
 import FoundationNetworking
 #endif
 
-func registerToConsul() throws {
+func registerToConsul() async throws {
     do {
         let tags: [String] = ["main"]
         let fullServiceName = "\(SERVICE_ID)-\(PORTAL_ID.lowercased())"
@@ -26,16 +26,11 @@ func registerToConsul() throws {
         defaultLogger.info(
             "Registering in consul with payload '\(try! JSONSerialization.data(withJSONObject: params)._string)'"
         )
-        let (maybeData, maybeResponse, maybeError) = try HTTPRequester.requestJSON(
+        let (maybeData, maybeResponse) = try await HTTPRequester.requestJSON(
             method: .PUT,
             url: "http://consul:8500/v1/agent/service/register",
-            params: params,
-            on: eventLoopGroup.eventLoop
-        ).wait()
-
-        if let error = maybeError {
-            throw error
-        }
+            params: params
+        )
 
         guard let response = maybeResponse as? HTTPURLResponse else {
             throw E.Consul("No response")
