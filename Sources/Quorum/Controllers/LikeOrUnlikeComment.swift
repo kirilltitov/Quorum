@@ -11,6 +11,7 @@ public class LikeController {
     public static func setup() {
         Contract.Request.validateIDComment { ID in
             guard try await Logic.Comment.get(by: ID) != nil else {
+                Task.local(\.context).logger.info("Cannot like comment #\(ID): not found")
                 return .CommentNotFound
             }
             return nil
@@ -19,12 +20,14 @@ public class LikeController {
         Contract.guarantee { (request) async throws -> Contract.Response in
             let user = try await Logic.User.authenticate(request: request)
 
-            return Contract.Response(
-                likes: try await Logic.Comment.likeOrUnlike(
-                    comment: try await Logic.Comment.getThrowing(by: request.IDComment),
-                    by: user
-                )
+            let likes = try await Logic.Comment.likeOrUnlike(
+                comment: try await Logic.Comment.getThrowing(by: request.IDComment),
+                by: user
             )
+
+            Task.local(\.context).logger.info("Liked comment #\(request.IDComment), now \(likes) likes")
+
+            return Contract.Response(likes: likes)
         }
     }
 }

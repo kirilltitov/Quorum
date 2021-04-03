@@ -60,6 +60,8 @@ public extension Logic {
                 throw LGNC.ContractError.GeneralError("User not found for some reason", 403)
             }
 
+            Task.local(\.context).logger.info("Authenticated user '\(user.username)' (\(user.ID.string))")
+
             return user
         }
 

@@ -38,7 +38,7 @@ let config = try Config<ConfigKeys>(
         .REALM: "Inner-Mongolia",
         .WEBSITE_DOMAIN: "https://kirilltitov.com",
         .AUTHOR_LGNS_PORT: "1711",
-        .LOG_LEVEL: "trace",
+        .LOG_LEVEL: "info",
         .LGNS_PORT: "1712",
         .HTTP_PORT: "8081",
         .PRIVATE_IP: "127.0.0.1",
