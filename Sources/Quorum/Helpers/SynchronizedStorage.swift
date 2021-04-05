@@ -46,11 +46,13 @@ public extension SyncStorage {
             return value
         }
 
-        if let result = try await getter() {
-            self.set0(by: key, value: result)
+        guard let result = try await getter() else {
+            return nil
         }
-        
-        return nil
+
+        self.set0(by: key, value: result)
+
+        return result
     }
 
     @discardableResult

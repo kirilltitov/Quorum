@@ -11,6 +11,8 @@ public extension LGNCore.Context {
     }
 }
 
+let addr = LGNCore.Address.ip(host: "10.133.54.35", port: 1811)
+
 public extension Logic {
     class User {
         public enum E: Error {
@@ -32,12 +34,7 @@ public extension Logic {
             do {
                 rawIDUser = try await Services.Author.Contracts.Authenticate
                     .execute(
-                        at: .node(
-                            service: "author",
-                            name: author,
-                            realm: PORTAL_ID,
-                            port: AUTHOR_PORT
-                        ),
+                        at: addr, // .node(service: "author", name: author, realm: PORTAL_ID, port: AUTHOR_PORT),
                         with: .init(
                             portal: LGNC.Entity.Cookie(name: "portal", value: portal),
                             session: LGNC.Entity.Cookie(name: "session", value: session)
@@ -93,33 +90,34 @@ public extension Logic {
 
         public static func get(by ID: Models.User.Identifier) async throws -> Models.User? {
             try await self.usersLRU.getOrSet(by: ID) {
+                let logger = Task.local(\.context).logger
                 do {
-                    let info = try await Services.Author.Contracts.UserInfoInternal.execute(
-                        at: .node(
-                            service: "author",
-                            name: "viktor",
-                            realm: PORTAL_ID,
-                            port: AUTHOR_PORT
-                        ),
+                    if let innerUser = try await Models.User.load(by: ID) {
+                        logger.info("Loaded inner user \(ID.string): \(innerUser.accessLevel.rawValue) '\(innerUser.username)'")
+                        return innerUser
+                    }
+
+                    let address: LGNCore.Address = addr // .node(service: "author", name: "viktor", realm: PORTAL_ID, port: AUTHOR_PORT),
+                    logger.info("No inner user, about to load origin user \(ID.string) info via UserInfoInternal contract @ \(address) with client \(type(of: client))")
+                    let originUserInfo = try await Services.Author.Contracts.UserInfoInternal.execute(
+                        at: address,
                         with: .init(ID: ID.string),
                         using: client,
                         context: Task.local(\.context)
                     )
-
-                    if let innerUser = try await Models.User.load(by: ID) {
-                        return innerUser
-                    }
+                    logger.info("Loaded origin user \(ID.string) info from \(address): \(String(describing: try? originUserInfo.getDictionary()))")
 
                     let innerUser = Models.User(
                         ID: ID,
-                        username: info.username,
-                        accessLevel: Models.User.AccessLevel(rawValue: info.accessLevel) ?? .User
+                        username: originUserInfo.username,
+                        accessLevel: Models.User.AccessLevel(rawValue: originUserInfo.accessLevel) ?? .User
                     )
                     try await innerUser.save()
 
                     return innerUser
                 } catch {
                     if case LGNC.E.MultipleError(let dict) = error, dict.getGeneralErrorCode() == 404 {
+                        logger.info("Remote user \(ID.string) not found")
                         return nil
                     }
                     throw error

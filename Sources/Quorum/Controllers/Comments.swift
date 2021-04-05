@@ -15,10 +15,15 @@ public struct CommentsController {
 
     public static func setup() {
         Contract.guarantee { (request: Contract.Request) async throws -> Contract.Response in
+            let logger = Task.local(\.context).logger
+
+            logger.info("About to load comments with likes for post ID \(request.IDPost)")
             let commentsWithLikes = try await Logic.Post.getCommentsFor(
                 ID: request.IDPost,
                 as: try await Logic.User.maybeAuthenticate(request: request)
             )
+
+            logger.info("Loaded \(commentsWithLikes.count) comments, about to populate them with users info")
 
             var users: [Models.User.Identifier: Models.User] = [:]
             for ID in Set(commentsWithLikes.map { $0.comment.IDUser }) {
