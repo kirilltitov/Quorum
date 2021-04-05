@@ -147,7 +147,7 @@ public extension Logic {
 
             comment.body = newBody
 
-            try await comment.save(within: transaction)
+            try await comment.save(within: transaction, commit: false)
             try await Models.Comment.History.log(
                 comment: comment,
                 newBody: newBody,
@@ -155,7 +155,6 @@ public extension Logic {
                 by: user,
                 within: transaction
             )
-            try await transaction.commit()
         }
 
         public static func approve(comment: Models.Comment) async throws {

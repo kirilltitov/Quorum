@@ -51,6 +51,8 @@ public struct EditController {
                         within: transaction
                     )
 
+                    try await transaction.commit()
+
                     return comment
                 }
                 .getContractComment()
