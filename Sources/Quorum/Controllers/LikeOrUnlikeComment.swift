@@ -11,7 +11,7 @@ public class LikeController {
     public static func setup() {
         Contract.Request.validateIDComment { ID in
             guard try await Logic.Comment.get(by: ID) != nil else {
-                Task.local(\.context).logger.info("Cannot like comment #\(ID): not found")
+                LGNCore.Context.current.logger.info("Cannot like comment #\(ID): not found")
                 return .CommentNotFound
             }
             return nil
@@ -25,7 +25,7 @@ public class LikeController {
                 by: user
             )
 
-            Task.local(\.context).logger.info("Liked comment #\(request.IDComment), now \(likes) likes")
+            LGNCore.Context.current.logger.info("Liked comment #\(request.IDComment), now \(likes) likes")
 
             return Contract.Response(likes: likes)
         }

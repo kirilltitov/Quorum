@@ -31,7 +31,7 @@ public struct UpdateUserAccessLevelController {
 
             try await user.set(accessLevel: accessLevel)
 
-            return empty
+            return App.empty
         }
     }
 }

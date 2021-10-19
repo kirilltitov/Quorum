@@ -32,7 +32,7 @@ public struct DeleteController {
 
             try await Logic.Comment.delete(comment: comment)
 
-            return empty
+            return App.empty
         }
     }
 }

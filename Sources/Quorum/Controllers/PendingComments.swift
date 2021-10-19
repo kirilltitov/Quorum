@@ -11,7 +11,7 @@ class PendingCommentsController {
         func contractRoutine(request: Contract.Request) async throws -> Contract.Response {
             let user = try await Logic.User.authenticate(request: request)
             guard user.isAtLeastModerator else {
-                throw Task.local(\.context).errorNotAuthenticated
+                throw LGNCore.Context.current.errorNotAuthenticated
             }
 
             let comments = try await Models.PendingComment.getUnapprovedComments()
@@ -35,7 +35,7 @@ class PendingCommentsCountController {
         func contractRoutine(request: ContractCount.Request) async throws -> ContractCount.Response {
             let user = try await Logic.User.authenticate(request: request)
             guard user.isAtLeastModerator else {
-                throw Task.local(\.context).errorNotAuthenticated
+                throw LGNCore.Context.current.errorNotAuthenticated
             }
 
             return ContractCount.Response(count: try await Models.PendingComment.getPendingCount())

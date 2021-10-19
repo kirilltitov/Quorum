@@ -3,7 +3,7 @@ import LGNCore
 import Entita2FDB
 
 public extension Models {
-    final class User: Model, Entita2FDBIndexedEntity {
+    final class User: Model, Entita2FDBIndexedEntity, @unchecked Sendable {
         public typealias Identifier = E2.UUID
 
         public enum IndexKey: String, AnyIndexKey {
@@ -22,7 +22,7 @@ public extension Models {
         }
 
         public static var IDKey: KeyPath<Models.User, E2.UUID> = \.ID
-        public static var storage = fdb
+        public static var storage = App.current.fdb
 
         public static let unknown = User(
             ID: E2.UUID("00000000-0000-0000-0000-000000000000")!,

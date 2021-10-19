@@ -12,7 +12,7 @@ public struct RejectCommentController {
         func contractRoutine(request: Contract.Request) async throws -> Contract.Response {
             let user = try await Logic.User.authenticate(request: request)
             guard user.accessLevel == .Admin || user.accessLevel == .Moderator else {
-                throw Task.local(\.context).errorNotAuthenticated
+                throw LGNCore.Context.current.errorNotAuthenticated
             }
 
             try await Logic.Comment.reject(comment: try await Logic.Comment.getThrowing(by: request.IDComment))

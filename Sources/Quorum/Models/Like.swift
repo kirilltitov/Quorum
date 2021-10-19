@@ -7,7 +7,7 @@ public extension Models {
         public static var IDKey: KeyPath<Like, Int> = \.ID
 
         public static var fullEntityName = false
-        public static var storage = fdb
+        public static var storage = App.current.fdb
 
         public let ID: Int
 
@@ -60,14 +60,14 @@ public extension Models {
             do {
                 return try bytes.cast()
             } catch {
-                defaultLogger.error("Could not unwrap Int from bytes \(bytes)")
+                LGNCore.Context.current.logger.error("Could not unwrap Int from bytes \(bytes)")
                 return 0
             }
         }
 
         public static func getLikesFor(comment: Comment) async throws -> Int {
             try await self.unwrapLikeCountFrom(
-                maybeBytes: fdb
+                maybeBytes: App.current.fdb
                     .begin()
                     .get(key: self.getLikesCounterSubspaceFor(comment: comment), snapshot: true)
             )
@@ -129,7 +129,7 @@ public extension Models {
             let commentLikeKey = self.getCommentsLikesPrefix(for: comment)[user.ID]
             let userLikeIndexKey = user.getIndexIndexKeyForIndex(key: .Like, value: comment.ID)
 
-            try await fdb.withTransaction { transaction in
+            try await App.current.fdb.withTransaction { transaction in
                 if try await transaction.get(key: self.getCommentsLikesPrefix(for: comment)[user.ID]) == nil {
                     transaction.set(key: commentLikeKey, value: [])
                     transaction.set(key: userLikeIndexKey, value: [])

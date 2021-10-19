@@ -10,6 +10,6 @@ public extension String {
 
     @inlinable
     func tr(_ interpolations: [String: Any] = [:]) -> String {
-        LGNCore.i18n.tr(self, Task.local(\.context).locale, interpolations)
+        LGNCore.i18n.tr(self, LGNCore.Context.current.locale, interpolations)
     }
 }

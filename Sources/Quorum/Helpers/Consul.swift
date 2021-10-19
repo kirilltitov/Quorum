@@ -8,22 +8,22 @@ import FoundationNetworking
 func registerToConsul() async throws {
     do {
         let tags: [String] = ["main"]
-        let fullServiceName = "\(SERVICE_ID)-\(PORTAL_ID.lowercased())"
+        let fullServiceName = "\(App.SERVICE_ID)-\(App.current.PORTAL_ID.lowercased())"
         let params: [String: Any] = [
             "ID": "main-\(fullServiceName)",
             "Name": fullServiceName,
-            "Address": "\(config[.PRIVATE_IP])",
-            "Port": LGNS_PORT,
+            "Address": "\(App.current.config[.PRIVATE_IP])",
+            "Port": App.current.LGNS_PORT,
             "Tags": tags,
             "Checks": [
                 [
                     "Name": "LGNS",
                     "Interval": 5,
-                    "TCP": "\(config[.PRIVATE_IP]):\(config[.LGNS_PORT])"
+                    "TCP": "\(App.current.config[.PRIVATE_IP]):\(App.current.config[.LGNS_PORT])"
                 ],
             ],
         ]
-        defaultLogger.info(
+        App.current.defaultLogger.info(
             "Registering in consul with payload '\(try! JSONSerialization.data(withJSONObject: params)._string)'"
         )
         let (maybeData, maybeResponse) = try await HTTPRequester.requestJSON(
@@ -47,9 +47,9 @@ func registerToConsul() async throws {
             throw E.Consul("Non-200 status code: \(response.statusCode), JSON: '\(json)'")
         }
 
-        defaultLogger.info("Successfully registered in Consul")
+        App.current.defaultLogger.info("Successfully registered in Consul")
     } catch {
-        defaultLogger.critical("Could not register to consul: \(error)")
+        App.current.defaultLogger.critical("Could not register to consul: \(error)")
         fatalError()
     }
 }

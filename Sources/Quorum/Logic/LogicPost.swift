@@ -29,8 +29,8 @@ public extension Logic {
         }
 
         private static var hashids = Hashids(
-            salt: config[.HASHIDS_SALT],
-            minHashLength: UInt(config[.HASHIDS_MIN_LENGTH])!
+            salt: App.current.config[.HASHIDS_SALT],
+            minHashLength: UInt(App.current.config[.HASHIDS_MIN_LENGTH])!
         )
 
         private static func commentCounterSubspaceForPost(ID: Models.Post.Identifier) -> FDB.Subspace {
@@ -54,7 +54,7 @@ public extension Logic {
         }
 
         public static func updateCommentCounterForPost(ID: Models.Post.Identifier, count: Int) async throws {
-            try await fdb.withTransaction { (transaction: AnyFDBTransaction) in
+            try await App.current.fdb.withTransaction { (transaction: AnyFDBTransaction) in
                 transaction.atomic(.add, key: self.commentCounterSubspaceForPost(ID: ID), value: count)
                 try await transaction.commit()
             }
@@ -69,7 +69,7 @@ public extension Logic {
         }
 
         public static func getCommentCounterForPost(ID: Models.Post.Identifier) async throws -> Int {
-            try await fdb.withTransaction { (transaction: AnyFDBTransaction) in
+            try await App.current.fdb.withTransaction { (transaction: AnyFDBTransaction) in
                 guard let bytes = try await transaction.get(key: self.commentCounterSubspaceForPost(ID: ID), snapshot: true) else {
                     return 0
                 }
@@ -100,7 +100,7 @@ public extension Logic {
         }
 
         public static func getPostStatus(_ ID: Models.Post.Identifier) async -> Status {
-            let url = "\(config[.WEBSITE_DOMAIN])/post/exists/\(ID)"
+            let url = "\(App.current.config[.WEBSITE_DOMAIN])/post/exists/\(ID)"
 
             do {
                 let (maybeData, _) = try await HTTPRequester.requestJSON(method: .GET, url: url)
@@ -111,7 +111,7 @@ public extension Logic {
 
                 return .OK
             } catch {
-                Task.local(\.context).logger.error("Could not execute remote service API at '\(url)': \(error)")
+                LGNCore.Context.current.logger.error("Could not execute remote service API at '\(url)': \(error)")
                 return .NotFound
             }
         }
@@ -131,9 +131,9 @@ public extension Logic {
             ID: Models.Post.Identifier,
             within maybeTransaction: AnyFDBTransaction? = nil
         ) async throws -> [(ID: Models.Comment.Identifier, value: Models.Comment)] {
-            return try await Models.Comment.loadAll(
+            try await Models.Comment.loadAll(
                 bySubspace: Models.Comment._getPostPrefix(ID),
-                within: try maybeTransaction ?? fdb.begin(),
+                within: try maybeTransaction ?? App.current.fdb.begin(),
                 snapshot: true
             )
         }
@@ -142,7 +142,7 @@ public extension Logic {
             ID: Models.Post.Identifier,
             as maybeUser: Models.User? = nil
         ) async throws -> [CommentWithLikes] {
-            return try await fdb.withTransaction { transaction in
+            try await App.current.fdb.withTransaction { transaction in
                 let isAtLeastModerator = maybeUser != nil && maybeUser?.isAtLeastModerator == true
 
                 let commentsWithLikes = try await self

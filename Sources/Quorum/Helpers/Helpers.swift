@@ -62,8 +62,8 @@ public func =><T: RawRepresentable & Equatable>(lhs: T, rhs: [T]) -> Bool {
 //MARK:- Entita2FDB
 public extension E2FDBEntity {
     static var format: E2.Format { .JSON }
-    static var subspace: FDB.Subspace { subspaceMain }
-    static var storage: some E2FDBStorage { fdb }
+    static var subspace: FDB.Subspace { App.current.subspaceMain }
+    static var storage: some E2FDBStorage { App.current.fdb }
 }
 
 public protocol Model: E2FDBEntity {
@@ -116,7 +116,7 @@ public typealias Migrations = [() async throws -> Void]
 
 func runMigrations(_ migrations: Migrations, on fdb: FDB) async {
     let logger = Logger(label: "Quorum.Migrations")
-    let key = subspaceMain["migration"]
+    let key = App.current.subspaceMain["migration"]
     var lastState: Int
     do {
         logger.info("Loading last migration state at key \(key)")

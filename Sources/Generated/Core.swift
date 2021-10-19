@@ -1168,6 +1168,175 @@ public extension Services.Shared {
 
     }
 
+    final class ChatMessage: ContractEntity {
+        public static let keyDictionary: [String: String] = [:]
+
+        public let ID: String
+        public let Sender: String
+        public let Date: String
+        public let Body: String
+
+        public init(ID: String, Sender: String, Date: String, Body: String) {
+            self.ID = ID
+            self.Sender = Sender
+            self.Date = Date
+            self.Body = Body
+        }
+
+        public static func initWithValidation(from dictionary: Entita.Dict) async throws -> Self {
+            try self.ensureNecessaryItems(
+                in: dictionary,
+                necessaryItems: [
+                    "ID",
+                    "Sender",
+                    "Date",
+                    "Body",
+                ]
+            )
+
+            let value_ID: String? = try? (self.extract(param: "ID", from: dictionary) as String)
+            let value_Sender: String? = try? (self.extract(param: "Sender", from: dictionary) as String)
+            let value_Date: String? = try? (self.extract(param: "Date", from: dictionary) as String)
+            let value_Body: String? = try? (self.extract(param: "Body", from: dictionary) as String)
+
+            let validatorClosures: [String: ValidationClosure] = [
+                "ID": {
+                    guard let _ = value_ID else {
+                        throw Validation.Error.MissingValue()
+                    }
+                    try await Validation.UUID().validate(value_ID!)
+                },
+                "Sender": {
+                    guard let _ = value_Sender else {
+                        throw Validation.Error.MissingValue()
+                    }
+                    try await Validation.UUID().validate(value_Sender!)
+                },
+                "Date": {
+                    guard let _ = value_Date else {
+                        throw Validation.Error.MissingValue()
+                    }
+
+                },
+                "Body": {
+                    guard let _ = value_Body else {
+                        throw Validation.Error.MissingValue()
+                    }
+
+                },
+            ]
+
+            let validationErrors = await self.reduce(closures: validatorClosures)
+            guard validationErrors.isEmpty else {
+                throw LGNC.E.DecodeError(validationErrors)
+            }
+
+            return self.init(
+                ID: value_ID!,
+                Sender: value_Sender!,
+                Date: value_Date!,
+                Body: value_Body!
+            )
+        }
+
+        public convenience init(from dictionary: Entita.Dict) throws {
+            self.init(
+                ID: try ChatMessage.extract(param: "ID", from: dictionary),
+                Sender: try ChatMessage.extract(param: "Sender", from: dictionary),
+                Date: try ChatMessage.extract(param: "Date", from: dictionary),
+                Body: try ChatMessage.extract(param: "Body", from: dictionary)
+            )
+        }
+
+        public func getDictionary() throws -> Entita.Dict {
+            [
+                self.getDictionaryKey("ID"): try self.encode(self.ID),
+                self.getDictionaryKey("Sender"): try self.encode(self.Sender),
+                self.getDictionaryKey("Date"): try self.encode(self.Date),
+                self.getDictionaryKey("Body"): try self.encode(self.Body),
+            ]
+        }
+
+    }
+
+    final class ChatUser: ContractEntity {
+        public static let keyDictionary: [String: String] = [:]
+
+        public let ID: String
+        public let username: String
+        public let accessLevel: String
+
+        public init(ID: String, username: String, accessLevel: String) {
+            self.ID = ID
+            self.username = username
+            self.accessLevel = accessLevel
+        }
+
+        public static func initWithValidation(from dictionary: Entita.Dict) async throws -> Self {
+            try self.ensureNecessaryItems(
+                in: dictionary,
+                necessaryItems: [
+                    "ID",
+                    "username",
+                    "accessLevel",
+                ]
+            )
+
+            let value_ID: String? = try? (self.extract(param: "ID", from: dictionary) as String)
+            let value_username: String? = try? (self.extract(param: "username", from: dictionary) as String)
+            let value_accessLevel: String? = try? (self.extract(param: "accessLevel", from: dictionary) as String)
+
+            let validatorClosures: [String: ValidationClosure] = [
+                "ID": {
+                    guard let _ = value_ID else {
+                        throw Validation.Error.MissingValue()
+                    }
+
+                },
+                "username": {
+                    guard let _ = value_username else {
+                        throw Validation.Error.MissingValue()
+                    }
+
+                },
+                "accessLevel": {
+                    guard let _ = value_accessLevel else {
+                        throw Validation.Error.MissingValue()
+                    }
+
+                },
+            ]
+
+            let validationErrors = await self.reduce(closures: validatorClosures)
+            guard validationErrors.isEmpty else {
+                throw LGNC.E.DecodeError(validationErrors)
+            }
+
+            return self.init(
+                ID: value_ID!,
+                username: value_username!,
+                accessLevel: value_accessLevel!
+            )
+        }
+
+        public convenience init(from dictionary: Entita.Dict) throws {
+            self.init(
+                ID: try ChatUser.extract(param: "ID", from: dictionary),
+                username: try ChatUser.extract(param: "username", from: dictionary),
+                accessLevel: try ChatUser.extract(param: "accessLevel", from: dictionary)
+            )
+        }
+
+        public func getDictionary() throws -> Entita.Dict {
+            [
+                self.getDictionaryKey("ID"): try self.encode(self.ID),
+                self.getDictionaryKey("username"): try self.encode(self.username),
+                self.getDictionaryKey("accessLevel"): try self.encode(self.accessLevel),
+            ]
+        }
+
+    }
+
     final class Comment: ContractEntity {
         public static let keyDictionary: [String: String] = [:]
 

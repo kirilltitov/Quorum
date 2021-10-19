@@ -6,7 +6,7 @@ public extension Models {
 
         public static let entityName = "post"
         public static var subspacePrefix: FDB.Subspace {
-            return subspaceCounter[self.entityName]["comments"]
+            return App.current.subspaceCounter[self.entityName]["comments"]
         }
     }
 }

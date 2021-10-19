@@ -54,7 +54,7 @@ public extension Logic {
 
         public static func insert(comment: Models.Comment, as user: Models.User) async throws {
             let dateLastCommentDiff = Date().timeIntervalSince1970 - user.dateLastComment.timeIntervalSince1970
-            guard user.isAtLeastModerator || dateLastCommentDiff > COMMENT_POST_COOLDOWN_SECONDS else {
+            guard user.isAtLeastModerator || dateLastCommentDiff > App.COMMENT_POST_COOLDOWN_SECONDS else {
                 throw LGNC.ContractError.GeneralError("You're commenting too often".tr(), 429)
             }
 
@@ -117,7 +117,7 @@ public extension Logic {
         }
 
         public static func likeOrUnlike(comment: Models.Comment, by currentUser: Models.User) async throws -> Int {
-            let logger = Task.local(\.context).logger
+            let logger = LGNCore.Context.current.logger
 
             guard comment.status == .published else {
                 logger.info("Comment is not published, cannot like or unlike")

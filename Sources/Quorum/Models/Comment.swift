@@ -6,7 +6,7 @@ import Generated
 
 extension Date {
     func contractFormatted() -> String {
-        Logic.Comment.format(date: self, locale: Task.local(\.context).locale)
+        Logic.Comment.format(date: self, locale: LGNCore.Context.current.locale)
     }
 }
 
@@ -36,7 +36,7 @@ public extension Models {
 
         public static let IDKey: KeyPath<Comment, Int> = \.ID
         public static var fullEntityName = false
-        public static var storage = fdb
+        public static var storage = App.current.fdb
 
         public static var indices: [IndexKey: Entita2.Index<Models.Comment>] = [
             .ID: E2.Index(\.ID, unique: true),
@@ -53,7 +53,7 @@ public extension Models {
         public var dateUpdated: Date
 
         public var isEditable: Bool {
-            self.dateCreated.timeIntervalSince < COMMENT_EDITABLE_TIME_SECONDS
+            self.dateCreated.timeIntervalSince < App.COMMENT_EDITABLE_TIME_SECONDS
         }
 
         public var IDPostEncoded: String {
@@ -140,7 +140,7 @@ public extension Models {
         final class History: ModelInt {
             public static let IDKey: KeyPath<History, Int> = \.ID
             public static var fullEntityName = false
-            public static var storage = fdb
+            public static var storage = App.current.fdb
 
             public let ID: History.Identifier
             public let IDComment: Models.Comment.Identifier

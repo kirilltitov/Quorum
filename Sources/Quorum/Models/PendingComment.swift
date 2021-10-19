@@ -6,9 +6,9 @@ public extension Models {
     final class PendingComment: ModelInt {
         public static var IDKey: KeyPath<PendingComment, Int> = \.ID
         public static var fullEntityName = false
-        public static var storage = fdb
+        public static var storage = App.current.fdb
 
-        private static let counterSubspace = subspaceCounter["unapproved"]
+        private static let counterSubspace = App.current.subspaceCounter["unapproved"]
 
         public let ID: Int
 

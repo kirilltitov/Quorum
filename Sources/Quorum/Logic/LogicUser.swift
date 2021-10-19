@@ -7,11 +7,11 @@ import FDB
 
 public extension LGNCore.Context {
     var errorNotAuthenticated: LGNC.ContractError {
-        return LGNC.ContractError.GeneralError("Not authenticated".tr(), 401)
+        LGNC.ContractError.GeneralError("Not authenticated".tr(), 401)
     }
 }
 
-let addr = LGNCore.Address.ip(host: "10.133.54.35", port: 1811)
+// let addr = LGNCore.Address.ip(host: "10.133.54.35", port: 1811)
 
 public extension Logic {
     class User {
@@ -29,17 +29,22 @@ public extension Logic {
             )
         }
 
-        private static func authenticate(session: String, portal: String, author: String) async throws -> Models.User {
+        public static func authenticate(session: String, portal: String, author: String) async throws -> Models.User {
             let rawIDUser: String?
             do {
                 rawIDUser = try await Services.Author.Contracts.Authenticate
                     .execute(
-                        at: addr, // .node(service: "author", name: author, realm: PORTAL_ID, port: AUTHOR_PORT),
+                        at: .node(
+                            service: "author",
+                            name: author,
+                            realm: App.current.PORTAL_ID,
+                            port: App.current.AUTHOR_PORT
+                        ),
                         with: .init(
                             portal: LGNC.Entity.Cookie(name: "portal", value: portal),
                             session: LGNC.Entity.Cookie(name: "session", value: session)
                         ),
-                        using: client
+                        using: App.current.client
                     )
                     .IDUser
             } catch LGNC.ContractError.RemoteContractExecutionFailed {
@@ -47,7 +52,7 @@ public extension Logic {
             }
 
             guard let rawIDUser = rawIDUser else {
-                throw Task.local(\.context).errorNotAuthenticated
+                throw LGNCore.Context.current.errorNotAuthenticated
             }
             guard let IDUser = Models.User.Identifier(rawIDUser) else {
                 throw LGNC.ContractError.GeneralError("Invalid ID User \(rawIDUser)", 403)
@@ -57,7 +62,7 @@ public extension Logic {
                 throw LGNC.ContractError.GeneralError("User not found for some reason", 403)
             }
 
-            Task.local(\.context).logger.info("Authenticated user '\(user.username)' (\(user.ID.string))")
+            LGNCore.Context.current.logger.info("Authenticated user '\(user.username)' (\(user.ID.string))")
 
             return user
         }
@@ -90,20 +95,26 @@ public extension Logic {
 
         public static func get(by ID: Models.User.Identifier) async throws -> Models.User? {
             try await self.usersLRU.getOrSet(by: ID) {
-                let logger = Task.local(\.context).logger
+                let logger = LGNCore.Context.current.logger
                 do {
                     if let innerUser = try await Models.User.load(by: ID) {
                         logger.info("Loaded inner user \(ID.string): \(innerUser.accessLevel.rawValue) '\(innerUser.username)'")
                         return innerUser
                     }
 
-                    let address: LGNCore.Address = addr // .node(service: "author", name: "viktor", realm: PORTAL_ID, port: AUTHOR_PORT),
+                    let address: LGNCore.Address = .node(
+                        service: "author",
+                        name: "viktor",
+                        realm: App.current.PORTAL_ID,
+                        port: App.current.AUTHOR_PORT
+                    )
+                    let client = App.current.client
                     logger.info("No inner user, about to load origin user \(ID.string) info via UserInfoInternal contract @ \(address) with client \(type(of: client))")
                     let originUserInfo = try await Services.Author.Contracts.UserInfoInternal.execute(
                         at: address,
                         with: .init(ID: ID.string),
                         using: client,
-                        context: Task.local(\.context)
+                        context: LGNCore.Context.current
                     )
                     logger.info("Loaded origin user \(ID.string) info from \(address): \(String(describing: try? originUserInfo.getDictionary()))")
 

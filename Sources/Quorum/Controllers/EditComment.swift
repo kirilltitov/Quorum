@@ -21,7 +21,7 @@ public struct EditController {
         func contractRoutine(request: Contract.Request) async throws -> Contract.Response {
             let user = try await Logic.User.authenticate(request: request)
 
-            return try await fdb
+            return try await App.current.fdb
                 .withTransaction { (transaction: AnyFDBTransaction) async throws -> Models.Comment in
                     let comment = try await Logic.Comment.getThrowing(by: request.IDComment, within: transaction)
 
@@ -39,7 +39,7 @@ public struct EditController {
                         }
 
                         let editDiff = Date().timeIntervalSince1970 - comment.dateUpdated.timeIntervalSince1970
-                        guard editDiff > COMMENT_EDIT_COOLDOWN_SECONDS else {
+                        guard editDiff > App.COMMENT_EDIT_COOLDOWN_SECONDS else {
                             throw LGNC.ContractError.GeneralError("You're editing too often".tr(), 429)
                         }
                     }
