@@ -87,6 +87,7 @@ public extension LGNCore.Address {
 @main
 struct Main {
     static public func main() async throws {
+        let VERSION = "1.1.0-async-await"
         let env = AppEnv.detect()
 
         let config = try Config<ConfigKeys>(
@@ -112,6 +113,7 @@ struct Main {
         LGNCore.Logger.logLevel = .trace
 
         let defaultLogger = Logger(label: "Quorum.Default")
+        defaultLogger.info("Hello! Quorum v\(VERSION) on duty!")
 
         guard let logLevel = Logger.Level(rawValue: config[.LOG_LEVEL]) else {
             defaultLogger.critical("Invalid LOG_LEVEL value: \(config[.LOG_LEVEL])")
