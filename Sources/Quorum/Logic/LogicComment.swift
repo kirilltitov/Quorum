@@ -81,9 +81,9 @@ public extension Logic {
         public static func hide(comment: Models.Comment) async throws {
             let comments = try await Logic.Post.getRawCommentsFor(ID: comment.IDPost)
             for (_, _comment) in comments {
-                if _comment.IDReplyComment == comment.ID && _comment.status == .published {
+                if let refID = _comment.IDReplyComment, refID == comment.ID && _comment.status == .published {
                     throw LGNC.ContractError.GeneralError(
-                        "Cannot hide comment, it has parent published comment".tr(),
+                        "Cannot hide comment, it has parent published comment (#\(refID))".tr(),
                         401
                     )
                 }
