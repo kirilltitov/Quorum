@@ -1,6 +1,7 @@
 import Foundation
 import Generated
 import LGNCore
+import LGNLog
 import LGNC
 import Entita2
 import FDB
@@ -62,7 +63,7 @@ public extension Logic {
                 throw LGNC.ContractError.GeneralError("User not found for some reason", 403)
             }
 
-            LGNCore.Context.current.logger.info("Authenticated user '\(user.username)' (\(user.ID.string))")
+            Logger.current.info("Authenticated user '\(user.username)' (\(user.ID.string))")
 
             return user
         }
@@ -95,7 +96,7 @@ public extension Logic {
 
         public static func get(by ID: Models.User.Identifier) async throws -> Models.User? {
             try await self.usersLRU.getOrSet(by: ID) {
-                let logger = LGNCore.Context.current.logger
+                let logger = Logger.current
                 do {
                     if let innerUser = try await Models.User.load(by: ID) {
                         logger.info("Loaded inner user \(ID.string): \(innerUser.accessLevel.rawValue) '\(innerUser.username)'")

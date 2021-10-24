@@ -1,5 +1,7 @@
 import Foundation
 import LGNCore
+import LGNLog
+import LGNConfig
 
 #if canImport(FoundationNetworking)
 import FoundationNetworking
@@ -23,7 +25,7 @@ func registerToConsul() async throws {
                 ],
             ],
         ]
-        App.current.defaultLogger.info(
+        Logger.current.info(
             "Registering in consul with payload '\(try! JSONSerialization.data(withJSONObject: params)._string)'"
         )
         let (maybeData, maybeResponse) = try await HTTPRequester.requestJSON(
@@ -47,9 +49,9 @@ func registerToConsul() async throws {
             throw E.Consul("Non-200 status code: \(response.statusCode), JSON: '\(json)'")
         }
 
-        App.current.defaultLogger.info("Successfully registered in Consul")
+        Logger.current.info("Successfully registered in Consul")
     } catch {
-        App.current.defaultLogger.critical("Could not register to consul: \(error)")
+        Logger.current.critical("Could not register to consul: \(error)")
         fatalError()
     }
 }

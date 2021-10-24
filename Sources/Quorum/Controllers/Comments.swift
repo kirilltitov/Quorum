@@ -1,6 +1,7 @@
 import Foundation
 import Generated
 import LGNCore
+import LGNLog
 import LGNC
 import LGNS
 import Entita2
@@ -15,7 +16,7 @@ public struct CommentsController {
 
     public static func setup() {
         Contract.guarantee { (request: Contract.Request) async throws -> Contract.Response in
-            let logger = LGNCore.Context.current.logger
+            let logger = Logger.current
 
             logger.info("About to load comments with likes for post ID \(request.IDPost)")
             let commentsWithLikes = try await Logic.Post.getCommentsFor(

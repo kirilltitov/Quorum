@@ -8,7 +8,7 @@ public extension Models {
         public static var fullEntityName = false
         public static var storage = App.current.fdb
 
-        private static let counterSubspace = App.current.subspaceCounter["unapproved"]
+        /* private but migrations */ internal static let counterSubspace = App.current.subspaceCounter["unapproved"]
 
         public let ID: Int
 

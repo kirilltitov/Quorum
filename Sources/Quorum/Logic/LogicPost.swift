@@ -2,6 +2,8 @@ import Foundation
 import Generated
 import LGNC
 import LGNCore
+import LGNLog
+import LGNConfig
 import Entita2
 import FDB
 
@@ -111,7 +113,7 @@ public extension Logic {
 
                 return .OK
             } catch {
-                LGNCore.Context.current.logger.error("Could not execute remote service API at '\(url)': \(error)")
+                Logger.current.error("Could not execute remote service API at '\(url)': \(error)")
                 return .NotFound
             }
         }

@@ -31,7 +31,6 @@ extension ContractCount.Request: AnyEntityWithSession {}
 
 class PendingCommentsCountController {
     public static func setup() {
-
         func contractRoutine(request: ContractCount.Request) async throws -> ContractCount.Response {
             let user = try await Logic.User.authenticate(request: request)
             guard user.isAtLeastModerator else {

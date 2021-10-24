@@ -1,5 +1,6 @@
 import Foundation
 import LGNCore
+import LGNLog
 import Entita2FDB
 import FDB
 

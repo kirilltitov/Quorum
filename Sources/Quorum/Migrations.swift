@@ -1,5 +1,6 @@
 import Foundation
 import LGNCore
+import LGNLog
 import LGNC
 import Entita2FDB
 import Entita
@@ -82,6 +83,20 @@ func getMigrations() -> Migrations {
                 dict["dateLastComment"] = Int(0)
                 try await App.current.fdb.set(key: row.key, value: dict.pack(to: .JSON))
             }
+        },
+        {
+            let logger = Logger.current
+
+            guard try await Models.PendingComment.getPendingCount() < 0 else {
+                logger.info("Pending counter is greater or equal to zero, no need to perform migration")
+                return
+            }
+
+            logger.info("Zeroing out pending counter")
+            try await App.current.fdb.set(
+                key: Models.PendingComment.counterSubspace,
+                value: LGNCore.getBytes(Int(0))
+            )
         },
     ]
 }

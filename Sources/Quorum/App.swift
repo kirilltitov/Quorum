@@ -1,6 +1,8 @@
 import Foundation
 import Generated
 import LGNCore
+import LGNLog
+import LGNConfig
 import LGNC
 import LGNP
 import LGNS
@@ -37,7 +39,6 @@ public struct App {
     public static let empty = LGNC.Entity.Empty()
 
     public let env: AppEnv
-    public let defaultLogger: Logger
     public let eventLoop: EventLoopGroup
     public let client: LGNCClient
     public let config: Config<ConfigKeys>
@@ -55,14 +56,12 @@ public struct App {
 
     public init(
         env: AppEnv,
-        defaultLogger: Logger,
         eventLoop: EventLoopGroup,
         client: LGNCClient,
         config: Config<ConfigKeys>,
         fdb: FDB
     ) {
         self.env = env
-        self.defaultLogger = defaultLogger
         self.eventLoop = eventLoop
         self.client = client
         self.config = config
@@ -109,8 +108,10 @@ struct Main {
             ]
         )
 
-        LoggingSystem.bootstrap(LGNCore.Logger.init)
-        LGNCore.Logger.logLevel = .trace
+        LoggingSystem.bootstrap(LGNLogger.init)
+        LGNLogger.logLevel = .trace
+        LGNLogger.hideLabel = true
+        LGNLogger.hideTimezone = true
 
         let defaultLogger = Logger(label: "Quorum.Default")
         defaultLogger.info("Hello! Quorum v\(VERSION) on duty!")
@@ -120,7 +121,7 @@ struct Main {
             fatalError()
         }
 
-        LGNCore.Logger.logLevel = logLevel
+        LGNLogger.logLevel = logLevel
         defaultLogger.notice("Log level set to '\(logLevel)'")
 
         Entita.KEY_DICTIONARIES_ENABLED = false
@@ -150,7 +151,6 @@ struct Main {
         #endif
 
         let fdb = FDB(clusterFile: clusterFile)
-        FDB.logger = defaultLogger
         defaultLogger.info("FDB created")
 
         try fdb.connect()
@@ -182,7 +182,6 @@ struct Main {
 
         App.current = App(
             env: env,
-            defaultLogger: defaultLogger,
             eventLoop: eventLoopGroup,
             client: client,
             config: config,

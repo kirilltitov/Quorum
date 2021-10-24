@@ -1,6 +1,7 @@
 import Foundation
 import Generated
 import LGNCore
+import LGNLog
 import LGNC
 import Entita2
 import FDB
@@ -60,6 +61,7 @@ public extension Logic {
 
             try await comment.insert()
 
+            try await Models.PendingComment.savePending(comment: comment)
             if user.shouldSkipPremoderation {
                 try await Logic.Comment.approve(comment: comment)
             }
@@ -117,7 +119,7 @@ public extension Logic {
         }
 
         public static func likeOrUnlike(comment: Models.Comment, by currentUser: Models.User) async throws -> Int {
-            let logger = LGNCore.Context.current.logger
+            let logger = Logger.current
 
             guard comment.status == .published else {
                 logger.info("Comment is not published, cannot like or unlike")

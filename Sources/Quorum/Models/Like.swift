@@ -1,4 +1,5 @@
 import LGNCore
+import LGNLog
 import Entita2FDB
 
 // not to be created at all
@@ -60,7 +61,7 @@ public extension Models {
             do {
                 return try bytes.cast()
             } catch {
-                LGNCore.Context.current.logger.error("Could not unwrap Int from bytes \(bytes)")
+                Logger.current.error("Could not unwrap Int from bytes \(bytes)")
                 return 0
             }
         }

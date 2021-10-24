@@ -1,6 +1,7 @@
 import Foundation
 import Generated
 import LGNCore
+import LGNLog
 import LGNC
 
 fileprivate typealias Contract = Services.Quorum.Contracts.LikeComment
@@ -11,7 +12,7 @@ public class LikeController {
     public static func setup() {
         Contract.Request.validateIDComment { ID in
             guard try await Logic.Comment.get(by: ID) != nil else {
-                LGNCore.Context.current.logger.info("Cannot like comment #\(ID): not found")
+                Logger.current.info("Cannot like comment #\(ID): not found")
                 return .CommentNotFound
             }
             return nil
@@ -25,7 +26,7 @@ public class LikeController {
                 by: user
             )
 
-            LGNCore.Context.current.logger.info("Liked comment #\(request.IDComment), now \(likes) likes")
+            Logger.current.info("Liked comment #\(request.IDComment), now \(likes) likes")
 
             return Contract.Response(likes: likes)
         }
