@@ -86,7 +86,7 @@ public extension LGNCore.Address {
 @main
 struct Main {
     static public func main() async throws {
-        let VERSION = "1.1.0-async-await"
+        let VERSION = "1.3.0-async-await"
         let env = AppEnv.detect()
 
         let config = try Config<ConfigKeys>(
@@ -150,8 +150,10 @@ struct Main {
         clusterFile = "/opt/foundationdb/fdb.cluster"
         #endif
 
+        LGNLogger.logLevel = .debug
         let fdb = FDB(clusterFile: clusterFile)
         defaultLogger.info("FDB created")
+        LGNLogger.logLevel = logLevel
 
         try fdb.connect()
         defaultLogger.info("FDB connected")
