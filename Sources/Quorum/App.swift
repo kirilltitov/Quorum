@@ -218,8 +218,8 @@ struct Main {
         )
         lifecycle.register(
             label: "HTTP Server",
-            start: .asyncc { try await serverHTTP.bind() },
-            shutdown: .asyncc { try await serverHTTP.shutdown() }
+            start: .async(serverHTTP.bind),
+            shutdown: .async(serverHTTP.shutdown)
         )
 
         let serverLGNS = try SQuorum.getServerLGNS(
@@ -230,8 +230,8 @@ struct Main {
         )
         lifecycle.register(
             label: "LGNS Server",
-            start: .asyncc { try await serverLGNS.bind() },
-            shutdown: .asyncc { try await serverLGNS.shutdown() }
+            start: .async(serverLGNS.bind),
+            shutdown: .async(serverLGNS.shutdown)
         )
 
         if config[.REGISTER_TO_CONSUL].bool == true {

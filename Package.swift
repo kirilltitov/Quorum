@@ -11,7 +11,7 @@ let package = Package(
     ],
     dependencies: [
         .package(name: "LGNC-Swift", url: "git@github.com:1711-games/LGNC-Swift.git", .branch("async-await")),
-        .package(url: "git@github.com:1711-Games/Entita2FDB.git", from: "1.0.0-RC-4"),
+        .package(url: "git@github.com:1711-Games/Entita2FDB.git", from: "1.0.0-RC-7"),
         .package(url: "https://github.com/swift-server/swift-service-lifecycle.git", from: "1.0.0-alpha.10"),
         .package(url: "https://github.com/1711-Games/LGN-Log.git", .upToNextMinor(from: "0.4.0")),
         .package(url: "https://github.com/1711-games/LGN-Config", from: "0.3.0"),
