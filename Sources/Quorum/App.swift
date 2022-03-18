@@ -86,7 +86,7 @@ public extension LGNCore.Address {
 @main
 struct Main {
     static public func main() async throws {
-        let VERSION = "1.3.1-async-await"
+        let VERSION = "1.3.2-async-await"
         let env = AppEnv.detect()
 
         let config = try Config<ConfigKeys>(
