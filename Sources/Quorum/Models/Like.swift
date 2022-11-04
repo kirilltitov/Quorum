@@ -1,6 +1,6 @@
 import LGNCore
-import NIO
-import Entita2FDB
+import LGNLog
+import FDBEntity
 
 // not to be created at all
 public extension Models {
@@ -8,6 +8,7 @@ public extension Models {
         public static var IDKey: KeyPath<Like, Int> = \.ID
 
         public static var fullEntityName = false
+        public static var storage = App.current.fdb
 
         public let ID: Int
 
@@ -60,104 +61,87 @@ public extension Models {
             do {
                 return try bytes.cast()
             } catch {
-                defaultLogger.error("Could not unwrap Int from bytes \(bytes)")
+                Logger.current.error("Could not unwrap Int from bytes \(bytes)")
                 return 0
             }
         }
 
-        public static func getLikesFor(comment: Comment, on eventLoop: EventLoop) -> EventLoopFuture<Int> {
-            return fdb
-                .begin(on: eventLoop)
-                .flatMap {
-                    $0.get(key: self.getLikesCounterSubspaceFor(comment: comment), snapshot: true, commit: true)
-                }
-                .map(self.unwrapLikeCountFrom)
+        public static func getLikesFor(comment: Comment) async throws -> Int {
+            try await self.unwrapLikeCountFrom(
+                maybeBytes: App.current.fdb
+                    .begin()
+                    .get(key: self.getLikesCounterSubspaceFor(comment: comment), snapshot: true)
+            )
         }
 
         public static func getLikesForCommentsIn(
             postID: Int,
-            within transaction: AnyFDBTransaction,
-            on eventLoop: EventLoop
-        ) -> EventLoopFuture<[Comment.Identifier: Int]> {
-            return transaction
-                .get(range: self.getLikesCounterPrefixSubspace(forPostID: postID).range, snapshot: true)
-                .map { (results: FDB.KeyValuesResult, _: AnyFDBTransaction) -> [Comment.Identifier: Int] in
-                    var result = [Comment.Identifier: Int]()
+            within transaction: any FDBTransaction
+        ) async throws -> [Comment.Identifier: Int] {
+            let records = try await transaction.get(
+                range: self.getLikesCounterPrefixSubspace(forPostID: postID).range,
+                snapshot: true
+            )
 
-                    // Can't use results.records.map because skipping rows becomes unreasonably more difficult
-                    for record in results.records {
-                        guard
-                            let tuple = try? FDB.Tuple(from: record.key).tuple.compactMap({$0}),
-                            let ID = tuple.last as? Comment.Identifier
-                            else { continue }
-                        result[ID] = self.unwrapLikeCountFrom(maybeBytes: record.value)
-                    }
+            var result = [Comment.Identifier: Int]()
 
-                    return result
-                }
+            // Can't use results.records.map because skipping rows becomes unreasonably more difficult
+            for record in records.records {
+                guard
+                    let tuple = try? FDB.Tuple(from: record.key).tuple.compactMap({$0}),
+                    let ID = tuple.last as? Comment.Identifier
+                    else { continue }
+                result[ID] = self.unwrapLikeCountFrom(maybeBytes: record.value)
+            }
+
+            return result
         }
 
-        public static func getLikesFor(
-            comment: Comment,
-            user: User,
-            on eventLoop: EventLoop
-        ) -> EventLoopFuture<(Models.Comment, Int, Models.User)> {
-            return self
-                .getLikesFor(comment: comment, on: eventLoop)
-                .map { (comment, $0, user) }
+        public static func getLikesFor(comment: Comment, user: User) async throws -> (Models.Comment, Int, Models.User) {
+            (comment, try await self.getLikesFor(comment: comment), user)
         }
 
-        public static func likeOrUnlike(comment: Comment, by user: User, on eventLoop: EventLoop) -> EventLoopFuture<Int> {
-            return self
-                .processLikeTo(comment: comment, by: user, on: eventLoop)
-                .flatMap { self.getLikesFor(comment: comment, on: eventLoop) }
+        public static func likeOrUnlike(comment: Comment, by user: User) async throws -> Int {
+            try await self.processLikeTo(comment: comment, by: user)
+            return try await self.getLikesFor(comment: comment)
         }
 
         fileprivate static func updateLikesCounterFor(
             comment: Comment,
             count: Int,
-            within transaction: AnyFDBTransaction
-        ) -> EventLoopFuture<AnyFDBTransaction> {
-            return transaction.atomic(.add, key: self.getLikesCounterSubspaceFor(comment: comment), value: count)
+            within transaction: any FDBTransaction
+        ) {
+            transaction.atomic(.add, key: self.getLikesCounterSubspaceFor(comment: comment), value: count)
         }
 
-        /* fileprivate */ public static func incrementLikesCounterFor(
-            comment: Comment,
-            within transaction: AnyFDBTransaction
-        ) -> EventLoopFuture<AnyFDBTransaction> {
-            return self.updateLikesCounterFor(comment: comment, count: 1, within: transaction)
+        /* fileprivate */
+        public static func incrementLikesCounterFor(comment: Comment, within transaction: any FDBTransaction) {
+            self.updateLikesCounterFor(comment: comment, count: 1, within: transaction)
         }
 
-        fileprivate static func decrementLikesCounterFor(
-            comment: Comment,
-            within transaction: AnyFDBTransaction
-        ) -> EventLoopFuture<AnyFDBTransaction> {
-            return self.updateLikesCounterFor(comment: comment, count: -1, within: transaction)
+        fileprivate static func decrementLikesCounterFor(comment: Comment, within transaction: any FDBTransaction) {
+            self.updateLikesCounterFor(comment: comment, count: -1, within: transaction)
         }
 
         fileprivate static func processLikeTo(
             comment: Comment,
-            by user: User,
-            on eventLoop: EventLoop
-        ) -> EventLoopFuture<Void> {
+            by user: User
+        ) async throws {
             let commentLikeKey = self.getCommentsLikesPrefix(for: comment)[user.ID]
             let userLikeIndexKey = user.getIndexIndexKeyForIndex(key: .Like, value: comment.ID)
 
-            return fdb.withTransaction(on: eventLoop) { transaction in
-                transaction
-                    .get(key: self.getCommentsLikesPrefix(for: comment)[user.ID])
-                    .flatMap { (maybeLike, transaction) -> EventLoopFuture<AnyFDBTransaction> in
-                        maybeLike == nil
-                            ? transaction
-                                .set(key: commentLikeKey, value: [])
-                                .flatMap { $0.set(key: userLikeIndexKey, value: []) }
-                                .flatMap { self.incrementLikesCounterFor(comment: comment, within: $0) }
-                            : transaction
-                                .clear(key: commentLikeKey)
-                                .flatMap { $0.clear(key: userLikeIndexKey) }
-                                .flatMap { self.decrementLikesCounterFor(comment: comment, within: $0) }
-                    }
-                    .flatMap { $0.commit() }
+            try await App.current.fdb.withTransaction { transaction in
+                if try await transaction.get(key: self.getCommentsLikesPrefix(for: comment)[user.ID]) == nil {
+                    transaction.set(key: commentLikeKey, value: [])
+                    transaction.set(key: userLikeIndexKey, value: [])
+                    self.incrementLikesCounterFor(comment: comment, within: transaction)
+                } else {
+                    transaction.clear(key: commentLikeKey)
+                    transaction.clear(key: userLikeIndexKey)
+                    self.decrementLikesCounterFor(comment: comment, within: transaction)
+                }
+
+                try await transaction.commit()
             }
         }
     }

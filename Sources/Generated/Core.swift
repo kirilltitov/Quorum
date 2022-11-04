@@ -3,7 +3,7 @@ import Entita
 import LGNS
 import LGNC
 import LGNP
-import NIO
+import AsyncHTTPClient
 
 public enum Services {
     public enum Shared {}
@@ -24,42 +24,33 @@ public extension Services.Shared {
             self.map = map
         }
 
-        public static func initWithValidation(
-            from dictionary: Entita.Dict, context: LGNCore.Context
-        ) -> EventLoopFuture<FieldMapping> {
-            let eventLoop = context.eventLoop
-
-            if let error = self.ensureNecessaryItems(
+        public static func initWithValidation(from dictionary: Entita.Dict) async throws -> Self {
+            try self.ensureNecessaryItems(
                 in: dictionary,
                 necessaryItems: [
                     "map",
                 ]
-            ) {
-                return eventLoop.makeFailedFuture(error)
-            }
+            )
 
-            let map: [String:String]? = try? (self.extract(param: "map", from: dictionary) as [String:String])
+            let value_map: [String:String]? = try? (self.extract(param: "map", from: dictionary) as [String:String])
 
-            let validatorFutures: [String: EventLoopFuture<Void>] = [
-                "map": eventLoop
-                    .submit {
-                        guard let _ = map else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    },
-            ]
-
-            return self
-                .reduce(validators: validatorFutures, context: context)
-                .flatMapThrowing {
-                    guard $0.count == 0 else {
-                        throw LGNC.E.DecodeError($0)
+            let validatorClosures: [String: ValidationClosure] = [
+                "map": {
+                    guard let _ = value_map else {
+                        throw Validation.Error.MissingValue()
                     }
 
-                    return self.init(
-                        map: map!
-                    )
-                }
+                },
+            ]
+
+            let validationErrors = await self.reduce(closures: validatorClosures)
+            guard validationErrors.isEmpty else {
+                throw LGNC.E.DecodeError(validationErrors)
+            }
+
+            return self.init(
+                map: value_map!
+            )
         }
 
         public convenience init(from dictionary: Entita.Dict) throws {
@@ -87,51 +78,42 @@ public extension Services.Shared {
             self.Response = Response
         }
 
-        public static func initWithValidation(
-            from dictionary: Entita.Dict, context: LGNCore.Context
-        ) -> EventLoopFuture<ServiceFieldMapping> {
-            let eventLoop = context.eventLoop
-
-            if let error = self.ensureNecessaryItems(
+        public static func initWithValidation(from dictionary: Entita.Dict) async throws -> Self {
+            try self.ensureNecessaryItems(
                 in: dictionary,
                 necessaryItems: [
                     "Request",
                     "Response",
                 ]
-            ) {
-                return eventLoop.makeFailedFuture(error)
-            }
+            )
 
-            let Request: Services.Shared.FieldMapping? = try? (self.extract(param: "Request", from: dictionary) as Services.Shared.FieldMapping)
-            let Response: Services.Shared.FieldMapping? = try? (self.extract(param: "Response", from: dictionary) as Services.Shared.FieldMapping)
+            let value_Request: Services.Shared.FieldMapping? = try? (self.extract(param: "Request", from: dictionary) as Services.Shared.FieldMapping)
+            let value_Response: Services.Shared.FieldMapping? = try? (self.extract(param: "Response", from: dictionary) as Services.Shared.FieldMapping)
 
-            let validatorFutures: [String: EventLoopFuture<Void>] = [
-                "Request": eventLoop
-                    .submit {
-                        guard let _ = Request else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    },
-                "Response": eventLoop
-                    .submit {
-                        guard let _ = Response else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    },
-            ]
-
-            return self
-                .reduce(validators: validatorFutures, context: context)
-                .flatMapThrowing {
-                    guard $0.count == 0 else {
-                        throw LGNC.E.DecodeError($0)
+            let validatorClosures: [String: ValidationClosure] = [
+                "Request": {
+                    guard let _ = value_Request else {
+                        throw Validation.Error.MissingValue()
                     }
 
-                    return self.init(
-                        Request: Request!,
-                        Response: Response!
-                    )
-                }
+                },
+                "Response": {
+                    guard let _ = value_Response else {
+                        throw Validation.Error.MissingValue()
+                    }
+
+                },
+            ]
+
+            let validationErrors = await self.reduce(closures: validatorClosures)
+            guard validationErrors.isEmpty else {
+                throw LGNC.E.DecodeError(validationErrors)
+            }
+
+            return self.init(
+                Request: value_Request!,
+                Response: value_Response!
+            )
         }
 
         public convenience init(from dictionary: Entita.Dict) throws {
@@ -159,42 +141,33 @@ public extension Services.Shared {
             self.map = map
         }
 
-        public static func initWithValidation(
-            from dictionary: Entita.Dict, context: LGNCore.Context
-        ) -> EventLoopFuture<ServiceFieldMappings> {
-            let eventLoop = context.eventLoop
-
-            if let error = self.ensureNecessaryItems(
+        public static func initWithValidation(from dictionary: Entita.Dict) async throws -> Self {
+            try self.ensureNecessaryItems(
                 in: dictionary,
                 necessaryItems: [
                     "map",
                 ]
-            ) {
-                return eventLoop.makeFailedFuture(error)
-            }
+            )
 
-            let map: [String:Services.Shared.ServiceFieldMapping]? = try? (self.extract(param: "map", from: dictionary) as [String:Services.Shared.ServiceFieldMapping])
+            let value_map: [String:Services.Shared.ServiceFieldMapping]? = try? (self.extract(param: "map", from: dictionary) as [String:Services.Shared.ServiceFieldMapping])
 
-            let validatorFutures: [String: EventLoopFuture<Void>] = [
-                "map": eventLoop
-                    .submit {
-                        guard let _ = map else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    },
-            ]
-
-            return self
-                .reduce(validators: validatorFutures, context: context)
-                .flatMapThrowing {
-                    guard $0.count == 0 else {
-                        throw LGNC.E.DecodeError($0)
+            let validatorClosures: [String: ValidationClosure] = [
+                "map": {
+                    guard let _ = value_map else {
+                        throw Validation.Error.MissingValue()
                     }
 
-                    return self.init(
-                        map: map!
-                    )
-                }
+                },
+            ]
+
+            let validationErrors = await self.reduce(closures: validatorClosures)
+            guard validationErrors.isEmpty else {
+                throw LGNC.E.DecodeError(validationErrors)
+            }
+
+            return self.init(
+                map: value_map!
+            )
         }
 
         public convenience init(from dictionary: Entita.Dict) throws {
@@ -220,42 +193,33 @@ public extension Services.Shared {
             self.monad = monad
         }
 
-        public static func initWithValidation(
-            from dictionary: Entita.Dict, context: LGNCore.Context
-        ) -> EventLoopFuture<CharacterInfo> {
-            let eventLoop = context.eventLoop
-
-            if let error = self.ensureNecessaryItems(
+        public static func initWithValidation(from dictionary: Entita.Dict) async throws -> Self {
+            try self.ensureNecessaryItems(
                 in: dictionary,
                 necessaryItems: [
                     "monad",
                 ]
-            ) {
-                return eventLoop.makeFailedFuture(error)
-            }
+            )
 
-            let monad: String? = try? (self.extract(param: "monad", from: dictionary) as String)
+            let value_monad: String? = try? (self.extract(param: "monad", from: dictionary) as String)
 
-            let validatorFutures: [String: EventLoopFuture<Void>] = [
-                "monad": eventLoop
-                    .submit {
-                        guard let _ = monad else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    },
-            ]
-
-            return self
-                .reduce(validators: validatorFutures, context: context)
-                .flatMapThrowing {
-                    guard $0.count == 0 else {
-                        throw LGNC.E.DecodeError($0)
+            let validatorClosures: [String: ValidationClosure] = [
+                "monad": {
+                    guard let _ = value_monad else {
+                        throw Validation.Error.MissingValue()
                     }
 
-                    return self.init(
-                        monad: monad!
-                    )
-                }
+                },
+            ]
+
+            let validationErrors = await self.reduce(closures: validatorClosures)
+            guard validationErrors.isEmpty else {
+                throw LGNC.E.DecodeError(validationErrors)
+            }
+
+            return self.init(
+                monad: value_monad!
+            )
         }
 
         public convenience init(from dictionary: Entita.Dict) throws {
@@ -281,42 +245,33 @@ public extension Services.Shared {
             self.event = event
         }
 
-        public static func initWithValidation(
-            from dictionary: Entita.Dict, context: LGNCore.Context
-        ) -> EventLoopFuture<EventRequest> {
-            let eventLoop = context.eventLoop
-
-            if let error = self.ensureNecessaryItems(
+        public static func initWithValidation(from dictionary: Entita.Dict) async throws -> Self {
+            try self.ensureNecessaryItems(
                 in: dictionary,
                 necessaryItems: [
                     "event",
                 ]
-            ) {
-                return eventLoop.makeFailedFuture(error)
-            }
+            )
 
-            let event: String? = try? (self.extract(param: "event", from: dictionary) as String)
+            let value_event: String? = try? (self.extract(param: "event", from: dictionary) as String)
 
-            let validatorFutures: [String: EventLoopFuture<Void>] = [
-                "event": eventLoop
-                    .submit {
-                        guard let _ = event else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    },
-            ]
-
-            return self
-                .reduce(validators: validatorFutures, context: context)
-                .flatMapThrowing {
-                    guard $0.count == 0 else {
-                        throw LGNC.E.DecodeError($0)
+            let validatorClosures: [String: ValidationClosure] = [
+                "event": {
+                    guard let _ = value_event else {
+                        throw Validation.Error.MissingValue()
                     }
 
-                    return self.init(
-                        event: event!
-                    )
-                }
+                },
+            ]
+
+            let validationErrors = await self.reduce(closures: validatorClosures)
+            guard validationErrors.isEmpty else {
+                throw LGNC.E.DecodeError(validationErrors)
+            }
+
+            return self.init(
+                event: value_event!
+            )
         }
 
         public convenience init(from dictionary: Entita.Dict) throws {
@@ -389,12 +344,8 @@ public extension Services.Shared {
             self.recaptchaToken = recaptchaToken
         }
 
-        public static func initWithValidation(
-            from dictionary: Entita.Dict, context: LGNCore.Context
-        ) -> EventLoopFuture<UserSignupRequest> {
-            let eventLoop = context.eventLoop
-
-            if let error = self.ensureNecessaryItems(
+        public static func initWithValidation(from dictionary: Entita.Dict) async throws -> Self {
+            try self.ensureNecessaryItems(
                 in: dictionary,
                 necessaryItems: [
                     "username",
@@ -405,155 +356,92 @@ public extension Services.Shared {
                     "language",
                     "recaptchaToken",
                 ]
-            ) {
-                return eventLoop.makeFailedFuture(error)
-            }
+            )
 
-            let username: String? = try? (self.extract(param: "username", from: dictionary) as String)
-            let email: String? = try? (self.extract(param: "email", from: dictionary) as String)
-            let password1: String? = try? (self.extract(param: "password1", from: dictionary) as String)
-            let password2: String? = try? (self.extract(param: "password2", from: dictionary) as String)
-            let sex: String? = try? (self.extract(param: "sex", from: dictionary) as String)
-            let language: String? = try? (self.extract(param: "language", from: dictionary) as String)
-            let recaptchaToken: String? = try? (self.extract(param: "recaptchaToken", from: dictionary) as String)
+            let value_username: String? = try? (self.extract(param: "username", from: dictionary) as String)
+            let value_email: String? = try? (self.extract(param: "email", from: dictionary) as String)
+            let value_password1: String? = try? (self.extract(param: "password1", from: dictionary) as String)
+            let value_password2: String? = try? (self.extract(param: "password2", from: dictionary) as String)
+            let value_sex: String? = try? (self.extract(param: "sex", from: dictionary) as String)
+            let value_language: String? = try? (self.extract(param: "language", from: dictionary) as String)
+            let value_recaptchaToken: String? = try? (self.extract(param: "recaptchaToken", from: dictionary) as String)
 
-            let validatorFutures: [String: EventLoopFuture<Void>] = [
-                "username": eventLoop
-                    .submit {
-                        guard let _ = username else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    }.flatMap {
-                        Validation.cumulative(
-                            [
-                                {
-                                    if let error = Validation.Regexp(pattern: "^[\\p{L}\\d_\\- ]+$", message: "Username must only consist of letters, numbers and underscores").validate(username!, context.locale) {
-                                        return eventLoop.makeFailedFuture(error)
-                                    }
-                                    return eventLoop.makeSucceededFuture()
-                                }(),
-                                {
-                                    if let error = Validation.Length.Min(length: 3).validate(username!, context.locale) {
-                                        return eventLoop.makeFailedFuture(error)
-                                    }
-                                    return eventLoop.makeSucceededFuture()
-                                }(),
-                                {
-                                    if let error = Validation.Length.Max(length: 24).validate(username!, context.locale) {
-                                        return eventLoop.makeFailedFuture(error)
-                                    }
-                                    return eventLoop.makeSucceededFuture()
-                                }(),
-                            ],
-                            on: eventLoop
-                        )
+            let validatorClosures: [String: ValidationClosure] = [
+                "username": {
+                    guard let _ = value_username else {
+                        throw Validation.Error.MissingValue()
                     }
-                    .flatMap {
-                        guard let validator = self.validatorUsernameClosure else {
-                            return eventLoop.makeSucceededFuture()
-                        }
-                        return Validation.CallbackWithAllowedValues<CallbackValidatorUsernameAllowedValues>(callback: validator).validate(
-                            username!,
-                            context.locale,
-                            on: eventLoop
-                        ).mapThrowing { maybeError in if let error = maybeError { throw error } }
-                    },
-                "email": eventLoop
-                    .submit {
-                        guard let _ = email else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    }.flatMap {
-                        if let error = Validation.Regexp(pattern: "^.+@.+\\..+$", message: "Invalid email format").validate(email!, context.locale) {
-                            return eventLoop.makeFailedFuture(error)
-                        }
-                        return eventLoop.makeSucceededFuture()
+                    try await Validation.cumulative([
+                        {
+                            try await Validation.Regexp(pattern: "^[\\p{L}\\d_\\- ]+$", message: "Username must only consist of letters, numbers and underscores").validate(value_username!)
+                        },
+                        {
+                            try await Validation.Length.Min(length: 3).validate(value_username!)
+                        },
+                        {
+                            try await Validation.Length.Max(length: 24).validate(value_username!)
+                        },
+                    ])
+                    if let validator = self.validatorUsernameClosure {
+                        try await Validation.CallbackWithAllowedValues<CallbackValidatorUsernameAllowedValues>(callback: validator).validate(value_username!)
                     }
-                    .flatMap {
-                        guard let validator = self.validatorEmailClosure else {
-                            return eventLoop.makeSucceededFuture()
-                        }
-                        return Validation.CallbackWithAllowedValues<CallbackValidatorEmailAllowedValues>(callback: validator).validate(
-                            email!,
-                            context.locale,
-                            on: eventLoop
-                        ).mapThrowing { maybeError in if let error = maybeError { throw error } }
-                    },
-                "password1": eventLoop
-                    .submit {
-                        guard let _ = password1 else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    }.flatMap {
-                        if let error = Validation.Length.Min(length: 6, message: "Password must be at least 6 characters long").validate(password1!, context.locale) {
-                            return eventLoop.makeFailedFuture(error)
-                        }
-                        return eventLoop.makeSucceededFuture()
+                },
+                "email": {
+                    guard let _ = value_email else {
+                        throw Validation.Error.MissingValue()
                     }
-                    .flatMap {
-                        if let error = Validation.Length.Max(length: 64, message: "Password must be less than 64 characters long").validate(password1!, context.locale) {
-                            return eventLoop.makeFailedFuture(error)
-                        }
-                        return eventLoop.makeSucceededFuture()
-                    },
-                "password2": eventLoop
-                    .submit {
-                        guard let _ = password2 else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    }.flatMap {
-                        if let error = Validation.Identical(right: password1!, message: "Passwords must match").validate(password2!, context.locale) {
-                            return eventLoop.makeFailedFuture(error)
-                        }
-                        return eventLoop.makeSucceededFuture()
-                    },
-                "sex": eventLoop
-                    .submit {
-                        guard let _ = sex else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    }.flatMap {
-                        if let error = Validation.In(allowedValues: ["Male", "Female", "Attack helicopter"]).validate(sex!, context.locale) {
-                            return eventLoop.makeFailedFuture(error)
-                        }
-                        return eventLoop.makeSucceededFuture()
-                    },
-                "language": eventLoop
-                    .submit {
-                        guard let _ = language else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    }.flatMap {
-                        if let error = Validation.In(allowedValues: ["en", "ru"]).validate(language!, context.locale) {
-                            return eventLoop.makeFailedFuture(error)
-                        }
-                        return eventLoop.makeSucceededFuture()
-                    },
-                "recaptchaToken": eventLoop
-                    .submit {
-                        guard let _ = recaptchaToken else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    },
+                    try await Validation.Regexp(pattern: "^.+@.+\\..+$", message: "Invalid email format").validate(value_email!)
+                    if let validator = self.validatorEmailClosure {
+                        try await Validation.CallbackWithAllowedValues<CallbackValidatorEmailAllowedValues>(callback: validator).validate(value_email!)
+                    }
+                },
+                "password1": {
+                    guard let _ = value_password1 else {
+                        throw Validation.Error.MissingValue()
+                    }
+                    try await Validation.Length.Min(length: 6, message: "Password must be at least 6 characters long").validate(value_password1!)
+                try await Validation.Length.Max(length: 64, message: "Password must be less than 64 characters long").validate(value_password1!)
+                },
+                "password2": {
+                    guard let _ = value_password2 else {
+                        throw Validation.Error.MissingValue()
+                    }
+                    try await Validation.Identical(right: value_password1!, message: "Passwords must match").validate(value_password2!)
+                },
+                "sex": {
+                    guard let _ = value_sex else {
+                        throw Validation.Error.MissingValue()
+                    }
+                    try await Validation.In(allowedValues: ["Male", "Female", "Attack helicopter"]).validate(value_sex!)
+                },
+                "language": {
+                    guard let _ = value_language else {
+                        throw Validation.Error.MissingValue()
+                    }
+                    try await Validation.In(allowedValues: ["en", "ru"]).validate(value_language!)
+                },
+                "recaptchaToken": {
+                    guard let _ = value_recaptchaToken else {
+                        throw Validation.Error.MissingValue()
+                    }
+
+                },
             ]
 
-            return self
-                .reduce(validators: validatorFutures, context: context)
-                .flatMapThrowing {
-                    guard $0.count == 0 else {
-                        throw LGNC.E.DecodeError($0)
-                    }
+            let validationErrors = await self.reduce(closures: validatorClosures)
+            guard validationErrors.isEmpty else {
+                throw LGNC.E.DecodeError(validationErrors)
+            }
 
-                    return self.init(
-                        username: username!,
-                        email: email!,
-                        password1: password1!,
-                        password2: password2!,
-                        sex: sex!,
-                        language: language!,
-                        recaptchaToken: recaptchaToken!
-                    )
-                }
+            return self.init(
+                username: value_username!,
+                email: value_email!,
+                password1: value_password1!,
+                password2: value_password2!,
+                sex: value_sex!,
+                language: value_language!,
+                recaptchaToken: value_recaptchaToken!
+            )
         }
 
         public convenience init(from dictionary: Entita.Dict) throws {
@@ -623,12 +511,8 @@ public extension Services.Shared {
             self.port = port
         }
 
-        public static func initWithValidation(
-            from dictionary: Entita.Dict, context: LGNCore.Context
-        ) -> EventLoopFuture<NodeInfo> {
-            let eventLoop = context.eventLoop
-
-            if let error = self.ensureNecessaryItems(
+        public static func initWithValidation(from dictionary: Entita.Dict) async throws -> Self {
+            try self.ensureNecessaryItems(
                 in: dictionary,
                 necessaryItems: [
                     "type",
@@ -636,65 +520,53 @@ public extension Services.Shared {
                     "name",
                     "port",
                 ]
-            ) {
-                return eventLoop.makeFailedFuture(error)
-            }
+            )
 
-            let type: String? = try? (self.extract(param: "type", from: dictionary) as String)
-            let id: String? = try? (self.extract(param: "id", from: dictionary) as String)
-            let name: String? = try? (self.extract(param: "name", from: dictionary) as String)
-            let port: Int? = try? (self.extract(param: "port", from: dictionary) as Int)
+            let value_type: String? = try? (self.extract(param: "type", from: dictionary) as String)
+            let value_id: String? = try? (self.extract(param: "id", from: dictionary) as String)
+            let value_name: String? = try? (self.extract(param: "name", from: dictionary) as String)
+            let value_port: Int? = try? (self.extract(param: "port", from: dictionary) as Int)
 
-            let validatorFutures: [String: EventLoopFuture<Void>] = [
-                "type": eventLoop
-                    .submit {
-                        guard let _ = type else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    },
-                "id": eventLoop
-                    .submit {
-                        guard let _ = id else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    },
-                "name": eventLoop
-                    .submit {
-                        guard let _ = name else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    }.flatMap {
-                        guard let validator = self.validatorNameClosure else {
-                            return eventLoop.makeSucceededFuture()
-                        }
-                        return Validation.CallbackWithAllowedValues<CallbackValidatorNameAllowedValues>(callback: validator).validate(
-                            name!,
-                            context.locale,
-                            on: eventLoop
-                        ).mapThrowing { maybeError in if let error = maybeError { throw error } }
-                    },
-                "port": eventLoop
-                    .submit {
-                        guard let _ = port else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    },
-            ]
-
-            return self
-                .reduce(validators: validatorFutures, context: context)
-                .flatMapThrowing {
-                    guard $0.count == 0 else {
-                        throw LGNC.E.DecodeError($0)
+            let validatorClosures: [String: ValidationClosure] = [
+                "type": {
+                    guard let _ = value_type else {
+                        throw Validation.Error.MissingValue()
                     }
 
-                    return self.init(
-                        type: type!,
-                        id: id!,
-                        name: name!,
-                        port: port!
-                    )
-                }
+                },
+                "id": {
+                    guard let _ = value_id else {
+                        throw Validation.Error.MissingValue()
+                    }
+
+                },
+                "name": {
+                    guard let _ = value_name else {
+                        throw Validation.Error.MissingValue()
+                    }
+                        if let validator = self.validatorNameClosure {
+                        try await Validation.CallbackWithAllowedValues<CallbackValidatorNameAllowedValues>(callback: validator).validate(value_name!)
+                    }
+                },
+                "port": {
+                    guard let _ = value_port else {
+                        throw Validation.Error.MissingValue()
+                    }
+
+                },
+            ]
+
+            let validationErrors = await self.reduce(closures: validatorClosures)
+            guard validationErrors.isEmpty else {
+                throw LGNC.E.DecodeError(validationErrors)
+            }
+
+            return self.init(
+                type: value_type!,
+                id: value_id!,
+                name: value_name!,
+                port: value_port!
+            )
         }
 
         public convenience init(from dictionary: Entita.Dict) throws {
@@ -748,60 +620,44 @@ public extension Services.Shared {
             self.entities = entities
         }
 
-        public static func initWithValidation(
-            from dictionary: Entita.Dict, context: LGNCore.Context
-        ) -> EventLoopFuture<PingRequest> {
-            let eventLoop = context.eventLoop
-
-            if let error = self.ensureNecessaryItems(
+        public static func initWithValidation(from dictionary: Entita.Dict) async throws -> Self {
+            try self.ensureNecessaryItems(
                 in: dictionary,
                 necessaryItems: [
                     "name",
                     "entities",
                 ]
-            ) {
-                return eventLoop.makeFailedFuture(error)
-            }
+            )
 
-            let name: String? = try? (self.extract(param: "name", from: dictionary) as String)
-            let entities: Int? = try? (self.extract(param: "entities", from: dictionary) as Int)
+            let value_name: String? = try? (self.extract(param: "name", from: dictionary) as String)
+            let value_entities: Int? = try? (self.extract(param: "entities", from: dictionary) as Int)
 
-            let validatorFutures: [String: EventLoopFuture<Void>] = [
-                "name": eventLoop
-                    .submit {
-                        guard let _ = name else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    }.flatMap {
-                        guard let validator = self.validatorNameClosure else {
-                            return eventLoop.makeSucceededFuture()
-                        }
-                        return Validation.CallbackWithAllowedValues<CallbackValidatorNameAllowedValues>(callback: validator).validate(
-                            name!,
-                            context.locale,
-                            on: eventLoop
-                        ).mapThrowing { maybeError in if let error = maybeError { throw error } }
-                    },
-                "entities": eventLoop
-                    .submit {
-                        guard let _ = entities else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    },
-            ]
-
-            return self
-                .reduce(validators: validatorFutures, context: context)
-                .flatMapThrowing {
-                    guard $0.count == 0 else {
-                        throw LGNC.E.DecodeError($0)
+            let validatorClosures: [String: ValidationClosure] = [
+                "name": {
+                    guard let _ = value_name else {
+                        throw Validation.Error.MissingValue()
+                    }
+                        if let validator = self.validatorNameClosure {
+                        try await Validation.CallbackWithAllowedValues<CallbackValidatorNameAllowedValues>(callback: validator).validate(value_name!)
+                    }
+                },
+                "entities": {
+                    guard let _ = value_entities else {
+                        throw Validation.Error.MissingValue()
                     }
 
-                    return self.init(
-                        name: name!,
-                        entities: entities!
-                    )
-                }
+                },
+            ]
+
+            let validationErrors = await self.reduce(closures: validatorClosures)
+            guard validationErrors.isEmpty else {
+                throw LGNC.E.DecodeError(validationErrors)
+            }
+
+            return self.init(
+                name: value_name!,
+                entities: value_entities!
+            )
         }
 
         public convenience init(from dictionary: Entita.Dict) throws {
@@ -835,42 +691,33 @@ public extension Services.Shared {
             self.result = result
         }
 
-        public static func initWithValidation(
-            from dictionary: Entita.Dict, context: LGNCore.Context
-        ) -> EventLoopFuture<PingResponse> {
-            let eventLoop = context.eventLoop
-
-            if let error = self.ensureNecessaryItems(
+        public static func initWithValidation(from dictionary: Entita.Dict) async throws -> Self {
+            try self.ensureNecessaryItems(
                 in: dictionary,
                 necessaryItems: [
                     "result",
                 ]
-            ) {
-                return eventLoop.makeFailedFuture(error)
-            }
+            )
 
-            let result: String? = try? (self.extract(param: "result", from: dictionary) as String)
+            let value_result: String? = try? (self.extract(param: "result", from: dictionary) as String)
 
-            let validatorFutures: [String: EventLoopFuture<Void>] = [
-                "result": eventLoop
-                    .submit {
-                        guard let _ = result else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    },
-            ]
-
-            return self
-                .reduce(validators: validatorFutures, context: context)
-                .flatMapThrowing {
-                    guard $0.count == 0 else {
-                        throw LGNC.E.DecodeError($0)
+            let validatorClosures: [String: ValidationClosure] = [
+                "result": {
+                    guard let _ = value_result else {
+                        throw Validation.Error.MissingValue()
                     }
 
-                    return self.init(
-                        result: result!
-                    )
-                }
+                },
+            ]
+
+            let validationErrors = await self.reduce(closures: validatorClosures)
+            guard validationErrors.isEmpty else {
+                throw LGNC.E.DecodeError(validationErrors)
+            }
+
+            return self.init(
+                result: value_result!
+            )
         }
 
         public convenience init(from dictionary: Entita.Dict) throws {
@@ -916,12 +763,8 @@ public extension Services.Shared {
             self.entities = entities
         }
 
-        public static func initWithValidation(
-            from dictionary: Entita.Dict, context: LGNCore.Context
-        ) -> EventLoopFuture<CheckinRequest> {
-            let eventLoop = context.eventLoop
-
-            if let error = self.ensureNecessaryItems(
+        public static func initWithValidation(from dictionary: Entita.Dict) async throws -> Self {
+            try self.ensureNecessaryItems(
                 in: dictionary,
                 necessaryItems: [
                     "type",
@@ -929,65 +772,53 @@ public extension Services.Shared {
                     "port",
                     "entities",
                 ]
-            ) {
-                return eventLoop.makeFailedFuture(error)
-            }
+            )
 
-            let type: String? = try? (self.extract(param: "type", from: dictionary) as String)
-            let name: String? = try? (self.extract(param: "name", from: dictionary) as String)
-            let port: Int? = try? (self.extract(param: "port", from: dictionary) as Int)
-            let entities: Int? = try? (self.extract(param: "entities", from: dictionary) as Int)
+            let value_type: String? = try? (self.extract(param: "type", from: dictionary) as String)
+            let value_name: String? = try? (self.extract(param: "name", from: dictionary) as String)
+            let value_port: Int? = try? (self.extract(param: "port", from: dictionary) as Int)
+            let value_entities: Int? = try? (self.extract(param: "entities", from: dictionary) as Int)
 
-            let validatorFutures: [String: EventLoopFuture<Void>] = [
-                "type": eventLoop
-                    .submit {
-                        guard let _ = type else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    },
-                "name": eventLoop
-                    .submit {
-                        guard let _ = name else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    }.flatMap {
-                        guard let validator = self.validatorNameClosure else {
-                            return eventLoop.makeSucceededFuture()
-                        }
-                        return Validation.CallbackWithAllowedValues<CallbackValidatorNameAllowedValues>(callback: validator).validate(
-                            name!,
-                            context.locale,
-                            on: eventLoop
-                        ).mapThrowing { maybeError in if let error = maybeError { throw error } }
-                    },
-                "port": eventLoop
-                    .submit {
-                        guard let _ = port else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    },
-                "entities": eventLoop
-                    .submit {
-                        guard let _ = entities else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    },
-            ]
-
-            return self
-                .reduce(validators: validatorFutures, context: context)
-                .flatMapThrowing {
-                    guard $0.count == 0 else {
-                        throw LGNC.E.DecodeError($0)
+            let validatorClosures: [String: ValidationClosure] = [
+                "type": {
+                    guard let _ = value_type else {
+                        throw Validation.Error.MissingValue()
                     }
 
-                    return self.init(
-                        type: type!,
-                        name: name!,
-                        port: port!,
-                        entities: entities!
-                    )
-                }
+                },
+                "name": {
+                    guard let _ = value_name else {
+                        throw Validation.Error.MissingValue()
+                    }
+                        if let validator = self.validatorNameClosure {
+                        try await Validation.CallbackWithAllowedValues<CallbackValidatorNameAllowedValues>(callback: validator).validate(value_name!)
+                    }
+                },
+                "port": {
+                    guard let _ = value_port else {
+                        throw Validation.Error.MissingValue()
+                    }
+
+                },
+                "entities": {
+                    guard let _ = value_entities else {
+                        throw Validation.Error.MissingValue()
+                    }
+
+                },
+            ]
+
+            let validationErrors = await self.reduce(closures: validatorClosures)
+            guard validationErrors.isEmpty else {
+                throw LGNC.E.DecodeError(validationErrors)
+            }
+
+            return self.init(
+                type: value_type!,
+                name: value_name!,
+                port: value_port!,
+                entities: value_entities!
+            )
         }
 
         public convenience init(from dictionary: Entita.Dict) throws {
@@ -1025,42 +856,33 @@ public extension Services.Shared {
             self.result = result
         }
 
-        public static func initWithValidation(
-            from dictionary: Entita.Dict, context: LGNCore.Context
-        ) -> EventLoopFuture<CheckinResponse> {
-            let eventLoop = context.eventLoop
-
-            if let error = self.ensureNecessaryItems(
+        public static func initWithValidation(from dictionary: Entita.Dict) async throws -> Self {
+            try self.ensureNecessaryItems(
                 in: dictionary,
                 necessaryItems: [
                     "result",
                 ]
-            ) {
-                return eventLoop.makeFailedFuture(error)
-            }
+            )
 
-            let result: String? = try? (self.extract(param: "result", from: dictionary) as String)
+            let value_result: String? = try? (self.extract(param: "result", from: dictionary) as String)
 
-            let validatorFutures: [String: EventLoopFuture<Void>] = [
-                "result": eventLoop
-                    .submit {
-                        guard let _ = result else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    },
-            ]
-
-            return self
-                .reduce(validators: validatorFutures, context: context)
-                .flatMapThrowing {
-                    guard $0.count == 0 else {
-                        throw LGNC.E.DecodeError($0)
+            let validatorClosures: [String: ValidationClosure] = [
+                "result": {
+                    guard let _ = value_result else {
+                        throw Validation.Error.MissingValue()
                     }
 
-                    return self.init(
-                        result: result!
-                    )
-                }
+                },
+            ]
+
+            let validationErrors = await self.reduce(closures: validatorClosures)
+            guard validationErrors.isEmpty else {
+                throw LGNC.E.DecodeError(validationErrors)
+            }
+
+            return self.init(
+                result: value_result!
+            )
         }
 
         public convenience init(from dictionary: Entita.Dict) throws {
@@ -1092,12 +914,8 @@ public extension Services.Shared {
             self.recaptchaToken = recaptchaToken
         }
 
-        public static func initWithValidation(
-            from dictionary: Entita.Dict, context: LGNCore.Context
-        ) -> EventLoopFuture<LoginRequest> {
-            let eventLoop = context.eventLoop
-
-            if let error = self.ensureNecessaryItems(
+        public static func initWithValidation(from dictionary: Entita.Dict) async throws -> Self {
+            try self.ensureNecessaryItems(
                 in: dictionary,
                 necessaryItems: [
                     "email",
@@ -1105,59 +923,54 @@ public extension Services.Shared {
                     "portal",
                     "recaptchaToken",
                 ]
-            ) {
-                return eventLoop.makeFailedFuture(error)
-            }
+            )
 
-            let email: String? = try? (self.extract(param: "email", from: dictionary) as String)
-            let password: String? = try? (self.extract(param: "password", from: dictionary) as String)
-            let portal: String? = try? (self.extract(param: "portal", from: dictionary) as String)
-            let recaptchaToken: String?? = try? (self.extract(param: "recaptchaToken", from: dictionary, isOptional: true) as String?)
+            let value_email: String? = try? (self.extract(param: "email", from: dictionary) as String)
+            let value_password: String? = try? (self.extract(param: "password", from: dictionary) as String)
+            let value_portal: String? = try? (self.extract(param: "portal", from: dictionary) as String)
+            let value_recaptchaToken: String?? = try? (self.extract(param: "recaptchaToken", from: dictionary, isOptional: true) as String?)
 
-            let validatorFutures: [String: EventLoopFuture<Void>] = [
-                "email": eventLoop
-                    .submit {
-                        guard let _ = email else {
-                            throw Validation.Error.MissingValue(context.locale, message: "Please enter email")
-                        }
-                    },
-                "password": eventLoop
-                    .submit {
-                        guard let _ = password else {
-                            throw Validation.Error.MissingValue(context.locale, message: "Please enter password")
-                        }
-                    },
-                "portal": eventLoop
-                    .submit {
-                        guard let _ = portal else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    },
-                "recaptchaToken": eventLoop
-                    .submit {
-                        guard let recaptchaToken = recaptchaToken else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                        if recaptchaToken == nil {
-                            throw Validation.Error.SkipMissingOptionalValueValidators()
-                        }
-                    },
-            ]
-
-            return self
-                .reduce(validators: validatorFutures, context: context)
-                .flatMapThrowing {
-                    guard $0.count == 0 else {
-                        throw LGNC.E.DecodeError($0)
+            let validatorClosures: [String: ValidationClosure] = [
+                "email": {
+                    guard let _ = value_email else {
+                        throw Validation.Error.MissingValue(message: "Please enter email")
                     }
 
-                    return self.init(
-                        email: email!,
-                        password: password!,
-                        portal: portal!,
-                        recaptchaToken: recaptchaToken!
-                    )
-                }
+                },
+                "password": {
+                    guard let _ = value_password else {
+                        throw Validation.Error.MissingValue(message: "Please enter password")
+                    }
+
+                },
+                "portal": {
+                    guard let _ = value_portal else {
+                        throw Validation.Error.MissingValue()
+                    }
+
+                },
+                "recaptchaToken": {
+                    guard let value = value_recaptchaToken else {
+                        throw Validation.Error.MissingValue()
+                    }
+                    if value == nil {
+                        throw Validation.Error.SkipMissingOptionalValueValidators()
+                    }
+
+                },
+            ]
+
+            let validationErrors = await self.reduce(closures: validatorClosures)
+            guard validationErrors.isEmpty else {
+                throw LGNC.E.DecodeError(validationErrors)
+            }
+
+            return self.init(
+                email: value_email!,
+                password: value_password!,
+                portal: value_portal!,
+                recaptchaToken: value_recaptchaToken!
+            )
         }
 
         public convenience init(from dictionary: Entita.Dict) throws {
@@ -1202,12 +1015,8 @@ public extension Services.Shared {
             self.IDUser = IDUser
         }
 
-        public static func initWithValidation(
-            from dictionary: Entita.Dict, context: LGNCore.Context
-        ) -> EventLoopFuture<LoginResponse> {
-            let eventLoop = context.eventLoop
-
-            if let error = self.ensureNecessaryItems(
+        public static func initWithValidation(from dictionary: Entita.Dict) async throws -> Self {
+            try self.ensureNecessaryItems(
                 in: dictionary,
                 necessaryItems: [
                     "session",
@@ -1215,71 +1024,51 @@ public extension Services.Shared {
                     "author",
                     "IDUser",
                 ]
-            ) {
-                return eventLoop.makeFailedFuture(error)
-            }
+            )
 
-            let session: LGNC.Entity.Cookie?
-            do {
-                session = try self.extractCookie(param: "session", from: dictionary, context: context)
-            } catch {
-                return eventLoop.makeFailedFuture(error)
-            }
-            let portal: LGNC.Entity.Cookie?
-            do {
-                portal = try self.extractCookie(param: "portal", from: dictionary, context: context)
-            } catch {
-                return eventLoop.makeFailedFuture(error)
-            }
-            let author: LGNC.Entity.Cookie?
-            do {
-                author = try self.extractCookie(param: "author", from: dictionary, context: context)
-            } catch {
-                return eventLoop.makeFailedFuture(error)
-            }
-            let IDUser: String? = try? (self.extract(param: "IDUser", from: dictionary) as String)
+            let value_session: LGNC.Entity.Cookie? = try await self.extractCookie(param: "session", from: dictionary)
+            let value_portal: LGNC.Entity.Cookie? = try await self.extractCookie(param: "portal", from: dictionary)
+            let value_author: LGNC.Entity.Cookie? = try await self.extractCookie(param: "author", from: dictionary)
+            let value_IDUser: String? = try? (self.extract(param: "IDUser", from: dictionary) as String)
 
-            let validatorFutures: [String: EventLoopFuture<Void>] = [
-                "session": eventLoop
-                    .submit {
-                        guard let _ = session else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    },
-                "portal": eventLoop
-                    .submit {
-                        guard let _ = portal else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    },
-                "author": eventLoop
-                    .submit {
-                        guard let _ = author else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    },
-                "IDUser": eventLoop
-                    .submit {
-                        guard let _ = IDUser else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    },
-            ]
-
-            return self
-                .reduce(validators: validatorFutures, context: context)
-                .flatMapThrowing {
-                    guard $0.count == 0 else {
-                        throw LGNC.E.DecodeError($0)
+            let validatorClosures: [String: ValidationClosure] = [
+                "session": {
+                    guard let _ = value_session else {
+                        throw Validation.Error.MissingValue()
                     }
 
-                    return self.init(
-                        session: session!,
-                        portal: portal!,
-                        author: author!,
-                        IDUser: IDUser!
-                    )
-                }
+                },
+                "portal": {
+                    guard let _ = value_portal else {
+                        throw Validation.Error.MissingValue()
+                    }
+
+                },
+                "author": {
+                    guard let _ = value_author else {
+                        throw Validation.Error.MissingValue()
+                    }
+
+                },
+                "IDUser": {
+                    guard let _ = value_IDUser else {
+                        throw Validation.Error.MissingValue()
+                    }
+
+                },
+            ]
+
+            let validationErrors = await self.reduce(closures: validatorClosures)
+            guard validationErrors.isEmpty else {
+                throw LGNC.E.DecodeError(validationErrors)
+            }
+
+            return self.init(
+                session: value_session!,
+                portal: value_portal!,
+                author: value_author!,
+                IDUser: value_IDUser!
+            )
         }
 
         public convenience init(from dictionary: Entita.Dict) throws {
@@ -1315,70 +1104,51 @@ public extension Services.Shared {
             self.accessLevel = accessLevel
         }
 
-        public static func initWithValidation(
-            from dictionary: Entita.Dict, context: LGNCore.Context
-        ) -> EventLoopFuture<CommentUserInfo> {
-            let eventLoop = context.eventLoop
-
-            if let error = self.ensureNecessaryItems(
+        public static func initWithValidation(from dictionary: Entita.Dict) async throws -> Self {
+            try self.ensureNecessaryItems(
                 in: dictionary,
                 necessaryItems: [
                     "ID",
                     "username",
                     "accessLevel",
                 ]
-            ) {
-                return eventLoop.makeFailedFuture(error)
-            }
+            )
 
-            let ID: String? = try? (self.extract(param: "ID", from: dictionary) as String)
-            let username: String? = try? (self.extract(param: "username", from: dictionary) as String)
-            let accessLevel: String? = try? (self.extract(param: "accessLevel", from: dictionary) as String)
+            let value_ID: String? = try? (self.extract(param: "ID", from: dictionary) as String)
+            let value_username: String? = try? (self.extract(param: "username", from: dictionary) as String)
+            let value_accessLevel: String? = try? (self.extract(param: "accessLevel", from: dictionary) as String)
 
-            let validatorFutures: [String: EventLoopFuture<Void>] = [
-                "ID": eventLoop
-                    .submit {
-                        guard let _ = ID else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    }.flatMap {
-                        if let error = Validation.UUID().validate(ID!, context.locale) {
-                            return eventLoop.makeFailedFuture(error)
-                        }
-                        return eventLoop.makeSucceededFuture()
-                    },
-                "username": eventLoop
-                    .submit {
-                        guard let _ = username else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    },
-                "accessLevel": eventLoop
-                    .submit {
-                        guard let _ = accessLevel else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    }.flatMap {
-                        if let error = Validation.In(allowedValues: ["User", "PowerUser", "Moderator", "Admin"]).validate(accessLevel!, context.locale) {
-                            return eventLoop.makeFailedFuture(error)
-                        }
-                        return eventLoop.makeSucceededFuture()
-                    },
-            ]
-
-            return self
-                .reduce(validators: validatorFutures, context: context)
-                .flatMapThrowing {
-                    guard $0.count == 0 else {
-                        throw LGNC.E.DecodeError($0)
+            let validatorClosures: [String: ValidationClosure] = [
+                "ID": {
+                    guard let _ = value_ID else {
+                        throw Validation.Error.MissingValue()
+                    }
+                    try await Validation.UUID().validate(value_ID!)
+                },
+                "username": {
+                    guard let _ = value_username else {
+                        throw Validation.Error.MissingValue()
                     }
 
-                    return self.init(
-                        ID: ID!,
-                        username: username!,
-                        accessLevel: accessLevel!
-                    )
-                }
+                },
+                "accessLevel": {
+                    guard let _ = value_accessLevel else {
+                        throw Validation.Error.MissingValue()
+                    }
+                    try await Validation.In(allowedValues: ["User", "PowerUser", "Moderator", "Admin"]).validate(value_accessLevel!)
+                },
+            ]
+
+            let validationErrors = await self.reduce(closures: validatorClosures)
+            guard validationErrors.isEmpty else {
+                throw LGNC.E.DecodeError(validationErrors)
+            }
+
+            return self.init(
+                ID: value_ID!,
+                username: value_username!,
+                accessLevel: value_accessLevel!
+            )
         }
 
         public convenience init(from dictionary: Entita.Dict) throws {
@@ -1386,6 +1156,175 @@ public extension Services.Shared {
                 ID: try CommentUserInfo.extract(param: "ID", from: dictionary),
                 username: try CommentUserInfo.extract(param: "username", from: dictionary),
                 accessLevel: try CommentUserInfo.extract(param: "accessLevel", from: dictionary)
+            )
+        }
+
+        public func getDictionary() throws -> Entita.Dict {
+            [
+                self.getDictionaryKey("ID"): try self.encode(self.ID),
+                self.getDictionaryKey("username"): try self.encode(self.username),
+                self.getDictionaryKey("accessLevel"): try self.encode(self.accessLevel),
+            ]
+        }
+
+    }
+
+    final class ChatMessage: ContractEntity {
+        public static let keyDictionary: [String: String] = [:]
+
+        public let ID: String
+        public let Sender: String
+        public let Date: String
+        public let Body: String
+
+        public init(ID: String, Sender: String, Date: String, Body: String) {
+            self.ID = ID
+            self.Sender = Sender
+            self.Date = Date
+            self.Body = Body
+        }
+
+        public static func initWithValidation(from dictionary: Entita.Dict) async throws -> Self {
+            try self.ensureNecessaryItems(
+                in: dictionary,
+                necessaryItems: [
+                    "ID",
+                    "Sender",
+                    "Date",
+                    "Body",
+                ]
+            )
+
+            let value_ID: String? = try? (self.extract(param: "ID", from: dictionary) as String)
+            let value_Sender: String? = try? (self.extract(param: "Sender", from: dictionary) as String)
+            let value_Date: String? = try? (self.extract(param: "Date", from: dictionary) as String)
+            let value_Body: String? = try? (self.extract(param: "Body", from: dictionary) as String)
+
+            let validatorClosures: [String: ValidationClosure] = [
+                "ID": {
+                    guard let _ = value_ID else {
+                        throw Validation.Error.MissingValue()
+                    }
+                    try await Validation.UUID().validate(value_ID!)
+                },
+                "Sender": {
+                    guard let _ = value_Sender else {
+                        throw Validation.Error.MissingValue()
+                    }
+                    try await Validation.UUID().validate(value_Sender!)
+                },
+                "Date": {
+                    guard let _ = value_Date else {
+                        throw Validation.Error.MissingValue()
+                    }
+
+                },
+                "Body": {
+                    guard let _ = value_Body else {
+                        throw Validation.Error.MissingValue()
+                    }
+
+                },
+            ]
+
+            let validationErrors = await self.reduce(closures: validatorClosures)
+            guard validationErrors.isEmpty else {
+                throw LGNC.E.DecodeError(validationErrors)
+            }
+
+            return self.init(
+                ID: value_ID!,
+                Sender: value_Sender!,
+                Date: value_Date!,
+                Body: value_Body!
+            )
+        }
+
+        public convenience init(from dictionary: Entita.Dict) throws {
+            self.init(
+                ID: try ChatMessage.extract(param: "ID", from: dictionary),
+                Sender: try ChatMessage.extract(param: "Sender", from: dictionary),
+                Date: try ChatMessage.extract(param: "Date", from: dictionary),
+                Body: try ChatMessage.extract(param: "Body", from: dictionary)
+            )
+        }
+
+        public func getDictionary() throws -> Entita.Dict {
+            [
+                self.getDictionaryKey("ID"): try self.encode(self.ID),
+                self.getDictionaryKey("Sender"): try self.encode(self.Sender),
+                self.getDictionaryKey("Date"): try self.encode(self.Date),
+                self.getDictionaryKey("Body"): try self.encode(self.Body),
+            ]
+        }
+
+    }
+
+    final class ChatUser: ContractEntity {
+        public static let keyDictionary: [String: String] = [:]
+
+        public let ID: String
+        public let username: String
+        public let accessLevel: String
+
+        public init(ID: String, username: String, accessLevel: String) {
+            self.ID = ID
+            self.username = username
+            self.accessLevel = accessLevel
+        }
+
+        public static func initWithValidation(from dictionary: Entita.Dict) async throws -> Self {
+            try self.ensureNecessaryItems(
+                in: dictionary,
+                necessaryItems: [
+                    "ID",
+                    "username",
+                    "accessLevel",
+                ]
+            )
+
+            let value_ID: String? = try? (self.extract(param: "ID", from: dictionary) as String)
+            let value_username: String? = try? (self.extract(param: "username", from: dictionary) as String)
+            let value_accessLevel: String? = try? (self.extract(param: "accessLevel", from: dictionary) as String)
+
+            let validatorClosures: [String: ValidationClosure] = [
+                "ID": {
+                    guard let _ = value_ID else {
+                        throw Validation.Error.MissingValue()
+                    }
+
+                },
+                "username": {
+                    guard let _ = value_username else {
+                        throw Validation.Error.MissingValue()
+                    }
+
+                },
+                "accessLevel": {
+                    guard let _ = value_accessLevel else {
+                        throw Validation.Error.MissingValue()
+                    }
+
+                },
+            ]
+
+            let validationErrors = await self.reduce(closures: validatorClosures)
+            guard validationErrors.isEmpty else {
+                throw LGNC.E.DecodeError(validationErrors)
+            }
+
+            return self.init(
+                ID: value_ID!,
+                username: value_username!,
+                accessLevel: value_accessLevel!
+            )
+        }
+
+        public convenience init(from dictionary: Entita.Dict) throws {
+            self.init(
+                ID: try ChatUser.extract(param: "ID", from: dictionary),
+                username: try ChatUser.extract(param: "username", from: dictionary),
+                accessLevel: try ChatUser.extract(param: "accessLevel", from: dictionary)
             )
         }
 
@@ -1437,43 +1376,8 @@ public extension Services.Shared {
             self.dateUpdated = dateUpdated
         }
 
-        public static func await(
-            ID: Int,
-            user: Services.Shared.CommentUserInfo,
-            IDPost: String,
-            IDReplyComment: Int? = nil,
-            isEditable: Bool,
-            status: String,
-            body: String,
-            likes likesFuture: EventLoopFuture<Int>,
-            dateCreated: String,
-            dateUpdated: String
-        ) -> EventLoopFuture<Comment> {
-            likesFuture.eventLoop.makeSucceededFuture(()).flatMap { () in
-                likesFuture.map { likes in (likes) }
-            }
-            .map { (likes) in
-                Comment(
-                    ID: ID,
-                    user: user,
-                    IDPost: IDPost,
-                    IDReplyComment: IDReplyComment,
-                    isEditable: isEditable,
-                    status: status,
-                    body: body,
-                    likes: likes,
-                    dateCreated: dateCreated,
-                    dateUpdated: dateUpdated
-                )
-            }
-        }
-
-        public static func initWithValidation(
-            from dictionary: Entita.Dict, context: LGNCore.Context
-        ) -> EventLoopFuture<Comment> {
-            let eventLoop = context.eventLoop
-
-            if let error = self.ensureNecessaryItems(
+        public static func initWithValidation(from dictionary: Entita.Dict) async throws -> Self {
+            try self.ensureNecessaryItems(
                 in: dictionary,
                 necessaryItems: [
                     "ID",
@@ -1487,122 +1391,102 @@ public extension Services.Shared {
                     "dateCreated",
                     "dateUpdated",
                 ]
-            ) {
-                return eventLoop.makeFailedFuture(error)
-            }
+            )
 
-            let ID: Int? = try? (self.extract(param: "ID", from: dictionary) as Int)
-            let user: Services.Shared.CommentUserInfo? = try? (self.extract(param: "user", from: dictionary) as Services.Shared.CommentUserInfo)
-            let IDPost: String? = try? (self.extract(param: "IDPost", from: dictionary) as String)
-            let IDReplyComment: Int?? = try? (self.extract(param: "IDReplyComment", from: dictionary, isOptional: true) as Int?)
-            let isEditable: Bool? = try? (self.extract(param: "isEditable", from: dictionary) as Bool)
-            let status: String? = try? (self.extract(param: "status", from: dictionary) as String)
-            let body: String? = try? (self.extract(param: "body", from: dictionary) as String)
-            let likes: Int? = try? (self.extract(param: "likes", from: dictionary) as Int)
-            let dateCreated: String? = try? (self.extract(param: "dateCreated", from: dictionary) as String)
-            let dateUpdated: String? = try? (self.extract(param: "dateUpdated", from: dictionary) as String)
+            let value_ID: Int? = try? (self.extract(param: "ID", from: dictionary) as Int)
+            let value_user: Services.Shared.CommentUserInfo? = try? (self.extract(param: "user", from: dictionary) as Services.Shared.CommentUserInfo)
+            let value_IDPost: String? = try? (self.extract(param: "IDPost", from: dictionary) as String)
+            let value_IDReplyComment: Int?? = try? (self.extract(param: "IDReplyComment", from: dictionary, isOptional: true) as Int?)
+            let value_isEditable: Bool? = try? (self.extract(param: "isEditable", from: dictionary) as Bool)
+            let value_status: String? = try? (self.extract(param: "status", from: dictionary) as String)
+            let value_body: String? = try? (self.extract(param: "body", from: dictionary) as String)
+            let value_likes: Int? = try? (self.extract(param: "likes", from: dictionary) as Int)
+            let value_dateCreated: String? = try? (self.extract(param: "dateCreated", from: dictionary) as String)
+            let value_dateUpdated: String? = try? (self.extract(param: "dateUpdated", from: dictionary) as String)
 
-            let validatorFutures: [String: EventLoopFuture<Void>] = [
-                "ID": eventLoop
-                    .submit {
-                        guard let _ = ID else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    },
-                "user": eventLoop
-                    .submit {
-                        guard let _ = user else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    },
-                "IDPost": eventLoop
-                    .submit {
-                        guard let _ = IDPost else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    },
-                "IDReplyComment": eventLoop
-                    .submit {
-                        guard let IDReplyComment = IDReplyComment else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                        if IDReplyComment == nil {
-                            throw Validation.Error.SkipMissingOptionalValueValidators()
-                        }
-                    },
-                "isEditable": eventLoop
-                    .submit {
-                        guard let _ = isEditable else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    },
-                "status": eventLoop
-                    .submit {
-                        guard let _ = status else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    }.flatMap {
-                        if let error = Validation.In(allowedValues: ["pending", "deleted", "hidden", "published"]).validate(status!, context.locale) {
-                            return eventLoop.makeFailedFuture(error)
-                        }
-                        return eventLoop.makeSucceededFuture()
-                    },
-                "body": eventLoop
-                    .submit {
-                        guard let _ = body else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    },
-                "likes": eventLoop
-                    .submit {
-                        guard let _ = likes else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    },
-                "dateCreated": eventLoop
-                    .submit {
-                        guard let _ = dateCreated else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    }.flatMap {
-                        if let error = Validation.Date(format: "yyyy-MM-dd kk:mm:ss.SSSSxxx").validate(dateCreated!, context.locale) {
-                            return eventLoop.makeFailedFuture(error)
-                        }
-                        return eventLoop.makeSucceededFuture()
-                    },
-                "dateUpdated": eventLoop
-                    .submit {
-                        guard let _ = dateUpdated else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    }.flatMap {
-                        if let error = Validation.Date(format: "yyyy-MM-dd kk:mm:ss.SSSSxxx").validate(dateUpdated!, context.locale) {
-                            return eventLoop.makeFailedFuture(error)
-                        }
-                        return eventLoop.makeSucceededFuture()
-                    },
-            ]
-
-            return self
-                .reduce(validators: validatorFutures, context: context)
-                .flatMapThrowing {
-                    guard $0.count == 0 else {
-                        throw LGNC.E.DecodeError($0)
+            let validatorClosures: [String: ValidationClosure] = [
+                "ID": {
+                    guard let _ = value_ID else {
+                        throw Validation.Error.MissingValue()
                     }
 
-                    return self.init(
-                        ID: ID!,
-                        user: user!,
-                        IDPost: IDPost!,
-                        IDReplyComment: IDReplyComment!,
-                        isEditable: isEditable!,
-                        status: status!,
-                        body: body!,
-                        likes: likes!,
-                        dateCreated: dateCreated!,
-                        dateUpdated: dateUpdated!
-                    )
-                }
+                },
+                "user": {
+                    guard let _ = value_user else {
+                        throw Validation.Error.MissingValue()
+                    }
+
+                },
+                "IDPost": {
+                    guard let _ = value_IDPost else {
+                        throw Validation.Error.MissingValue()
+                    }
+
+                },
+                "IDReplyComment": {
+                    guard let value = value_IDReplyComment else {
+                        throw Validation.Error.MissingValue()
+                    }
+                    if value == nil {
+                        throw Validation.Error.SkipMissingOptionalValueValidators()
+                    }
+
+                },
+                "isEditable": {
+                    guard let _ = value_isEditable else {
+                        throw Validation.Error.MissingValue()
+                    }
+
+                },
+                "status": {
+                    guard let _ = value_status else {
+                        throw Validation.Error.MissingValue()
+                    }
+                    try await Validation.In(allowedValues: ["pending", "deleted", "hidden", "published"]).validate(value_status!)
+                },
+                "body": {
+                    guard let _ = value_body else {
+                        throw Validation.Error.MissingValue()
+                    }
+
+                },
+                "likes": {
+                    guard let _ = value_likes else {
+                        throw Validation.Error.MissingValue()
+                    }
+
+                },
+                "dateCreated": {
+                    guard let _ = value_dateCreated else {
+                        throw Validation.Error.MissingValue()
+                    }
+                    try await Validation.Date(format: "yyyy-MM-dd kk:mm:ss.SSSSxxx").validate(value_dateCreated!)
+                },
+                "dateUpdated": {
+                    guard let _ = value_dateUpdated else {
+                        throw Validation.Error.MissingValue()
+                    }
+                    try await Validation.Date(format: "yyyy-MM-dd kk:mm:ss.SSSSxxx").validate(value_dateUpdated!)
+                },
+            ]
+
+            let validationErrors = await self.reduce(closures: validatorClosures)
+            guard validationErrors.isEmpty else {
+                throw LGNC.E.DecodeError(validationErrors)
+            }
+
+            return self.init(
+                ID: value_ID!,
+                user: value_user!,
+                IDPost: value_IDPost!,
+                IDReplyComment: value_IDReplyComment!,
+                isEditable: value_isEditable!,
+                status: value_status!,
+                body: value_body!,
+                likes: value_likes!,
+                dateCreated: value_dateCreated!,
+                dateUpdated: value_dateUpdated!
+            )
         }
 
         public convenience init(from dictionary: Entita.Dict) throws {
@@ -1684,12 +1568,8 @@ public extension Services.Shared {
             self.accessLevel = accessLevel
         }
 
-        public static func initWithValidation(
-            from dictionary: Entita.Dict, context: LGNCore.Context
-        ) -> EventLoopFuture<User> {
-            let eventLoop = context.eventLoop
-
-            if let error = self.ensureNecessaryItems(
+        public static func initWithValidation(from dictionary: Entita.Dict) async throws -> Self {
+            try self.ensureNecessaryItems(
                 in: dictionary,
                 necessaryItems: [
                     "ID",
@@ -1706,169 +1586,124 @@ public extension Services.Shared {
                     "authorName",
                     "accessLevel",
                 ]
-            ) {
-                return eventLoop.makeFailedFuture(error)
-            }
+            )
 
-            let ID: String? = try? (self.extract(param: "ID", from: dictionary) as String)
-            let username: String? = try? (self.extract(param: "username", from: dictionary) as String)
-            let email: String? = try? (self.extract(param: "email", from: dictionary) as String)
-            let password: String? = try? (self.extract(param: "password", from: dictionary) as String)
-            let sex: String? = try? (self.extract(param: "sex", from: dictionary) as String)
-            let isBanned: Bool? = try? (self.extract(param: "isBanned", from: dictionary) as Bool)
-            let ip: String? = try? (self.extract(param: "ip", from: dictionary) as String)
-            let country: String? = try? (self.extract(param: "country", from: dictionary) as String)
-            let dateUnsuccessfulLogin: String? = try? (self.extract(param: "dateUnsuccessfulLogin", from: dictionary) as String)
-            let dateSignup: String? = try? (self.extract(param: "dateSignup", from: dictionary) as String)
-            let dateLogin: String? = try? (self.extract(param: "dateLogin", from: dictionary) as String)
-            let authorName: String? = try? (self.extract(param: "authorName", from: dictionary) as String)
-            let accessLevel: String? = try? (self.extract(param: "accessLevel", from: dictionary) as String)
+            let value_ID: String? = try? (self.extract(param: "ID", from: dictionary) as String)
+            let value_username: String? = try? (self.extract(param: "username", from: dictionary) as String)
+            let value_email: String? = try? (self.extract(param: "email", from: dictionary) as String)
+            let value_password: String? = try? (self.extract(param: "password", from: dictionary) as String)
+            let value_sex: String? = try? (self.extract(param: "sex", from: dictionary) as String)
+            let value_isBanned: Bool? = try? (self.extract(param: "isBanned", from: dictionary) as Bool)
+            let value_ip: String? = try? (self.extract(param: "ip", from: dictionary) as String)
+            let value_country: String? = try? (self.extract(param: "country", from: dictionary) as String)
+            let value_dateUnsuccessfulLogin: String? = try? (self.extract(param: "dateUnsuccessfulLogin", from: dictionary) as String)
+            let value_dateSignup: String? = try? (self.extract(param: "dateSignup", from: dictionary) as String)
+            let value_dateLogin: String? = try? (self.extract(param: "dateLogin", from: dictionary) as String)
+            let value_authorName: String? = try? (self.extract(param: "authorName", from: dictionary) as String)
+            let value_accessLevel: String? = try? (self.extract(param: "accessLevel", from: dictionary) as String)
 
-            let validatorFutures: [String: EventLoopFuture<Void>] = [
-                "ID": eventLoop
-                    .submit {
-                        guard let _ = ID else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    }.flatMap {
-                        if let error = Validation.UUID().validate(ID!, context.locale) {
-                            return eventLoop.makeFailedFuture(error)
-                        }
-                        return eventLoop.makeSucceededFuture()
-                    },
-                "username": eventLoop
-                    .submit {
-                        guard let _ = username else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    },
-                "email": eventLoop
-                    .submit {
-                        guard let _ = email else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    }.flatMap {
-                        if let error = Validation.Regexp(pattern: "^.+@.+\\..+$", message: "Invalid email format").validate(email!, context.locale) {
-                            return eventLoop.makeFailedFuture(error)
-                        }
-                        return eventLoop.makeSucceededFuture()
+            let validatorClosures: [String: ValidationClosure] = [
+                "ID": {
+                    guard let _ = value_ID else {
+                        throw Validation.Error.MissingValue()
                     }
-                    .flatMap {
-                        if let error = Validation.Length.Min(length: 6).validate(email!, context.locale) {
-                            return eventLoop.makeFailedFuture(error)
-                        }
-                        return eventLoop.makeSucceededFuture()
-                    },
-                "password": eventLoop
-                    .submit {
-                        guard let _ = password else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    },
-                "sex": eventLoop
-                    .submit {
-                        guard let _ = sex else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    }.flatMap {
-                        if let error = Validation.In(allowedValues: ["Male", "Female", "Attack helicopter"]).validate(sex!, context.locale) {
-                            return eventLoop.makeFailedFuture(error)
-                        }
-                        return eventLoop.makeSucceededFuture()
-                    },
-                "isBanned": eventLoop
-                    .submit {
-                        guard let _ = isBanned else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    },
-                "ip": eventLoop
-                    .submit {
-                        guard let _ = ip else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    },
-                "country": eventLoop
-                    .submit {
-                        guard let _ = country else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    },
-                "dateUnsuccessfulLogin": eventLoop
-                    .submit {
-                        guard let _ = dateUnsuccessfulLogin else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    }.flatMap {
-                        if let error = Validation.Date(format: "yyyy-MM-dd kk:mm:ss.SSSSxxx").validate(dateUnsuccessfulLogin!, context.locale) {
-                            return eventLoop.makeFailedFuture(error)
-                        }
-                        return eventLoop.makeSucceededFuture()
-                    },
-                "dateSignup": eventLoop
-                    .submit {
-                        guard let _ = dateSignup else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    }.flatMap {
-                        if let error = Validation.Date(format: "yyyy-MM-dd kk:mm:ss.SSSSxxx").validate(dateSignup!, context.locale) {
-                            return eventLoop.makeFailedFuture(error)
-                        }
-                        return eventLoop.makeSucceededFuture()
-                    },
-                "dateLogin": eventLoop
-                    .submit {
-                        guard let _ = dateLogin else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    }.flatMap {
-                        if let error = Validation.Date(format: "yyyy-MM-dd kk:mm:ss.SSSSxxx").validate(dateLogin!, context.locale) {
-                            return eventLoop.makeFailedFuture(error)
-                        }
-                        return eventLoop.makeSucceededFuture()
-                    },
-                "authorName": eventLoop
-                    .submit {
-                        guard let _ = authorName else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    },
-                "accessLevel": eventLoop
-                    .submit {
-                        guard let _ = accessLevel else {
-                            throw Validation.Error.MissingValue(context.locale)
-                        }
-                    }.flatMap {
-                        if let error = Validation.In(allowedValues: ["User", "Admin"]).validate(accessLevel!, context.locale) {
-                            return eventLoop.makeFailedFuture(error)
-                        }
-                        return eventLoop.makeSucceededFuture()
-                    },
+                    try await Validation.UUID().validate(value_ID!)
+                },
+                "username": {
+                    guard let _ = value_username else {
+                        throw Validation.Error.MissingValue()
+                    }
+
+                },
+                "email": {
+                    guard let _ = value_email else {
+                        throw Validation.Error.MissingValue()
+                    }
+                    try await Validation.Regexp(pattern: "^.+@.+\\..+$", message: "Invalid email format").validate(value_email!)
+                try await Validation.Length.Min(length: 6).validate(value_email!)
+                },
+                "password": {
+                    guard let _ = value_password else {
+                        throw Validation.Error.MissingValue()
+                    }
+
+                },
+                "sex": {
+                    guard let _ = value_sex else {
+                        throw Validation.Error.MissingValue()
+                    }
+                    try await Validation.In(allowedValues: ["Male", "Female", "Attack helicopter"]).validate(value_sex!)
+                },
+                "isBanned": {
+                    guard let _ = value_isBanned else {
+                        throw Validation.Error.MissingValue()
+                    }
+
+                },
+                "ip": {
+                    guard let _ = value_ip else {
+                        throw Validation.Error.MissingValue()
+                    }
+
+                },
+                "country": {
+                    guard let _ = value_country else {
+                        throw Validation.Error.MissingValue()
+                    }
+
+                },
+                "dateUnsuccessfulLogin": {
+                    guard let _ = value_dateUnsuccessfulLogin else {
+                        throw Validation.Error.MissingValue()
+                    }
+                    try await Validation.Date(format: "yyyy-MM-dd kk:mm:ss.SSSSxxx").validate(value_dateUnsuccessfulLogin!)
+                },
+                "dateSignup": {
+                    guard let _ = value_dateSignup else {
+                        throw Validation.Error.MissingValue()
+                    }
+                    try await Validation.Date(format: "yyyy-MM-dd kk:mm:ss.SSSSxxx").validate(value_dateSignup!)
+                },
+                "dateLogin": {
+                    guard let _ = value_dateLogin else {
+                        throw Validation.Error.MissingValue()
+                    }
+                    try await Validation.Date(format: "yyyy-MM-dd kk:mm:ss.SSSSxxx").validate(value_dateLogin!)
+                },
+                "authorName": {
+                    guard let _ = value_authorName else {
+                        throw Validation.Error.MissingValue()
+                    }
+
+                },
+                "accessLevel": {
+                    guard let _ = value_accessLevel else {
+                        throw Validation.Error.MissingValue()
+                    }
+                    try await Validation.In(allowedValues: ["User", "Admin"]).validate(value_accessLevel!)
+                },
             ]
 
-            return self
-                .reduce(validators: validatorFutures, context: context)
-                .flatMapThrowing {
-                    guard $0.count == 0 else {
-                        throw LGNC.E.DecodeError($0)
-                    }
+            let validationErrors = await self.reduce(closures: validatorClosures)
+            guard validationErrors.isEmpty else {
+                throw LGNC.E.DecodeError(validationErrors)
+            }
 
-                    return self.init(
-                        ID: ID!,
-                        username: username!,
-                        email: email!,
-                        password: password!,
-                        sex: sex!,
-                        isBanned: isBanned!,
-                        ip: ip!,
-                        country: country!,
-                        dateUnsuccessfulLogin: dateUnsuccessfulLogin!,
-                        dateSignup: dateSignup!,
-                        dateLogin: dateLogin!,
-                        authorName: authorName!,
-                        accessLevel: accessLevel!
-                    )
-                }
+            return self.init(
+                ID: value_ID!,
+                username: value_username!,
+                email: value_email!,
+                password: value_password!,
+                sex: value_sex!,
+                isBanned: value_isBanned!,
+                ip: value_ip!,
+                country: value_country!,
+                dateUnsuccessfulLogin: value_dateUnsuccessfulLogin!,
+                dateSignup: value_dateSignup!,
+                dateLogin: value_dateLogin!,
+                authorName: value_authorName!,
+                accessLevel: value_accessLevel!
+            )
         }
 
         public convenience init(from dictionary: Entita.Dict) throws {

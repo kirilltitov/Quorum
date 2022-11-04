@@ -1,16 +1,17 @@
 import Foundation
 import Generated
 import LGNCore
+import LGNLog
 import LGNC
-import Entita2
-import FDB
-import NIO
+import FDBEntity
 
 public extension LGNCore.Context {
     var errorNotAuthenticated: LGNC.ContractError {
-        return LGNC.ContractError.GeneralError("Not authenticated".tr(self.locale), 401)
+        LGNC.ContractError.GeneralError("Not authenticated".tr(), 401)
     }
 }
+
+// let addr = LGNCore.Address.ip(host: "10.133.54.35", port: 1811)
 
 public extension Logic {
     class User {
@@ -18,161 +19,120 @@ public extension Logic {
             case UserNotFound
         }
 
-        private static let usersLRU: CacheLRU<E2.UUID, Models.User> = CacheLRU(
-            capacity: 1000,
-            eventLoopGroup: eventLoopGroup,
-            eventLoopCount: eventLoopCount
-        )
+        private static let usersLRU: CacheLRU<FDB.UUID, Models.User> = CacheLRU(capacity: 1000)
 
-        public static func authenticate(
-            request: AnyEntityWithSession,
-            context: LGNCore.Context
-        ) -> EventLoopFuture<Models.User> {
-            self.authenticate(
+        public static func authenticate(request: AnyEntityWithSession) async throws -> Models.User {
+            try await self.authenticate(
                 session: request.session.value,
                 portal: request.portal.value,
-                author: request.author.value,
-                context: context
+                author: request.author.value
             )
         }
 
-        private static func authenticate(
-            session: String,
-            portal: String,
-            author: String,
-            context: LGNCore.Context
-        ) -> EventLoopFuture<Models.User> {
-            Services.Author.Contracts.Authenticate
-                .execute(
-                    at: .node(
-                        service: "author",
-                        name: author,
-                        realm: PORTAL_ID,
-                        port: AUTHOR_PORT
-                    ),
-                    with: .init(
-                        portal: LGNC.Entity.Cookie(name: "portal", value: portal),
-                        session: LGNC.Entity.Cookie(name: "session", value: session)
-                    ),
-                    using: client,
-                    context: context
-                )
-                .flatMapErrorThrowing { error in
-                    if case LGNC.ContractError.RemoteContractExecutionFailed = error {
-                        return .init(IDUser: nil)
-                    }
-                    throw error
-                }
-                .flatMapThrowing { response in
-                    guard let rawIDUser = response.IDUser else {
-                        throw context.errorNotAuthenticated
-                    }
-                    guard let IDUser = Models.User.Identifier(rawIDUser) else {
-                        throw LGNC.ContractError.GeneralError("Invalid ID User \(rawIDUser)", 403)
-                    }
-                    return self.get(by: IDUser, context: context)
-                }
-                .mapThrowing { (maybeUser: Models.User?) in
-                    guard let user = maybeUser else {
-                        throw LGNC.ContractError.GeneralError("User not found for some reason", 403)
-                    }
-                    return user
-                }
-        }
-
-        public static func maybeAuthenticate(
-            request: AnyEntityWithMaybeSession,
-            context: LGNCore.Context
-        ) -> EventLoopFuture<Models.User?> {
-            guard let session = request.session?.value else {
-                return context.eventLoop.makeSucceededFuture(nil)
-            }
-            guard let portal = request.portal?.value else {
-                return context.eventLoop.makeSucceededFuture(nil)
-            }
-            guard let author = request.author?.value else {
-                return context.eventLoop.makeSucceededFuture(nil)
-            }
-
-            return self
-                .authenticate(
-                    session: session,
-                    portal: portal,
-                    author: author,
-                    context: context
-                )
-                .map { Optional($0) }
-        }
-
-        public static func get(by IDString: String, context: LGNCore.Context) -> EventLoopFuture<Models.User?> {
-            guard let ID = Models.User.Identifier(IDString) else {
-                return context.eventLoop.makeFailedFuture(
-                    LGNC.ContractError.GeneralError("Invalid ID", 400)
-                )
-            }
-
-            return self.get(by: ID, context: context)
-        }
-
-        public static func get(by ID: Models.User.Identifier) -> EventLoopFuture<Models.User?> {
-            return self.get(
-                by: ID,
-                context: Context(
-                    remoteAddr: config[.PRIVATE_IP],
-                    clientAddr: config[.PRIVATE_IP],
-                    userAgent: "Quorum",
-                    locale: .enUS,
-                    uuid: UUID(),
-                    isSecure: true,
-                    transport: .LGNS,
-                    meta: [:],
-                    eventLoop: eventLoopGroup.eventLoop
-                )
-            )
-        }
-
-        public static func get(
-            by ID: Models.User.Identifier,
-            context: LGNCore.Context
-        ) -> EventLoopFuture<Models.User?> {
-            let eventLoop = context.eventLoop
-
-            return self.usersLRU.getOrSet(by: ID, on: eventLoop) {
-                Services.Author.Contracts.UserInfoInternal
+        public static func authenticate(session: String, portal: String, author: String) async throws -> Models.User {
+            let rawIDUser: String?
+            do {
+                rawIDUser = try await Services.Author.Contracts.Authenticate
                     .execute(
                         at: .node(
                             service: "author",
-                            name: "viktor",
-                            realm: PORTAL_ID,
-                            port: AUTHOR_PORT
+                            name: author,
+                            realm: App.current.PORTAL_ID,
+                            port: App.current.AUTHOR_PORT
                         ),
+                        with: .init(
+                            portal: LGNC.Entity.Cookie(name: "portal", value: portal),
+                            session: LGNC.Entity.Cookie(name: "session", value: session)
+                        ),
+                        using: App.current.client
+                    )
+                    .IDUser
+            } catch LGNC.ContractError.RemoteContractExecutionFailed {
+                rawIDUser = nil
+            }
+
+            guard let rawIDUser = rawIDUser else {
+                throw LGNCore.Context.current.errorNotAuthenticated
+            }
+            guard let IDUser = Models.User.Identifier(rawIDUser) else {
+                throw LGNC.ContractError.GeneralError("Invalid ID User \(rawIDUser)", 403)
+            }
+
+            guard let user = try await self.get(by: IDUser) else {
+                throw LGNC.ContractError.GeneralError("User not found for some reason", 403)
+            }
+
+            Logger.current.info("Authenticated user '\(user.username)' (\(user.ID.string))")
+
+            return user
+        }
+
+        public static func maybeAuthenticate(request: AnyEntityWithMaybeSession) async throws -> Models.User? {
+            guard let session = request.session?.value else {
+                return nil
+            }
+            guard let portal = request.portal?.value else {
+                return nil
+            }
+            guard let author = request.author?.value else {
+                return nil
+            }
+
+            return try await self.authenticate(
+                session: session,
+                portal: portal,
+                author: author
+            )
+        }
+
+        public static func get(by IDString: String) async throws -> Models.User? {
+            guard let ID = Models.User.Identifier(IDString) else {
+                throw LGNC.ContractError.GeneralError("Invalid ID", 400)
+            }
+
+            return try await self.get(by: ID)
+        }
+
+        public static func get(by ID: Models.User.Identifier) async throws -> Models.User? {
+            try await self.usersLRU.getOrSet(by: ID) {
+                let logger = Logger.current
+                do {
+                    if let innerUser = try await Models.User.load(by: ID) {
+                        logger.info("Loaded inner user \(ID.string): \(innerUser.accessLevel.rawValue) '\(innerUser.username)'")
+                        return innerUser
+                    }
+
+                    let address: LGNCore.Address = .node(
+                        service: "author",
+                        name: "viktor",
+                        realm: App.current.PORTAL_ID,
+                        port: App.current.AUTHOR_PORT
+                    )
+                    let client = App.current.client
+                    logger.info("No inner user, about to load origin user \(ID.string) info via UserInfoInternal contract @ \(address) with client \(type(of: client))")
+                    let originUserInfo = try await Services.Author.Contracts.UserInfoInternal.execute(
+                        at: address,
                         with: .init(ID: ID.string),
                         using: client,
-                        context: context
+                        context: LGNCore.Context.current
                     )
-                    .flatMap { (user: Services.Author.Contracts.UserInfoInternal.Response) in
-                        Models.User
-                            .load(by: ID, storage: fdb, on: eventLoop)
-                            .flatMap { maybeInnerUser in
-                                if let innerUser = maybeInnerUser {
-                                    return eventLoop.makeSucceededFuture(innerUser)
-                                }
-                                let innerUser = Models.User(
-                                    ID: ID,
-                                    username: user.username,
-                                    accessLevel: Models.User.AccessLevel(rawValue: user.accessLevel) ?? .User
-                                )
-                                return innerUser
-                                    .save(storage: fdb, on: eventLoop)
-                                    .map { innerUser }
-                            }
+                    logger.info("Loaded origin user \(ID.string) info from \(address): \(String(describing: try? originUserInfo.getDictionary()))")
+
+                    let innerUser = Models.User(
+                        ID: ID,
+                        username: originUserInfo.username,
+                        accessLevel: Models.User.AccessLevel(rawValue: originUserInfo.accessLevel) ?? .User
+                    )
+                    try await innerUser.save()
+
+                    return innerUser
+                } catch {
+                    if case LGNC.E.MultipleError(let dict) = error, dict.getGeneralErrorCode() == 404 {
+                        logger.info("Remote user \(ID.string) not found")
+                        return nil
                     }
-                    .flatMapErrorThrowing { error in
-                        if case LGNC.E.MultipleError(let dict) = error, dict.getGeneralErrorCode() == 404 {
-                            return nil
-                        }
-                        throw error
-                    }
+                    throw error
+                }
             }
         }
     }

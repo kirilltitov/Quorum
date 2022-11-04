@@ -1,4 +1,5 @@
 import LGNC
+import AsyncHTTPClient
 
 public protocol AnyEntityWithSession {
     var session: LGNC.Entity.Cookie { get }

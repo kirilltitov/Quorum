@@ -1,18 +1,17 @@
 import Foundation
 import LGNCore
 import LGNC
-import Entita2FDB
-import NIO
+import FDBEntity
 import Generated
 
 extension Date {
-    func contractFormatted(locale: LGNCore.i18n.Locale) -> String {
-        return Logic.Comment.format(date: self, locale: locale)
+    func contractFormatted() -> String {
+        Logic.Comment.format(date: self, locale: LGNCore.Context.current.locale)
     }
 }
 
 public extension Models {
-    final class Comment: ModelInt, Entita2FDBIndexedEntity {
+    final class Comment: ModelInt, FDBIndexedEntity {
         public enum IndexKey: String, AnyIndexKey {
             case ID, user
         }
@@ -37,10 +36,11 @@ public extension Models {
 
         public static let IDKey: KeyPath<Comment, Int> = \.ID
         public static var fullEntityName = false
+        public static var storage = App.current.fdb
 
-        public static var indices: [IndexKey: Entita2.Index<Models.Comment>] = [
-            .ID: E2.Index(\.ID, unique: true),
-            .user: E2.Index(\.IDUser, unique: false),
+        public static var indices: [IndexKey: FDB.Index<Models.Comment>] = [
+            .ID: FDB.Index(\.ID, unique: true),
+            .user: FDB.Index(\.IDUser, unique: false),
         ]
 
         public let ID: Int
@@ -53,11 +53,11 @@ public extension Models {
         public var dateUpdated: Date
 
         public var isEditable: Bool {
-            return self.dateCreated.timeIntervalSince < COMMENT_EDITABLE_TIME_SECONDS
+            self.dateCreated.timeIntervalSince < App.COMMENT_EDITABLE_TIME_SECONDS
         }
 
         public var IDPostEncoded: String {
-            return Logic.Post.encodeHash(ID: self.IDPost)
+            Logic.Post.encodeHash(ID: self.IDPost)
         }
 
         public init(
@@ -77,63 +77,39 @@ public extension Models {
             self.dateUpdated = .distantPast
         }
 
-        public func getUser(context: LGNCore.Context) -> EventLoopFuture<User> {
-            return Logic.User
-                .get(by: self.IDUser, context: context)
-                .map {
-                    guard let user = $0 else {
-                        return User.unknown
-                    }
-                    return user
-                }
+        public func getUser() async throws -> User {
+            guard let user = try await Logic.User.get(by: self.IDUser) else {
+                return User.unknown
+            }
+            return user
         }
 
-        public func getContractComment(
-            loadLikes: Bool = true,
-            context: Context
-        ) -> EventLoopFuture<Services.Shared.Comment> {
-            let eventLoop = context.eventLoop
-            let user = self.getUser(context: context)
+        public func getContractComment(loadLikes: Bool = true) async throws -> Services.Shared.Comment {
+            let user = try await self.getUser()
 
-            // TODO proper await
-            return user.flatMap { user in
-                Services.Shared.Comment.await(
-                    ID: self.ID,
-                    user: Services.Shared.CommentUserInfo(
-                        ID: user.ID.string,
-                        username: user.username,
-                        accessLevel: user.accessLevel.rawValue
-                    ),
-                    IDPost: self.IDPostEncoded,
-                    IDReplyComment: self.IDReplyComment,
-                    isEditable: self.isEditable,
-                    status: self.status.rawValue,
-                    body: self.status == .deleted ? "" : self.body,
-                    likes: loadLikes ? Like.getLikesFor(comment: self, on: eventLoop) : eventLoop.makeSucceededFuture(0),
-                    dateCreated: self.dateCreated.contractFormatted(locale: context.locale),
-                    dateUpdated: self.dateUpdated.contractFormatted(locale: context.locale)
-                )
-            }
+            return Services.Shared.Comment(
+                ID: self.ID,
+                user: Services.Shared.CommentUserInfo(
+                    ID: user.ID.string,
+                    username: user.username,
+                    accessLevel: user.accessLevel.rawValue
+                ),
+                IDPost: self.IDPostEncoded,
+                IDReplyComment: self.IDReplyComment,
+                isEditable: self.isEditable,
+                status: self.status.rawValue,
+                body: self.status == .deleted ? "" : self.body,
+                likes: loadLikes ? try await Like.getLikesFor(comment: self) : 0,
+                dateCreated: self.dateCreated.contractFormatted(),
+                dateUpdated: self.dateUpdated.contractFormatted()
+            )
         }
 
         public static func getUsingRefID(
             by ID: Comment.Identifier,
-            storage: Storage,
-            on eventLoop: EventLoop
-        ) -> EventLoopFuture<Models.Comment?> {
-            self.loadByIndex(key: .ID, value: ID, storage: storage, on: eventLoop)
-        }
-
-        public static func getUsingRefIDWithTransaction(
-            by ID: Comment.Identifier,
-            storage: Storage,
-            on eventLoop: EventLoop
-        ) -> EventLoopFuture<(Models.Comment?, AnyFDBTransaction)> {
-            return fdb.withTransaction(on: eventLoop) { transaction in
-                self
-                    .loadByIndex(key: .ID, value: ID, within: transaction, storage: storage, on: eventLoop)
-                    .map { maybeComment in (maybeComment, transaction) }
-            }
+            within maybeTransaction: (any FDBTransaction)? = nil
+        ) async throws -> Models.Comment? {
+            try await self.loadByIndex(key: .ID, value: ID, within: maybeTransaction)
         }
 
 //        public func getIndexIndexSubspace() -> Subspace {
@@ -142,60 +118,29 @@ public extension Models {
 
         // this is extracted because logic would like to use it as range
         public static func _getPrefix() -> FDB.Subspace {
-            return self.subspace[Post.entityName]
+            self.subspace[Post.entityName]
         }
 
         public static func _getPostPrefix(_ ID: Post.Identifier) -> FDB.Subspace {
-            return self._getPrefix()[ID][Comment.entityName]
+            self._getPrefix()[ID][Comment.entityName]
         }
 
         public func _getFullPrefix() -> FDB.Subspace {
-            return Comment._getPostPrefix(self.IDPost)[self.ID]
+            Comment._getPostPrefix(self.IDPost)[self.ID]
         }
 
         public func getIDAsKey() -> Bytes {
-            return self._getFullPrefix().asFDBKey()
+            self._getFullPrefix().asFDBKey()
         }
 
-        public static func await(
-            on eventLoop: EventLoop,
-            ID IDFuture: EventLoopFuture<Models.Comment.Identifier>,
-            IDUser IDUserFuture: EventLoopFuture<User.Identifier>,
-            IDPost: String,
-            IDReplyComment: Int?,
-            body: String
-        ) -> EventLoopFuture<Comment> {
-            guard let IDPost = Logic.Post.decodeHash(ID: IDPost) else {
-                return eventLoop.makeFailedFuture(LGNC.ContractError.GeneralError("Invalid post ID", 400))
-            }
-
-            return eventLoop.makeSucceededFuture()
-                .flatMap { () in
-                    IDFuture.map { ID in (ID) }
-                }
-                .flatMap { (ID) in
-                    IDUserFuture.map { IDUser in (ID, IDUser) }
-                }
-                .map { (ID, IDUser) -> (Models.Comment) in
-                    Comment(
-                        ID: ID,
-                        IDUser: IDUser,
-                        IDPost: IDPost,
-                        IDReplyComment: IDReplyComment,
-                        body: body
-                    )
-                }
-        }
-
-        public func beforeSave(within transaction: AnyTransaction?, on eventLoop: EventLoop) -> EventLoopFuture<Void> {
+        public func beforeSave(within transaction: any FDBTransaction) async throws {
             self.dateUpdated = .now
-
-            return eventLoop.makeSucceededFuture(())
         }
 
         final class History: ModelInt {
             public static let IDKey: KeyPath<History, Int> = \.ID
             public static var fullEntityName = false
+            public static var storage = App.current.fdb
 
             public let ID: History.Identifier
             public let IDComment: Models.Comment.Identifier
@@ -224,19 +169,19 @@ public extension Models {
                 newBody: String,
                 oldBody: String,
                 by user: Models.User,
-                within transaction: AnyFDBTransaction,
-                on eventLoop: EventLoop
-            ) -> EventLoopFuture<Void> {
-                return History
-                    .getNextID(commit: false, within: transaction)
-                    .map { (ID: Int) -> History in
-                        History(ID: ID, IDComment: comment.ID, IDUser: user.ID, oldBody: oldBody, newBody: newBody)
-                    }
-                    .flatMap { model in model.save(commit: false, within: transaction, storage: fdb, on: eventLoop) }
+                within transaction: any FDBTransaction
+            ) async throws {
+                try await History(
+                    ID: try await History.getNextID(commit: false, within: transaction),
+                    IDComment: comment.ID,
+                    IDUser: user.ID,
+                    oldBody: oldBody,
+                    newBody: newBody
+                ).save(within: transaction, commit: false)
             }
 
             public func getIDAsKey() -> Bytes {
-                return History.subspacePrefix[self.IDComment, self.ID].asFDBKey()
+                History.subspacePrefix[self.IDComment, self.ID].asFDBKey()
             }
         }
     }

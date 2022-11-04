@@ -9,32 +9,20 @@ extension Contract.Request: AnyEntityWithSession {}
 /// Moves comment from `deleted` status to `published` status
 class UndeleteController {
     static func setup() {
-        func contractRoutine(
-            request: Contract.Request,
-            context: LGNCore.Context
-        ) -> EventLoopFuture<Contract.Response> {
-            let eventLoop = context.eventLoop
+        func contractRoutine(request: Contract.Request) async throws -> Contract.Response {
+            let user = try await Logic.User.authenticate(request: request)
+            guard user.isAtLeastModerator else {
+                throw LGNCore.Context.current.errorNotAuthenticated
+            }
 
-            return Logic.User
-                .authenticate(request: request, context: context)
-                .flatMap { user in
-                    Logic.Comment
-                        .getThrowing(by: request.IDComment, on: eventLoop)
-                        .map { comment in (user, comment) }
-                }
-                .flatMapThrowing { (user: Models.User, comment: Models.Comment) throws -> EventLoopFuture<Models.Comment> in
-                    guard user.isAtLeastModerator else {
-                        throw context.errorNotAuthenticated
-                    }
-                    guard comment.status == .deleted else {
-                        throw LGNC.ContractError.GeneralError(
-                            "Cannot undelete comment from non-deleted status",
-                            401
-                        )
-                    }
-                    return Logic.Comment.undelete(comment: comment, on: eventLoop)
-                }
-                .flatMap { comment in comment.getContractComment(context: context) }
+            let comment = try await Logic.Comment.getThrowing(by: request.IDComment)
+            guard comment.status == .deleted else {
+                throw LGNC.ContractError.GeneralError("Cannot undelete comment from non-deleted status", 401)
+            }
+
+            try await Logic.Comment.undelete(comment: comment)
+
+            return try await comment.getContractComment()
         }
 
         Contract.guarantee(contractRoutine)

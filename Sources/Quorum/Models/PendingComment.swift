@@ -1,12 +1,14 @@
 import NIO
-import Entita2FDB
+import FDBEntity
 
 // not to be created at all
 public extension Models {
     final class PendingComment: ModelInt {
         public static var IDKey: KeyPath<PendingComment, Int> = \.ID
         public static var fullEntityName = false
-        private static let counterSubspace = subspaceCounter["unapproved"]
+        public static var storage = App.current.fdb
+
+        /* private but migrations */ internal static let counterSubspace = App.current.subspaceCounter["unapproved"]
 
         public let ID: Int
 
@@ -14,72 +16,53 @@ public extension Models {
             self.ID = ID
         }
 
-        public static func savePending(
-            comment: Models.Comment,
-            storage: Storage,
-            on eventLoop: EventLoop
-        ) -> EventLoopFuture<Void> {
-            storage.withTransaction(on: eventLoop) { transaction in
-                transaction
-                    .set(key: self.IDAsKey(ID: comment.ID), value: comment.getIDAsKey())
-                    .flatMap { self.incrementPendingCounter(within: $0) }
-                    .flatMap { $0.commit() }
+        public static func savePending(comment: Models.Comment) async throws {
+            try await Self.storage.withTransaction { transaction in
+                transaction.set(key: self.IDAsKey(ID: comment.ID), value: comment.getIDAsKey())
+                self.incrementPendingCounter(within: transaction)
+                try await transaction.commit()
             }
         }
 
-        public static func clearRoutine(
-            comment: Models.Comment,
-            storage: Storage,
-            on eventLoop: EventLoop
-        ) -> EventLoopFuture<Void> {
-            storage.withTransaction(on: eventLoop) { transaction in
-                transaction
-                    .clear(key: self.IDAsKey(ID: comment.ID))
-                    .flatMap { self.decrementPendingCounter(within: $0) }
-                    .flatMap { $0.commit() }
+        public static func clearRoutine(comment: Models.Comment) async throws {
+            try await Self.storage.withTransaction { transaction in
+                transaction.clear(key: self.IDAsKey(ID: comment.ID))
+                self.decrementPendingCounter(within: transaction)
+                try await transaction.commit()
             }
         }
 
-        private static func incrementPendingCounter(
-            within transaction: AnyFDBTransaction
-        ) -> EventLoopFuture<AnyFDBTransaction> {
+        private static func incrementPendingCounter(within transaction: any FDBTransaction) {
             transaction.atomic(.add, key: self.counterSubspace, value: Int(1))
         }
 
-        private static func decrementPendingCounter(
-            within transaction: AnyFDBTransaction
-        ) -> EventLoopFuture<AnyFDBTransaction> {
+        private static func decrementPendingCounter(within transaction: any FDBTransaction) {
             transaction.atomic(.add, key: self.counterSubspace, value: Int(-1))
         }
 
-        public static func getPendingCount(storage: Storage, on eventLoop: EventLoop) -> EventLoopFuture<Int> {
-            storage
-                .withTransaction(on: eventLoop) { $0.get(key: self.counterSubspace, snapshot: true, commit: true) }
-                .flatMapThrowing { (maybeBytes: Bytes?) -> Int in
-                    guard let bytes = maybeBytes else {
-                        return 0
-                    }
-                    return try bytes.cast()
+        public static func getPendingCount() async throws -> Int {
+            try await Self.storage.withTransaction { transaction in
+                guard let bytes = try await transaction.get(key: self.counterSubspace, snapshot: true) else {
+                    return 0
                 }
+                return try bytes.cast()
+            }
         }
 
-        public static func getUnapprovedComments(
-            storage: Storage,
-            on eventLoop: EventLoop
-        ) -> EventLoopFuture<[Models.Comment]> {
-            storage.withTransaction(on: eventLoop) { transaction in
-                transaction
-                    .get(range: self.subspacePrefix.range)
-                    .flatMap { (results, _) -> EventLoopFuture<[Models.Comment?]> in
-                        EventLoopFuture.reduce(
-                            into: [Models.Comment?](),
-                            results.records.map { kv in
-                                Models.Comment.loadByRaw(IDBytes: kv.value, storage: storage, on: eventLoop)
-                            },
-                            on: eventLoop
-                        ) { $0.append($1) }
+        public static func getUnapprovedComments() async throws -> [Models.Comment] {
+            try await Self.storage.withTransaction { transaction in
+                let records = try await transaction.get(range: self.subspacePrefix.range)
+
+                var result: [Models.Comment] = []
+
+                for record in records.records {
+                    guard let comment = try await Models.Comment.loadByRaw(IDBytes: record.value) else {
+                        continue
                     }
-                    .map { comments in comments.compactMap { $0 } }
+                    result.append(comment)
+                }
+
+                return result
             }
         }
 
