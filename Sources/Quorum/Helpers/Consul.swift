@@ -20,7 +20,7 @@ func registerToConsul() async throws {
             "Checks": [
                 [
                     "Name": "LGNS",
-                    "Interval": 5,
+                    "Interval": "5",
                     "TCP": "\(App.current.config[.PRIVATE_IP]):\(App.current.config[.LGNS_PORT])"
                 ],
             ],

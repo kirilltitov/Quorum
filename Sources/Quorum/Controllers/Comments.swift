@@ -4,7 +4,6 @@ import LGNCore
 import LGNLog
 import LGNC
 import LGNS
-import Entita2
 import NIO
 
 fileprivate typealias Contract = Services.Quorum.Contracts.Comments

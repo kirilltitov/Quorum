@@ -3,7 +3,6 @@ import Generated
 import LGNCore
 import LGNLog
 import LGNC
-import Entita2
 import FDB
 
 public extension Logic {
@@ -41,7 +40,7 @@ public extension Logic {
 
         public static func getThrowing(
             by ID: Models.Comment.Identifier,
-            within maybeTransaction: AnyFDBTransaction? = nil
+            within maybeTransaction: (any FDBTransaction)? = nil
         ) async throws -> Models.Comment {
             guard let comment = try await Models.Comment.getUsingRefID(by: ID, within: maybeTransaction) else {
                 throw LGNC.ContractError.GeneralError("Comment not found (it should)", 404)
@@ -138,7 +137,7 @@ public extension Logic {
             comment: Models.Comment,
             body: String,
             by user: Models.User,
-            within transaction: AnyFDBTransaction
+            within transaction: any FDBTransaction
         ) async throws {
             let newBody = Logic.Comment.getProcessedBody(from: body)
             let oldBody = comment.body

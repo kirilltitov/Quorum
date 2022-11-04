@@ -1,7 +1,7 @@
 import Foundation
 import LGNCore
 import LGNC
-import Entita2FDB
+import FDBEntity
 import Generated
 
 extension Date {
@@ -11,7 +11,7 @@ extension Date {
 }
 
 public extension Models {
-    final class Comment: ModelInt, Entita2FDBIndexedEntity {
+    final class Comment: ModelInt, FDBIndexedEntity {
         public enum IndexKey: String, AnyIndexKey {
             case ID, user
         }
@@ -38,9 +38,9 @@ public extension Models {
         public static var fullEntityName = false
         public static var storage = App.current.fdb
 
-        public static var indices: [IndexKey: Entita2.Index<Models.Comment>] = [
-            .ID: E2.Index(\.ID, unique: true),
-            .user: E2.Index(\.IDUser, unique: false),
+        public static var indices: [IndexKey: FDB.Index<Models.Comment>] = [
+            .ID: FDB.Index(\.ID, unique: true),
+            .user: FDB.Index(\.IDUser, unique: false),
         ]
 
         public let ID: Int
@@ -107,7 +107,7 @@ public extension Models {
 
         public static func getUsingRefID(
             by ID: Comment.Identifier,
-            within maybeTransaction: AnyFDBTransaction? = nil
+            within maybeTransaction: (any FDBTransaction)? = nil
         ) async throws -> Models.Comment? {
             try await self.loadByIndex(key: .ID, value: ID, within: maybeTransaction)
         }
@@ -133,7 +133,7 @@ public extension Models {
             self._getFullPrefix().asFDBKey()
         }
 
-        public func beforeSave(within transaction: AnyTransaction?) async throws {
+        public func beforeSave(within transaction: any FDBTransaction) async throws {
             self.dateUpdated = .now
         }
 
@@ -169,7 +169,7 @@ public extension Models {
                 newBody: String,
                 oldBody: String,
                 by user: Models.User,
-                within transaction: AnyFDBTransaction
+                within transaction: any FDBTransaction
             ) async throws {
                 try await History(
                     ID: try await History.getNextID(commit: false, within: transaction),

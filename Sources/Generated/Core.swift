@@ -3,6 +3,7 @@ import Entita
 import LGNS
 import LGNC
 import LGNP
+import AsyncHTTPClient
 
 public enum Services {
     public enum Shared {}

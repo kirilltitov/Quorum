@@ -1,7 +1,7 @@
 #!/bin/bash
 
 DOCKER_COMPOSE_FILE="docker-compose.yml"
-PRIVATE_IP=`ifconfig eth1 | grep 'inet addr' | cut -d: -f2 | awk '{print $1}'`
+PRIVATE_IP=`ip addr show eth1 | awk '$1 == "inet" {gsub(/\/.*$/, "", $2); print $2}'`
 
 export LGNS_HOST=$PRIVATE_IP
 export LGNS_PORT=1712

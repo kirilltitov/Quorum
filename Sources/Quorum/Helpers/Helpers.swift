@@ -1,8 +1,7 @@
 import Foundation
 import LGNCore
 import LGNLog
-import Entita2FDB
-import FDB
+import FDBEntity
 
 //MARK:- General
 extension Int {
@@ -48,7 +47,7 @@ public extension FDB.Subspace {
     }
 }
 
-public extension AnyFDBKey {
+public extension FDBKey {
     var _string: String {
         return (try? FDB.Tuple(from: self.asFDBKey())._string) ?? "\(self)"
     }
@@ -61,33 +60,33 @@ public func =><T: RawRepresentable & Equatable>(lhs: T, rhs: [T]) -> Bool {
 }
 
 //MARK:- Entita2FDB
-public extension E2FDBEntity {
-    static var format: E2.Format { .JSON }
+public extension FDBEntity {
+    static var format: FDB.Entity.Format { .JSON }
     static var subspace: FDB.Subspace { App.current.subspaceMain }
-    static var storage: some E2FDBStorage { App.current.fdb }
+    static var storage: any FDBConnector { App.current.fdb }
 }
 
-public protocol Model: E2FDBEntity {
-    override associatedtype Identifier = E2.UUID
+public protocol Model: FDBEntity where Identifier == FDB.UUID {
+    // override associatedtype Identifier = FDB.UUID
 }
 
-public protocol ModelInt: E2FDBEntity {
-    override associatedtype Identifier = Int
+public protocol ModelInt: FDBEntity where Identifier == Int {
+    // override associatedtype Identifier = Int
 }
 
-public extension Model {
-    func insert(within transaction: AnyFDBTransaction?, commit: Bool = true) async throws {
-        try await self.insert(within: transaction as? AnyTransaction, commit: commit)
-    }
-
-    func save(by ID: Identifier? = nil, within transaction: AnyFDBTransaction?, commit: Bool = true) async throws {
-        try await self.save(by: ID, within: transaction as? AnyTransaction, commit: commit)
-    }
-
-    func delete(within transaction: AnyFDBTransaction?, commit: Bool = true) async throws {
-        try await self.delete(within: transaction as? AnyTransaction, commit: commit)
-    }
-}
+//public extension Model {
+//    func insert(within transaction: (any FDBTransaction)?, commit: Bool = true) async throws {
+//        try await self.insert(within: transaction as? any Entita2Transaction, commit: commit)
+//    }
+//
+//    func save(by ID: Identifier? = nil, within transaction: (any FDBTransaction)?, commit: Bool = true) async throws {
+//        try await self.save(by: ID, within: transaction as? any Entita2Transaction, commit: commit)
+//    }
+//
+//    func delete(within transaction: (any FDBTransaction)?, commit: Bool = true) async throws {
+//        try await self.delete(within: transaction as? any Entita2Transaction, commit: commit)
+//    }
+//}
 
 public extension ModelInt {
     static func getNextID() async throws -> Int {
@@ -96,7 +95,7 @@ public extension ModelInt {
         }
     }
 
-    static func getNextID(commit: Bool = true, within transaction: AnyFDBTransaction) async throws -> Int {
+    static func getNextID(commit: Bool = true, within transaction: any FDBTransaction) async throws -> Int {
         let key = Self.subspace["idx"][Self.entityName]
 
         transaction.atomic(.add, key: key, value: Int(1))
@@ -115,7 +114,7 @@ public extension ModelInt {
 
 public typealias Migrations = [() async throws -> Void]
 
-func runMigrations(_ migrations: Migrations, on fdb: FDB) async {
+func runMigrations(_ migrations: Migrations, on fdb: any FDBConnector) async {
     let logger = Logger(label: "Quorum.Migrations")
     let key = App.current.subspaceMain["migration"]
     var lastState: Int

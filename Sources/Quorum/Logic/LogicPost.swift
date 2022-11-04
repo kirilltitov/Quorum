@@ -4,7 +4,6 @@ import LGNC
 import LGNCore
 import LGNLog
 import LGNConfig
-import Entita2
 import FDB
 
 public extension Logic {
@@ -56,7 +55,7 @@ public extension Logic {
         }
 
         public static func updateCommentCounterForPost(ID: Models.Post.Identifier, count: Int) async throws {
-            try await App.current.fdb.withTransaction { (transaction: AnyFDBTransaction) in
+            try await App.current.fdb.withTransaction { (transaction: any FDBTransaction) in
                 transaction.atomic(.add, key: self.commentCounterSubspaceForPost(ID: ID), value: count)
                 try await transaction.commit()
             }
@@ -71,7 +70,7 @@ public extension Logic {
         }
 
         public static func getCommentCounterForPost(ID: Models.Post.Identifier) async throws -> Int {
-            try await App.current.fdb.withTransaction { (transaction: AnyFDBTransaction) in
+            try await App.current.fdb.withTransaction { (transaction: any FDBTransaction) in
                 guard let bytes = try await transaction.get(key: self.commentCounterSubspaceForPost(ID: ID), snapshot: true) else {
                     return 0
                 }
@@ -131,7 +130,7 @@ public extension Logic {
 
         public static func getRawCommentsFor(
             ID: Models.Post.Identifier,
-            within maybeTransaction: AnyFDBTransaction? = nil
+            within maybeTransaction: (any FDBTransaction)? = nil
         ) async throws -> [(ID: Models.Comment.Identifier, value: Models.Comment)] {
             try await Models.Comment.loadAll(
                 bySubspace: Models.Comment._getPostPrefix(ID),

@@ -9,6 +9,7 @@ import LGNP
 import LGNC
 import LGNS
 import Entita
+import AsyncHTTPClient
 
 public extension Services {
     enum Quorum: Service {

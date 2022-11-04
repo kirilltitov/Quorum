@@ -1,10 +1,12 @@
 import Foundation
 import LGNCore
-import Entita2FDB
+import FDBEntity
 
 public extension Models {
-    final class User: Model, Entita2FDBIndexedEntity, @unchecked Sendable {
-        public typealias Identifier = E2.UUID
+    final class User: Model, FDBIndexedEntity, @unchecked Sendable {
+        public static var storage: any FDBConnector { App.current.fdb }
+
+        public typealias Identifier = FDB.UUID
 
         public enum IndexKey: String, AnyIndexKey {
             case username
@@ -21,20 +23,20 @@ public extension Models {
             case Admin
         }
 
-        public static var IDKey: KeyPath<Models.User, E2.UUID> = \.ID
-        public static var storage = App.current.fdb
+        public static var IDKey: KeyPath<Models.User, FDB.UUID> = \.ID
+        //public static var storage: any E2FDBStorage = App.current.fdb
 
         public static let unknown = User(
-            ID: E2.UUID("00000000-0000-0000-0000-000000000000")!,
+            ID: FDB.UUID("00000000-0000-0000-0000-000000000000")!,
             username: "Frank Strino",
             accessLevel: .User
         )
 
-        public static var indices: [IndexKey: Entita2.Index<Models.User>] = [
-            .username: E2.Index(\.username, unique: true),
+        public static var indices: [IndexKey: FDB.Index<Models.User>] = [
+            .username: FDB.Index(\.username, unique: true),
         ]
 
-        public let ID: E2.UUID
+        public let ID: FDB.UUID
 
         // synchronizable from Author
         public var username: String
@@ -57,7 +59,7 @@ public extension Models {
         }
 
         public init(
-            ID: E2.UUID,
+            ID: FDB.UUID,
             username: String,
             accessLevel: AccessLevel
         ) {

@@ -3,7 +3,6 @@ import Generated
 import LGNCore
 import LGNS
 import LGNC
-import Entita2
 
 fileprivate typealias Contract = Services.Quorum.Contracts.UnhideComment
 

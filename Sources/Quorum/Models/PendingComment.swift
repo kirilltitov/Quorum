@@ -1,5 +1,5 @@
 import NIO
-import Entita2FDB
+import FDBEntity
 
 // not to be created at all
 public extension Models {
@@ -32,11 +32,11 @@ public extension Models {
             }
         }
 
-        private static func incrementPendingCounter(within transaction: AnyFDBTransaction) {
+        private static func incrementPendingCounter(within transaction: any FDBTransaction) {
             transaction.atomic(.add, key: self.counterSubspace, value: Int(1))
         }
 
-        private static func decrementPendingCounter(within transaction: AnyFDBTransaction) {
+        private static func decrementPendingCounter(within transaction: any FDBTransaction) {
             transaction.atomic(.add, key: self.counterSubspace, value: Int(-1))
         }
 

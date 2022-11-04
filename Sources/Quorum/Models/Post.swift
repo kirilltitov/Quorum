@@ -1,4 +1,4 @@
-import Entita2FDB
+import FDBEntity
 
 public extension Models {
     enum Post {

@@ -7,7 +7,7 @@ import LGNC
 import LGNP
 import LGNS
 import Entita
-import Entita2FDB
+import FDBEntity
 import AsyncHTTPClient
 import Lifecycle
 
@@ -34,8 +34,8 @@ public struct App {
     public static let COMMENT_POST_COOLDOWN_SECONDS: TimeInterval = 5
     public static let COMMENT_EDIT_COOLDOWN_SECONDS: TimeInterval = 5
 
-    public static let defaultUser = E2.UUID("00000000-1637-0034-1711-000000000000")!
-    public static var adminUserID: E2.UUID { self.defaultUser }
+    public static let defaultUser = FDB.UUID("00000000-1637-0034-1711-000000000000")!
+    public static var adminUserID: FDB.UUID { self.defaultUser }
     public static let empty = LGNC.Entity.Empty()
 
     public let env: AppEnv
@@ -43,7 +43,7 @@ public struct App {
     public let client: LGNCClient
     public let config: Config<ConfigKeys>
 
-    public let fdb: FDB
+    public let fdb: any FDBConnector
     public let subspaceMain: FDB.Subspace
     public let subspaceCounter: FDB.Subspace
 
@@ -59,7 +59,7 @@ public struct App {
         eventLoop: EventLoopGroup,
         client: LGNCClient,
         config: Config<ConfigKeys>,
-        fdb: FDB
+        fdb: any FDBConnector
     ) {
         self.env = env
         self.eventLoop = eventLoop
@@ -86,7 +86,7 @@ public extension LGNCore.Address {
 @main
 struct Main {
     static public func main() async throws {
-        let VERSION = "1.3.2-async-await"
+        let VERSION = "1.4.0-swift-5.7"
         let env = AppEnv.detect()
 
         let config = try Config<ConfigKeys>(
@@ -98,7 +98,7 @@ struct Main {
                 .REALM: "suncity", // "Inner-Mongolia",
                 .WEBSITE_DOMAIN: "https://kirilltitov.com",
                 .AUTHOR_LGNS_PORT: "1711",
-                .LOG_LEVEL: "info",
+                .LOG_LEVEL: "trace",
                 .LGNS_PORT: "1712",
                 .HTTP_PORT: "8081",
                 .PRIVATE_IP: "127.0.0.1",
@@ -151,7 +151,7 @@ struct Main {
         #endif
 
         LGNLogger.logLevel = .debug
-        let fdb = FDB(clusterFile: clusterFile)
+        let fdb = FDB.Connector(clusterFile: clusterFile)
         defaultLogger.info("FDB created")
         LGNLogger.logLevel = logLevel
 
@@ -190,8 +190,9 @@ struct Main {
             fdb: fdb
         )
 
-        await runMigrations(getMigrations(), on: fdb)
-        defaultLogger.info("Migrations run")
+        //todo uncomment after https://github.com/apple/swift/issues/60960
+        //await runMigrations(getMigrations(), on: fdb)
+        //defaultLogger.info("Migrations run")
 
         CreateController.setup()
         CommentsController.setup()

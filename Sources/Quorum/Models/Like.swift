@@ -1,6 +1,6 @@
 import LGNCore
 import LGNLog
-import Entita2FDB
+import FDBEntity
 
 // not to be created at all
 public extension Models {
@@ -76,7 +76,7 @@ public extension Models {
 
         public static func getLikesForCommentsIn(
             postID: Int,
-            within transaction: AnyFDBTransaction
+            within transaction: any FDBTransaction
         ) async throws -> [Comment.Identifier: Int] {
             let records = try await transaction.get(
                 range: self.getLikesCounterPrefixSubspace(forPostID: postID).range,
@@ -109,17 +109,17 @@ public extension Models {
         fileprivate static func updateLikesCounterFor(
             comment: Comment,
             count: Int,
-            within transaction: AnyFDBTransaction
+            within transaction: any FDBTransaction
         ) {
             transaction.atomic(.add, key: self.getLikesCounterSubspaceFor(comment: comment), value: count)
         }
 
         /* fileprivate */
-        public static func incrementLikesCounterFor(comment: Comment, within transaction: AnyFDBTransaction) {
+        public static func incrementLikesCounterFor(comment: Comment, within transaction: any FDBTransaction) {
             self.updateLikesCounterFor(comment: comment, count: 1, within: transaction)
         }
 
-        fileprivate static func decrementLikesCounterFor(comment: Comment, within transaction: AnyFDBTransaction) {
+        fileprivate static func decrementLikesCounterFor(comment: Comment, within transaction: any FDBTransaction) {
             self.updateLikesCounterFor(comment: comment, count: -1, within: transaction)
         }
 

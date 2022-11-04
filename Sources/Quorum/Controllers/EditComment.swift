@@ -3,7 +3,7 @@ import Generated
 import LGNCore
 import LGNS
 import LGNC
-import Entita2FDB
+import FDB
 
 fileprivate typealias Contract = Services.Quorum.Contracts.EditComment
 
@@ -22,7 +22,7 @@ public struct EditController {
             let user = try await Logic.User.authenticate(request: request)
 
             return try await App.current.fdb
-                .withTransaction { (transaction: AnyFDBTransaction) async throws -> Models.Comment in
+                .withTransaction { (transaction: any FDBTransaction) async throws -> Models.Comment in
                     let comment = try await Logic.Comment.getThrowing(by: request.IDComment, within: transaction)
 
                     if !user.isAtLeastModerator {

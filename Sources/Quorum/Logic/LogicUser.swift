@@ -3,8 +3,7 @@ import Generated
 import LGNCore
 import LGNLog
 import LGNC
-import Entita2
-import FDB
+import FDBEntity
 
 public extension LGNCore.Context {
     var errorNotAuthenticated: LGNC.ContractError {
@@ -20,7 +19,7 @@ public extension Logic {
             case UserNotFound
         }
 
-        private static let usersLRU: CacheLRU<E2.UUID, Models.User> = CacheLRU(capacity: 1000)
+        private static let usersLRU: CacheLRU<FDB.UUID, Models.User> = CacheLRU(capacity: 1000)
 
         public static func authenticate(request: AnyEntityWithSession) async throws -> Models.User {
             try await self.authenticate(
