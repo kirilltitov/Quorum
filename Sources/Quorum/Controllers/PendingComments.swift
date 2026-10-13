@@ -17,7 +17,7 @@ class PendingCommentsController {
             let comments = try await Models.PendingComment.getUnapprovedComments()
 
             return Contract.Response(
-                comments: try await comments.map { comment in try await comment.getContractComment() }
+                comments: try await comments.asyncMap { comment in try await comment.getContractComment() }
             )
         }
 

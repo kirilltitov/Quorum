@@ -3,8 +3,8 @@ import Generated
 import LGNC
 import LGNCore
 import LGNLog
-import LGNConfig
 import FDB
+import FDBEntity
 
 public extension Logic {
     enum Post {
@@ -12,34 +12,29 @@ public extension Logic {
             case OK, NotFound, NotCommentable
         }
 
-        public class CommentWithLikes {
-            public let comment: Models.Comment
-            private(set) var likes: Int = 0
-
-            public init(_ comment: Models.Comment) {
-                self.comment = comment
-            }
-
-            func incrementLikes(_ likes: Int = 1) {
-                self.likes += likes
-            }
+        public struct CommentWithLikes: Sendable {
+            public var comment: Models.Comment
+            public var likes: Int = 0
         }
 
-        public enum E: Error {
-            case PostNotFound
-        }
+        /// Maximum number of posts in a single counters request
+        static let maxCountersRequestSize = 100
 
-        private static var hashids = Hashids(
+        private static let hashids = Hashids(
             salt: App.current.config[.HASHIDS_SALT],
             minHashLength: UInt(App.current.config[.HASHIDS_MIN_LENGTH])!
         )
 
-        private static func commentCounterSubspaceForPost(ID: Models.Post.Identifier) -> FDB.Subspace {
+        private static func commentCounterKeyForPost(ID: Models.Post.Identifier) -> FDB.Subspace {
             Models.Post.subspacePrefix[ID]
         }
 
         public static func decodeHash(ID: String) -> Models.Post.Identifier? {
-            self.hashids.decode(ID).first
+            let decoded = self.hashids.decode(ID)
+            guard decoded.count == 1 else {
+                return nil
+            }
+            return decoded[0]
         }
 
         public static func encodeHash(ID: Models.Post.Identifier) -> String {
@@ -54,59 +49,39 @@ public extension Logic {
             return await self.getPostStatus(ID)
         }
 
-        public static func updateCommentCounterForPost(ID: Models.Post.Identifier, count: Int) async throws {
-            try await App.current.fdb.withTransaction { (transaction: any FDBTransaction) in
-                transaction.atomic(.add, key: self.commentCounterSubspaceForPost(ID: ID), value: count)
-                try await transaction.commit()
-            }
-        }
-
-        public static func incrementCommentCounterForPost(ID: Models.Post.Identifier, count: Int = 1) async throws {
-            try await self.updateCommentCounterForPost(ID: ID, count: count)
-        }
-
-        public static func decrementCommentCounterForPost(ID: Models.Post.Identifier, count: Int = -1) async throws {
-            try await self.updateCommentCounterForPost(ID: ID, count: count)
-        }
-
-        public static func getCommentCounterForPost(ID: Models.Post.Identifier) async throws -> Int {
-            try await App.current.fdb.withTransaction { (transaction: any FDBTransaction) in
-                guard let bytes = try await transaction.get(key: self.commentCounterSubspaceForPost(ID: ID), snapshot: true) else {
-                    return 0
-                }
-                return try bytes.cast()
-            }
-        }
-
-        public static func getCommentCountersForPosts(
-            IDs: [Models.Post.Identifier]
-        ) async throws -> [Models.Post.Identifier: Int] {
-            var result: [Models.Post.Identifier: Int] = [:]
-
-            for ID in IDs {
-                result[ID] = try await self.getCommentCounterForPost(ID: ID)
-            }
-
-            return result
+        public static func updateCommentCounterForPost(
+            ID: Models.Post.Identifier,
+            by count: Int,
+            within transaction: borrowing FDB.Transaction
+        ) {
+            transaction.atomic(.add, key: self.commentCounterKeyForPost(ID: ID), value: Int64(count))
         }
 
         public static func getCommentCountersForPosts(IDs obfuscatedIDs: [String]) async throws -> [String: Int] {
-            let counters = try await self.getCommentCountersForPosts(
-                IDs: obfuscatedIDs
-                    .map(self.decodeHash)
-                    .compactMap { $0 ?? 0 }
-            )
+            guard obfuscatedIDs.count <= self.maxCountersRequestSize else {
+                throw LGNC.ContractError.GeneralError("Too many posts", 400)
+            }
+            let IDs = Set(obfuscatedIDs.compactMap(self.decodeHash))
 
-            return Dictionary.init(uniqueKeysWithValues: counters.map { k, v in (self.encodeHash(ID: k), v) })
+            return try await App.current.fdb.withTransaction { transaction in
+                var result: [String: Int] = [:]
+                for ID in IDs {
+                    result[self.encodeHash(ID: ID)] = try await transaction
+                        .get(key: self.commentCounterKeyForPost(ID: ID), snapshot: true)
+                        .value
+                        .counterValue
+                }
+                return result
+            }
         }
 
         public static func getPostStatus(_ ID: Models.Post.Identifier) async -> Status {
             let url = "\(App.current.config[.WEBSITE_DOMAIN])/post/exists/\(ID)"
 
             do {
-                let (maybeData, _) = try await HTTPRequester.requestJSON(method: .GET, url: url)
+                let (data, _) = try await HTTPRequester.requestJSON(method: .GET, url: url)
 
-                guard maybeData?[json: "data", "result"] == true else {
+                guard data[json: "data", "result"] == true else {
                     return .NotFound
                 }
 
@@ -115,6 +90,13 @@ public extension Logic {
                 Logger.current.error("Could not execute remote service API at '\(url)': \(error)")
                 return .NotFound
             }
+        }
+
+        public static func getRawCommentsFor(
+            ID: Models.Post.Identifier,
+            within transaction: borrowing FDB.Transaction
+        ) async throws -> [Models.Comment] {
+            try await Models.Comment.loadAll(in: Models.Comment._getPostPrefix(ID), within: transaction, snapshot: true)
         }
 
         public static func getCommentsFor(
@@ -128,46 +110,27 @@ public extension Logic {
             return try await self.getCommentsFor(ID: ID, as: maybeUser)
         }
 
-        public static func getRawCommentsFor(
-            ID: Models.Post.Identifier,
-            within maybeTransaction: (any FDBTransaction)? = nil
-        ) async throws -> [(ID: Models.Comment.Identifier, value: Models.Comment)] {
-            try await Models.Comment.loadAll(
-                bySubspace: Models.Comment._getPostPrefix(ID),
-                within: try maybeTransaction ?? App.current.fdb.begin(),
-                snapshot: true
-            )
-        }
-
         public static func getCommentsFor(
             ID: Models.Post.Identifier,
             as maybeUser: Models.User? = nil
         ) async throws -> [CommentWithLikes] {
-            try await App.current.fdb.withTransaction { transaction in
-                let isAtLeastModerator = maybeUser != nil && maybeUser?.isAtLeastModerator == true
+            let isAtLeastModerator = maybeUser?.isAtLeastModerator == true
 
-                let commentsWithLikes = try await self
+            return try await App.current.fdb.withTransaction { transaction in
+                let likes = try await Models.Like.getLikesForCommentsIn(postID: ID, within: transaction)
+
+                return try await self
                     .getRawCommentsFor(ID: ID, within: transaction)
-                    .filter { ID, comment in
-                        // moderators can see all comments
-                        if isAtLeastModerator {
+                    .filter { comment in
+                        // moderators can see all comments, users can see their own comments
+                        if isAtLeastModerator || comment.IDUser == maybeUser?.ID {
                             return true
                         }
-                        // users can see their own comments
-                        if comment.IDUser == maybeUser?.ID {
-                            return true
-                        }
-                        // author should see own hidden comments as published
-                        if comment.status == .hidden && comment.IDUser == maybeUser?.ID {
-                            return true
-                        }
-                        // if comment isn't published or hidden, don't show it
-                        if comment.status => [.pending, .hidden, .banHidden] {
-                            return false
-                        }
-                        return true
+                        // if comment isn't published or deleted, don't show it
+                        return !(comment.status => [.pending, .hidden, .banHidden])
                     }
-                    .map { (ID: Models.Comment.Identifier, comment: Models.Comment) -> CommentWithLikes in
+                    .map { comment in
+                        var comment = comment
                         // author should see own hidden comments as published
                         if comment.status == .hidden && comment.IDUser == maybeUser?.ID && !isAtLeastModerator {
                             comment.status = .published
@@ -175,18 +138,8 @@ public extension Logic {
                         if comment.status == .deleted && !isAtLeastModerator {
                             comment.body = ""
                         }
-                        return CommentWithLikes(comment)
+                        return CommentWithLikes(comment: comment, likes: likes[comment.ID] ?? 0)
                     }
-
-                let likesInfo = try await Models.Like.getLikesForCommentsIn(postID: ID, within: transaction)
-
-                for comment in commentsWithLikes {
-                    if let likes = likesInfo[comment.comment.ID] {
-                        comment.incrementLikes(likes)
-                    }
-                }
-
-                return commentsWithLikes
             }
         }
     }

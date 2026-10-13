@@ -1,6 +1,7 @@
 import Foundation
 import LGNCore
 import LGNC
+import FDB
 import FDBEntity
 import Generated
 
@@ -11,12 +12,12 @@ extension Date {
 }
 
 public extension Models {
-    final class Comment: ModelInt, FDBIndexedEntity {
-        public enum IndexKey: String, AnyIndexKey {
+    struct Comment: ModelInt, FDB.IndexedEntity, Sendable {
+        public enum IndexKey: String, FDB.EntityIndexKey {
             case ID, user
         }
 
-        public enum Status: String, Codable {
+        public enum Status: String, Codable, Sendable {
             /// Freshly posted comment, awaits moderation
             case pending
 
@@ -34,13 +35,11 @@ public extension Models {
             case published
         }
 
-        public static let IDKey: KeyPath<Comment, Int> = \.ID
-        public static var fullEntityName = false
-        public static var storage = App.current.fdb
+        public static var IDKey: KeyPath<Comment, Int> { \.ID }
 
-        public static var indices: [IndexKey: FDB.Index<Models.Comment>] = [
-            .ID: FDB.Index(\.ID, unique: true),
-            .user: FDB.Index(\.IDUser, unique: false),
+        public static let indices: [IndexKey: FDB.EntityIndex<Models.Comment>] = [
+            .ID: FDB.EntityIndex(\.ID, unique: true),
+            .user: FDB.EntityIndex(\.IDUser, unique: false),
         ]
 
         public let ID: Int
@@ -53,7 +52,7 @@ public extension Models {
         public var dateUpdated: Date
 
         public var isEditable: Bool {
-            self.dateCreated.timeIntervalSince < App.COMMENT_EDITABLE_TIME_SECONDS
+            Date().timeIntervalSince(self.dateCreated) < App.COMMENT_EDITABLE_TIME_SECONDS
         }
 
         public var IDPostEncoded: String {
@@ -73,19 +72,17 @@ public extension Models {
             self.IDReplyComment = IDReplyComment
             self.status = .pending
             self.body = body
-            self.dateCreated = .now
+            self.dateCreated = Date()
             self.dateUpdated = .distantPast
         }
 
         public func getUser() async throws -> User {
-            guard let user = try await Logic.User.get(by: self.IDUser) else {
-                return User.unknown
-            }
-            return user
+            try await Logic.User.get(by: self.IDUser) ?? User.unknown
         }
 
-        public func getContractComment(loadLikes: Bool = true) async throws -> Services.Shared.Comment {
+        public func getContractComment(likes: Int? = nil) async throws -> Services.Shared.Comment {
             let user = try await self.getUser()
+            let likes = if let likes { likes } else { try await Like.getLikesFor(comment: self) }
 
             return Services.Shared.Comment(
                 ID: self.ID,
@@ -99,24 +96,24 @@ public extension Models {
                 isEditable: self.isEditable,
                 status: self.status.rawValue,
                 body: self.status == .deleted ? "" : self.body,
-                likes: loadLikes ? try await Like.getLikesFor(comment: self) : 0,
+                likes: likes,
                 dateCreated: self.dateCreated.contractFormatted(),
                 dateUpdated: self.dateUpdated.contractFormatted()
             )
         }
 
-        public static func getUsingRefID(
+        public static func get(
             by ID: Comment.Identifier,
-            within maybeTransaction: (any FDBTransaction)? = nil
+            within transaction: borrowing FDB.Transaction
         ) async throws -> Models.Comment? {
-            try await self.loadByIndex(key: .ID, value: ID, within: maybeTransaction)
+            try await self.loadByIndex(key: .ID, value: ID, within: transaction)
         }
 
-//        public func getIndexIndexSubspace() -> Subspace {
-//            return Comment.subspace[Comment.entityName][self.ID]["idx"]
-//        }
+        public static func get(by ID: Comment.Identifier) async throws -> Models.Comment? {
+            try await self.loadByIndex(key: .ID, value: ID)
+        }
 
-        // this is extracted because logic would like to use it as range
+        /// Comments are stored under their posts: `Post / <post ID> / Comment / <comment ID>`
         public static func _getPrefix() -> FDB.Subspace {
             self.subspace[Post.entityName]
         }
@@ -125,22 +122,18 @@ public extension Models {
             self._getPrefix()[ID][Comment.entityName]
         }
 
-        public func _getFullPrefix() -> FDB.Subspace {
-            Comment._getPostPrefix(self.IDPost)[self.ID]
-        }
-
         public func getIDAsKey() -> Bytes {
-            self._getFullPrefix().asFDBKey()
+            Comment._getPostPrefix(self.IDPost)[self.ID].prefix
         }
 
-        public func beforeSave(within transaction: any FDBTransaction) async throws {
-            self.dateUpdated = .now
+        /// Saves the comment, updating its modification date
+        public mutating func touchAndSave(within transaction: borrowing FDB.Transaction) async throws {
+            self.dateUpdated = Date()
+            try await self.save(within: transaction)
         }
 
-        final class History: ModelInt {
-            public static let IDKey: KeyPath<History, Int> = \.ID
-            public static var fullEntityName = false
-            public static var storage = App.current.fdb
+        struct History: ModelInt, Sendable {
+            public static var IDKey: KeyPath<History, Int> { \.ID }
 
             public let ID: History.Identifier
             public let IDComment: Models.Comment.Identifier
@@ -149,39 +142,25 @@ public extension Models {
             public let newBody: String
             public let date: Date
 
-            public init(
-                ID: History.Identifier,
-                IDComment: Models.Comment.Identifier,
-                IDUser: Models.User.Identifier,
-                oldBody: String,
-                newBody: String
-            ) {
-                self.ID = ID
-                self.IDComment = IDComment
-                self.IDUser = IDUser
-                self.oldBody = oldBody
-                self.newBody = newBody
-                self.date = .now
-            }
-
             public static func log(
                 comment: Models.Comment,
                 newBody: String,
                 oldBody: String,
                 by user: Models.User,
-                within transaction: any FDBTransaction
+                within transaction: borrowing FDB.Transaction
             ) async throws {
                 try await History(
-                    ID: try await History.getNextID(commit: false, within: transaction),
+                    ID: try await History.getNextID(within: transaction),
                     IDComment: comment.ID,
                     IDUser: user.ID,
                     oldBody: oldBody,
-                    newBody: newBody
-                ).save(within: transaction, commit: false)
+                    newBody: newBody,
+                    date: Date()
+                ).save(within: transaction)
             }
 
             public func getIDAsKey() -> Bytes {
-                History.subspacePrefix[self.IDComment, self.ID].asFDBKey()
+                History.subspacePrefix[self.IDComment, self.ID].prefix
             }
         }
     }

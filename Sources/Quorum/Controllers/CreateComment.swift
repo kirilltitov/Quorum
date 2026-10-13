@@ -32,15 +32,13 @@ public struct CreateController {
                 throw LGNC.ContractError.GeneralError("Invalid post ID", 400)
             }
 
-            let comment = Models.Comment(
-                ID: try await Models.Comment.getNextID(),
-                IDUser: user.ID,
+            let comment = try await Logic.Comment.create(
                 IDPost: IDPost,
                 IDReplyComment: request.IDReplyComment,
-                body: Logic.Comment.getProcessedBody(from: request.body)
+                body: request.body,
+                as: user
             )
-            try await Logic.Comment.insert(comment: comment, as: user)
-            return try await comment.getContractComment()
+            return try await comment.getContractComment(likes: 0)
         }
     }
 }

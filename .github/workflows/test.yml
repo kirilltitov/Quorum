@@ -1,0 +1,40 @@
+name: Test
+
+on:
+  push:
+    branches: [master, async-await]
+  pull_request:
+
+env:
+  FDB_VERSION: 7.4.8
+
+jobs:
+  # Same setup as in production: FoundationDB 6.3 cluster via the multi-version client (libfdb_c 7.4 with the 6.3
+  # library as an external client), API version 630
+  test:
+    runs-on: ubuntu-latest
+    container: swift:6.4-noble
+    env:
+      FDB_API_VERSION: 630
+      FDB_NETWORK_OPTION_EXTERNAL_CLIENT_DIRECTORY: /tmp/fdb63/ext
+      FDB_CLUSTER_FILE: /tmp/fdb63/fdb.cluster
+      APP_ENV: local
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install FoundationDB 7.4 client and a 6.3 cluster
+        run: |
+          apt-get update -qq
+          apt-get install -y -qq curl
+          curl -sSfLO https://github.com/apple/foundationdb/releases/download/${FDB_VERSION}/foundationdb-clients_${FDB_VERSION}-1_amd64.deb
+          dpkg -i foundationdb-clients_${FDB_VERSION}-1_amd64.deb
+          printf 'prefix=/usr\nincludedir=${prefix}/include\nlibdir=${prefix}/lib\n\nName: fdb\nDescription: FoundationDB\nVersion: %s\nCflags: -I${includedir}\nLibs: -L${libdir} -lfdb_c\n' "${FDB_VERSION}" > /usr/lib/pkgconfig/libfdb.pc
+          curl -sSfL https://raw.githubusercontent.com/kirilltitov/FDBSwift/master/scripts/start_fdb63.sh | bash -s /tmp/fdb63
+      - name: Test
+        run: swift test
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build image
+        run: docker build -t quorum .

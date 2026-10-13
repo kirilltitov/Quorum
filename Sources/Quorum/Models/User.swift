@@ -1,14 +1,13 @@
 import Foundation
 import LGNCore
+import FDB
 import FDBEntity
 
 public extension Models {
-    final class User: Model, FDBIndexedEntity, @unchecked Sendable {
-        public static var storage: any FDBConnector { App.current.fdb }
-
+    struct User: Model, FDB.IndexedEntity, Sendable {
         public typealias Identifier = FDB.UUID
 
-        public enum IndexKey: String, AnyIndexKey {
+        public enum IndexKey: String, FDB.EntityIndexKey {
             case username
 
             /// This case is lcfirst (`Like`) and not `like` because of backward compatibility,
@@ -16,15 +15,14 @@ public extension Models {
             case Like
         }
 
-        public enum AccessLevel: String, Codable {
+        public enum AccessLevel: String, Codable, Sendable {
             case User
             case PowerUser
             case Moderator
             case Admin
         }
 
-        public static var IDKey: KeyPath<Models.User, FDB.UUID> = \.ID
-        //public static var storage: any E2FDBStorage = App.current.fdb
+        public static var IDKey: KeyPath<Models.User, FDB.UUID> { \.ID }
 
         public static let unknown = User(
             ID: FDB.UUID("00000000-0000-0000-0000-000000000000")!,
@@ -32,8 +30,8 @@ public extension Models {
             accessLevel: .User
         )
 
-        public static var indices: [IndexKey: FDB.Index<Models.User>] = [
-            .username: FDB.Index(\.username, unique: true),
+        public static let indices: [IndexKey: FDB.EntityIndex<Models.User>] = [
+            .username: FDB.EntityIndex(\.username, unique: true),
         ]
 
         public let ID: FDB.UUID
@@ -70,12 +68,6 @@ public extension Models {
             self.mutedUntil = nil
             self.color = "default"
             self.dateLastComment = .distantPast
-        }
-
-        public func set(accessLevel: AccessLevel) async throws {
-            self.accessLevel = accessLevel
-
-            try await self.save()
         }
     }
 }

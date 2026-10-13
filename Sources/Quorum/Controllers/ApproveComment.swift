@@ -15,9 +15,7 @@ public struct ApproveCommentController {
                 throw LGNCore.Context.current.errorNotAuthenticated
             }
 
-            let comment = try await Logic.Comment.getThrowing(by: request.IDComment)
-            try await Logic.Comment.approve(comment: comment)
-            return try await comment.getContractComment()
+            return try await Logic.Comment.approve(ID: request.IDComment).getContractComment()
         }
 
         Contract.guarantee(contractRoutine)

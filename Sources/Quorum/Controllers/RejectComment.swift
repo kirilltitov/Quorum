@@ -15,7 +15,7 @@ public struct RejectCommentController {
                 throw LGNCore.Context.current.errorNotAuthenticated
             }
 
-            try await Logic.Comment.reject(comment: try await Logic.Comment.getThrowing(by: request.IDComment))
+            try await Logic.Comment.reject(ID: request.IDComment)
 
             return Contract.Response()
         }

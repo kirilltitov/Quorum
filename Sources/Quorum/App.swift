@@ -7,9 +7,12 @@ import LGNC
 import LGNP
 import LGNS
 import Entita
+import FDB
 import FDBEntity
 import AsyncHTTPClient
-import Lifecycle
+import ServiceLifecycle
+import NIOCore
+import NIOPosix
 
 public typealias SQuorum = Services.Quorum
 public typealias SAuthor = Services.Author
@@ -23,7 +26,7 @@ public struct Models {}
 public struct Logic {}
 
 public struct App {
-    public static var current: Self!
+    nonisolated(unsafe) public static var current: Self!
 
     public static let SERVICE_ID = "Quorum"
     public static let POST_KEY = "Post"
@@ -43,7 +46,7 @@ public struct App {
     public let client: LGNCClient
     public let config: Config<ConfigKeys>
 
-    public let fdb: any FDBConnector
+    public let fdb: FDB.Database
     public let subspaceMain: FDB.Subspace
     public let subspaceCounter: FDB.Subspace
 
@@ -59,7 +62,7 @@ public struct App {
         eventLoop: EventLoopGroup,
         client: LGNCClient,
         config: Config<ConfigKeys>,
-        fdb: any FDBConnector
+        fdb: FDB.Database
     ) {
         self.env = env
         self.eventLoop = eventLoop
@@ -85,8 +88,8 @@ public extension LGNCore.Address {
 
 @main
 struct Main {
-    static public func main() async throws {
-        let VERSION = "1.4.0-swift-5.7"
+    static func main() async throws {
+        let VERSION = "1.5.0"
         let env = AppEnv.detect()
 
         let config = try Config<ConfigKeys>(
@@ -94,8 +97,8 @@ struct Main {
             isLocal: env == .local,
             localConfig: [
                 .SALT: "da kak tak",
-                .KEY: "viybynojeuhamyycecsynloh", // "3858f62230ac3c91",
-                .REALM: "suncity", // "Inner-Mongolia",
+                .KEY: "viybynojeuhamyycecsynloh",
+                .REALM: "suncity",
                 .WEBSITE_DOMAIN: "https://kirilltitov.com",
                 .AUTHOR_LGNS_PORT: "1711",
                 .LOG_LEVEL: "trace",
@@ -108,7 +111,7 @@ struct Main {
             ]
         )
 
-        LoggingSystem.bootstrap(LGNLogger.init)
+        LoggingSystem.bootstrap { LGNLogger(label: $0) }
         LGNLogger.logLevel = .trace
         LGNLogger.hideLabel = true
         LGNLogger.hideTimezone = true
@@ -118,7 +121,7 @@ struct Main {
 
         guard let logLevel = Logger.Level(rawValue: config[.LOG_LEVEL]) else {
             defaultLogger.critical("Invalid LOG_LEVEL value: \(config[.LOG_LEVEL])")
-            fatalError()
+            exit(1)
         }
 
         LGNLogger.logLevel = logLevel
@@ -131,46 +134,39 @@ struct Main {
             allowedLocales: [.enUS, .ruRU]
         )
 
-        let lifecycle = ServiceLifecycle()
-        defaultLogger.info("Lifecycle installed")
-
         let eventLoopCount = System.coreCount.clamped(min: 4)
-        let eventLoopGroup: EventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: eventLoopCount)
+        let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: eventLoopCount)
         defaultLogger.info("EventLoopGroup of \(eventLoopCount) event loops started")
-
-        lifecycle.registerShutdown(label: "eventLoopGroup", .sync(eventLoopGroup.syncShutdownGracefully))
 
         let cryptor = try LGNP.Cryptor(key: config[.KEY])
 
+        // Production cluster runs FoundationDB 6.3: its client library is loaded by the multi-version client
+        // (FDB_NETWORK_OPTION_EXTERNAL_CLIENT_DIRECTORY), which works only with the API version of the cluster
+        let environment = ProcessInfo.processInfo.environment
+        let apiVersion = environment["FDB_API_VERSION"].flatMap(Int32.init) ?? 630
+        try FDB.Network.selectAPIVersion(apiVersion)
+
         let clusterFile: String
         #if os(macOS)
-        clusterFile = "/usr/local/etc/foundationdb/fdb.cluster"
-        //clusterFile = "/Users/kirilltitov/Downloads/fdb.cluster"
+        clusterFile = environment["FDB_CLUSTER_FILE"] ?? "/usr/local/etc/foundationdb/fdb.cluster"
         #else
-        clusterFile = "/opt/foundationdb/fdb.cluster"
+        clusterFile = environment["FDB_CLUSTER_FILE"] ?? "/opt/foundationdb/fdb.cluster"
         #endif
 
-        LGNLogger.logLevel = .debug
-        let fdb = FDB.Connector(clusterFile: clusterFile)
-        defaultLogger.info("FDB created")
-        LGNLogger.logLevel = logLevel
+        let fdb = try FDB.Database(clusterFile: clusterFile, logger: Logger(label: "Quorum.FDB"))
+        defaultLogger.info("FDB opened (cluster file \(clusterFile), API version \(apiVersion))")
 
-        try fdb.connect()
-        defaultLogger.info("FDB connected")
-
-        lifecycle.registerShutdown(
-            label: "FDB",
-            .sync(fdb.disconnect)
-        )
-        defaultLogger.info("FDB shutdown registered")
-
-        let requiredBitmask: LGNP.Message.ControlBitmask = [.signatureSHA512, /*.encrypted,*/ .contentTypeMsgPack]
-        let client: LGNCClient
+        let requiredBitmask: LGNP.Message.ControlBitmask = [.signatureSHA512, .contentTypeMsgPack]
+        let client: any LGNCClient
+        let clientDynamic: LGNC.Client.Dynamic?
         if env == .local {
             client = LGNC.Client.Loopback(eventLoopGroup: eventLoopGroup)
+            clientDynamic = nil
+            // The loopback client runs Author contracts locally, within the context of the caller
+            LGNC.ALLOW_ALL_TRANSPORTS = true
             guaranteeLocalAuthorContracts()
         } else {
-            client = LGNC.Client.Dynamic(
+            let dynamic = LGNC.Client.Dynamic(
                 eventLoopGroup: eventLoopGroup,
                 clientLGNS: LGNS.Client(
                     cryptor: cryptor,
@@ -179,6 +175,8 @@ struct Main {
                 ),
                 clientHTTP: HTTPClient(eventLoopGroupProvider: .shared(eventLoopGroup))
             )
+            client = dynamic
+            clientDynamic = dynamic
         }
         defaultLogger.info("Client created")
 
@@ -190,9 +188,9 @@ struct Main {
             fdb: fdb
         )
 
-        //todo uncomment after https://github.com/apple/swift/issues/60960
-        //await runMigrations(getMigrations(), on: fdb)
-        //defaultLogger.info("Migrations run")
+        // Fail fast if the cluster is not reachable
+        _ = try await fdb.withTransaction { tr in try await tr.getReadVersion().value }
+        defaultLogger.info("FDB connected")
 
         CreateController.setup()
         CommentsController.setup()
@@ -215,12 +213,7 @@ struct Main {
         let serverHTTP = try SQuorum.getServerHTTP(
             at: .ip(host: App.current.HOST, port: App.current.HTTP_PORT),
             eventLoopGroup: eventLoopGroup,
-            webSocketRouter: AuthWebSockeetRouter.self
-        )
-        lifecycle.register(
-            label: "HTTP Server",
-            start: .async(serverHTTP.bind),
-            shutdown: .async(serverHTTP.shutdown)
+            webSocketRouter: LGNC.WebSocket.SimpleRouter.self
         )
 
         let serverLGNS = try SQuorum.getServerLGNS(
@@ -229,24 +222,26 @@ struct Main {
             eventLoopGroup: eventLoopGroup,
             requiredBitmask: requiredBitmask
         )
-        lifecycle.register(
-            label: "LGNS Server",
-            start: .async(serverLGNS.bind),
-            shutdown: .async(serverLGNS.shutdown)
-        )
 
         if config[.REGISTER_TO_CONSUL].bool == true {
             try await registerToConsul()
         }
 
-        lifecycle.start { maybeError in
-            if let error = maybeError {
-                defaultLogger.critical("Could not start Quorum: \(error)")
-            } else {
-                defaultLogger.info("Quorum is up!")
-            }
+        let serviceGroup = ServiceGroup(
+            services: [serverHTTP, serverLGNS],
+            gracefulShutdownSignals: [.sigterm, .sigint],
+            logger: defaultLogger
+        )
+        defaultLogger.info("Quorum is up!")
+        do {
+            try await serviceGroup.run()
+        } catch {
+            defaultLogger.critical("Quorum failed: \(error)")
         }
-        lifecycle.wait()
+
+        try? await clientDynamic?.disconnect()
+        try? await eventLoopGroup.shutdownGracefully()
+        try? FDB.Network.stop()
 
         defaultLogger.info("Bye")
     }

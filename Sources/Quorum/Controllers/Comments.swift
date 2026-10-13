@@ -11,8 +11,6 @@ fileprivate typealias Contract = Services.Quorum.Contracts.Comments
 extension Contract.Request: AnyEntityWithMaybeSession {}
 
 public struct CommentsController {
-    typealias CommentsWithLikesAndUsers = ([Logic.Post.CommentWithLikes], [Models.User.Identifier: Models.User])
-
     public static func setup() {
         Contract.guarantee { (request: Contract.Request) async throws -> Contract.Response in
             let logger = Logger.current
@@ -26,7 +24,8 @@ public struct CommentsController {
             logger.info("Loaded \(commentsWithLikes.count) comments, about to populate them with users info")
 
             var users: [Models.User.Identifier: Models.User] = [:]
-            for ID in Set(commentsWithLikes.map({ $0.comment.IDUser })) {
+            for commentWithLikes in commentsWithLikes where users[commentWithLikes.comment.IDUser] == nil {
+                let ID = commentWithLikes.comment.IDUser
                 users[ID] = try await Logic.User.get(by: ID) ?? Models.User.unknown
             }
 

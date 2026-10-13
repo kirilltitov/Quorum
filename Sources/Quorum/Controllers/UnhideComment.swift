@@ -24,12 +24,7 @@ public struct UnhideController {
                 throw LGNC.ContractError.GeneralError("You have no authority to hide this comment", 403)
             }
 
-            let comment = try await Logic.Comment.getThrowing(by: request.IDComment)
-            guard comment.status == .hidden else {
-                throw LGNC.ContractError.GeneralError("Comment is not in hideable status", 400)
-            }
-
-            try await Logic.Comment.unhide(comment: comment)
+            try await Logic.Comment.unhide(ID: request.IDComment)
 
             return Contract.Response()
         }
