@@ -20,16 +20,7 @@ public struct DeleteController {
 
         Contract.guarantee { (request: Contract.Request) -> Contract.Response in
             let user = try await Logic.User.authenticate(request: request)
-            let comment = try await Logic.Comment.getThrowing(by: request.IDComment)
-
-            guard comment.IDUser == user.ID || user.isAtLeastModerator else {
-                throw LGNC.ContractError.GeneralError("You have no authority to delete this comment", 403)
-            }
-            guard comment.status == .published else {
-                throw LGNC.ContractError.GeneralError("Comment is not in deleteable status", 400)
-            }
-
-            try await Logic.Comment.delete(comment: comment)
+            try await Logic.Comment.delete(ID: request.IDComment, by: user)
 
             return App.empty
         }

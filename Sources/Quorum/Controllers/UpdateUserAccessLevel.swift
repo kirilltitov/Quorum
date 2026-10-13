@@ -8,7 +8,7 @@ fileprivate typealias Contract = Services.Quorum.Contracts.UpdateUserAccessLevel
 
 extension Contract.Request: AnyEntityWithSession {}
 
-/// Sets user accessLevel in Quorum and in Author
+/// Sets user accessLevel in Quorum
 public struct UpdateUserAccessLevelController {
     public static func setup() {
         Contract.guarantee { (request: Contract.Request) -> Contract.Response in
@@ -20,15 +20,14 @@ public struct UpdateUserAccessLevelController {
                 throw LGNC.ContractError.GeneralError("Can't change own access level", 405)
             }
 
-            let maybeUser = try await Logic.User.get(by: request.IDUser)
-            guard let user = maybeUser else {
-                throw LGNC.ContractError.GeneralError("User '\(request.IDUser)' not found", 404)
+            guard let ID = Models.User.Identifier(request.IDUser) else {
+                throw LGNC.ContractError.GeneralError("Invalid ID", 400)
             }
             guard let accessLevel = Models.User.AccessLevel(rawValue: request.accessLevel) else {
                 throw LGNC.ContractError.GeneralError("Invalid access level '\(request.accessLevel)'", 400)
             }
 
-            try await user.set(accessLevel: accessLevel)
+            try await Logic.User.set(accessLevel: accessLevel, for: ID)
 
             return App.empty
         }

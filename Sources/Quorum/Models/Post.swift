@@ -1,3 +1,4 @@
+import FDB
 import FDBEntity
 
 public extension Models {

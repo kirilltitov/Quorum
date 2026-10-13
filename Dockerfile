@@ -1,16 +1,39 @@
-FROM kirilltitov/elegion:latest
-COPY ./ /opt/service
+# Client library of the FoundationDB API (7.4) and the client library of the production cluster (6.3),
+# loaded by the multi-version client as an external one
+ARG FDB_VERSION=7.4.8
+ARG FDB_CLUSTER_VERSION=6.3.23
+ARG SWIFT_IMAGE=swift:6.4-noble
+
+FROM ${SWIFT_IMAGE} AS fdb
+ARG FDB_VERSION
+ARG FDB_CLUSTER_VERSION
+RUN apt-get update -qq && apt-get install -y -qq curl \
+    && curl -sSfLO https://github.com/apple/foundationdb/releases/download/${FDB_VERSION}/foundationdb-clients_${FDB_VERSION}-1_amd64.deb \
+    && curl -sSfLO https://github.com/apple/foundationdb/releases/download/${FDB_CLUSTER_VERSION}/foundationdb-clients_${FDB_CLUSTER_VERSION}-1_amd64.deb \
+    && mkdir -p /fdb/external \
+    && dpkg-deb -x foundationdb-clients_${FDB_CLUSTER_VERSION}-1_amd64.deb /tmp/fdb-cluster \
+    && cp /tmp/fdb-cluster/usr/lib/libfdb_c.so /fdb/external/libfdb_c_${FDB_CLUSTER_VERSION}.so \
+    && dpkg-deb -x foundationdb-clients_${FDB_VERSION}-1_amd64.deb /fdb/client \
+    && printf 'prefix=/usr\nincludedir=${prefix}/include\nlibdir=${prefix}/lib\n\nName: fdb\nDescription: FoundationDB\nVersion: %s\nCflags: -I${includedir}\nLibs: -L${libdir} -lfdb_c\n' "${FDB_VERSION}" > /fdb/libfdb.pc
+
+FROM ${SWIFT_IMAGE} AS build
+COPY --from=fdb /fdb/client/usr/include/foundationdb /usr/include/foundationdb
+COPY --from=fdb /fdb/client/usr/lib/libfdb_c.so /usr/lib/libfdb_c.so
+COPY --from=fdb /fdb/libfdb.pc /usr/lib/pkgconfig/libfdb.pc
 WORKDIR /opt/service
-RUN export QEMU_CPU=max && swift build -c release -Xswiftc -cross-module-optimization
-# RUN swift package resolve --verbose
-# RUN swift build -c release
+COPY Package.swift Package.resolved* ./
+RUN swift package resolve
+COPY Sources ./Sources
+COPY Tests ./Tests
+RUN swift build -c release --product Quorum --static-swift-stdlib
 
-FROM kirilltitov/elegion:latest
+FROM ubuntu:24.04
+RUN apt-get update -qq && apt-get install -y -qq --no-install-recommends ca-certificates libcurl4 libxml2 tzdata \
+    && rm -rf /var/lib/apt/lists/*
+COPY --from=fdb /fdb/client/usr/lib/libfdb_c.so /usr/lib/libfdb_c.so
+COPY --from=fdb /fdb/external /usr/lib/fdb-external
+ENV FDB_NETWORK_OPTION_EXTERNAL_CLIENT_DIRECTORY=/usr/lib/fdb-external \
+    FDB_API_VERSION=630
 WORKDIR /root/
-COPY --from=0 /opt/service/.build/release/Quorum .
+COPY --from=build /opt/service/.build/release/Quorum .
 CMD ["./Quorum"]
-
-# FROM kirilltitov/elegion:latest-async-build
-# WORKDIR /root/
-# COPY ./Quorum .
-# CMD ["./Quorum"]

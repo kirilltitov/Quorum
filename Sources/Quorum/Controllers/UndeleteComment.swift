@@ -15,14 +15,7 @@ class UndeleteController {
                 throw LGNCore.Context.current.errorNotAuthenticated
             }
 
-            let comment = try await Logic.Comment.getThrowing(by: request.IDComment)
-            guard comment.status == .deleted else {
-                throw LGNC.ContractError.GeneralError("Cannot undelete comment from non-deleted status", 401)
-            }
-
-            try await Logic.Comment.undelete(comment: comment)
-
-            return try await comment.getContractComment()
+            return try await Logic.Comment.undelete(ID: request.IDComment).getContractComment()
         }
 
         Contract.guarantee(contractRoutine)

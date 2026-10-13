@@ -3,13 +3,14 @@ import Entita
 import LGNS
 import LGNC
 import LGNP
-import AsyncHTTPClient
 
 public enum Services {
     public enum Shared {}
 
     public static let list: [String: Service.Type] = [
         "Author": Author.self,
+        "Chat": Chat.self,
+        "Monad": Monad.self,
         "Quorum": Quorum.self,
     ]
 }

@@ -21,16 +21,11 @@ public struct HideController {
 
         Contract.guarantee { (request: Contract.Request) async throws -> Contract.Response in
             let user = try await Logic.User.authenticate(request: request)
-            let comment = try await Logic.Comment.getThrowing(by: request.IDComment)
-
             guard user.isAtLeastModerator else {
                 throw LGNC.ContractError.GeneralError("You have no authority to hide this comment", 403)
             }
-            guard comment.status == .published else {
-                throw LGNC.ContractError.GeneralError("Comment is not in hideable status", 400)
-            }
 
-            try await Logic.Comment.hide(comment: comment)
+            try await Logic.Comment.hide(ID: request.IDComment)
 
             return Contract.Response()
         }
