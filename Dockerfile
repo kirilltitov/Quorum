@@ -3,6 +3,7 @@
 ARG FDB_VERSION=7.4.8
 ARG FDB_CLUSTER_VERSION=6.3.23
 ARG SWIFT_IMAGE=swift:6.4-noble
+ARG SWIFT_RUNTIME_IMAGE=swift:6.4-noble-slim
 
 FROM ${SWIFT_IMAGE} AS fdb
 ARG FDB_VERSION
@@ -25,11 +26,9 @@ COPY Package.swift Package.resolved* ./
 RUN swift package resolve
 COPY Sources ./Sources
 COPY Tests ./Tests
-RUN swift build -c release --product Quorum --static-swift-stdlib
+RUN swift build -c release --product Quorum
 
-FROM ubuntu:24.04
-RUN apt-get update -qq && apt-get install -y -qq --no-install-recommends ca-certificates libcurl4 libxml2 tzdata \
-    && rm -rf /var/lib/apt/lists/*
+FROM ${SWIFT_RUNTIME_IMAGE}
 COPY --from=fdb /fdb/client/usr/lib/libfdb_c.so /usr/lib/libfdb_c.so
 COPY --from=fdb /fdb/external /usr/lib/fdb-external
 ENV FDB_NETWORK_OPTION_EXTERNAL_CLIENT_DIRECTORY=/usr/lib/fdb-external \
