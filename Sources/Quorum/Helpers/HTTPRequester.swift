@@ -1,86 +1,37 @@
 import Foundation
-import LGNCore
-import NIO
+import AsyncHTTPClient
+import NIOCore
+import NIOHTTP1
 
-#if canImport(FoundationNetworking)
-import FoundationNetworking
-#endif
-
-public class HTTPRequester {
+public enum HTTPRequester {
     public enum Method: String {
         case GET, POST, PUT
     }
 
-    public enum ContentType: String {
-        case JSON = "application/json"
-        case URLEncoded = "application/x-www-form-urlencoded"
+    /// Maximum size of a response body
+    static let maxResponseSize = 1024 * 1024
 
-        public func encode(params: Any) -> Data? {
-            switch self {
-            case .URLEncoded:
-                guard let params = params as? [String: String] else {
-                    return nil
-                }
-                return params
-                    .map { key, value in "\(key)=\(value)" }
-                    .joined(separator: "&")
-                    .data(using: .utf8)
-            case .JSON:
-                return try? JSONSerialization.data(withJSONObject: params)
-            }
-        }
-    }
-
-    public enum E: Error {
-        case InvalidURL
-    }
-
+    /// Performs a JSON request, returns response body and status code
     public static func requestJSON(
         method: Method = .POST,
         url: String,
         params: Any? = nil,
         headers: [String: String] = [:],
-        on eventLoop: EventLoop
-    ) -> EventLoopFuture<(Data?, URLResponse?, Error?)> {
-        return self.request(
-            method: method,
-            contentType: .JSON,
-            url: url,
-            params: params,
-            headers: headers,
-            on: eventLoop
-        )
-    }
-
-    public static func request(
-        method: Method,
-        contentType: ContentType,
-        url urlString: String,
-        params: Any? = nil,
-        headers: [String: String] = [:],
-        on eventLoop: EventLoop
-    ) -> EventLoopFuture<(Data?, URLResponse?, Error?)> {
-        let promise: EventLoopPromise<(Data?, URLResponse?, Error?)> = eventLoop.makePromise()
-
-        guard let url = URL(string: urlString) else {
-            promise.fail(E.InvalidURL)
-            return promise.futureResult
+        timeout: TimeAmount = .seconds(10)
+    ) async throws -> (Data, Int) {
+        var request = HTTPClientRequest(url: url)
+        request.method = HTTPMethod(rawValue: method.rawValue)
+        request.headers.add(name: "Content-Type", value: "application/json")
+        for (key, value) in headers {
+            request.headers.add(name: key, value: value)
+        }
+        if let params {
+            request.body = .bytes(ByteBuffer(bytes: try JSONSerialization.data(withJSONObject: params)))
         }
 
-        var request = URLRequest(url: url)
-        request.setValue(contentType.rawValue, forHTTPHeaderField: "Content-Type")
-        request.httpMethod = method.rawValue
+        let response = try await HTTPClient.shared.execute(request, timeout: timeout)
+        let body = try await response.body.collect(upTo: self.maxResponseSize)
 
-        if let params = params {
-            request.httpBody = contentType.encode(params: params)
-        }
-
-        headers.forEach { key, value in request.addValue(value, forHTTPHeaderField: key)}
-
-        URLSession.shared
-            .dataTask(with: request) { promise.succeed(($0, $1, $2)) }
-            .resume()
-
-        return promise.futureResult
+        return (Data(body.readableBytesView), Int(response.status.code))
     }
 }

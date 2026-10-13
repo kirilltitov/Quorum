@@ -1,12 +1,15 @@
 import Foundation
 import LGNCore
+import _Concurrency
 
 public extension String {
-    @inlinable var bool: Bool {
-        return self == "yes" || self == "true" || self == "1" || self == "YES" || self == "TRUE"
+    @inlinable
+    var bool: Bool {
+        self == "yes" || self == "true" || self == "1" || self == "YES" || self == "TRUE"
     }
 
-    @inlinable func tr(_ locale: LGNCore.i18n.Locale, _ interpolations: [String: Any] = [:]) -> String {
-        return LGNCore.i18n.tr(self, locale, interpolations)
+    @inlinable
+    func tr(_ interpolations: [String: Any] = [:]) -> String {
+        LGNCore.i18n.tr(self, LGNCore.Context.current.locale, interpolations)
     }
 }

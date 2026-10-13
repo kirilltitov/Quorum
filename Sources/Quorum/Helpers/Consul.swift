@@ -1,60 +1,43 @@
 import Foundation
 import LGNCore
+import LGNLog
+import LGNConfig
 
-#if canImport(FoundationNetworking)
-import FoundationNetworking
-#endif
 
-func registerToConsul() throws {
+func registerToConsul() async throws {
     do {
         let tags: [String] = ["main"]
-        let fullServiceName = "\(SERVICE_ID)-\(PORTAL_ID.lowercased())"
+        let fullServiceName = "\(App.SERVICE_ID)-\(App.current.PORTAL_ID.lowercased())"
         let params: [String: Any] = [
             "ID": "main-\(fullServiceName)",
             "Name": fullServiceName,
-            "Address": "\(config[.PRIVATE_IP])",
-            "Port": LGNS_PORT,
+            "Address": "\(App.current.config[.PRIVATE_IP])",
+            "Port": App.current.LGNS_PORT,
             "Tags": tags,
             "Checks": [
                 [
                     "Name": "LGNS",
                     "Interval": 5,
-                    "TCP": "\(config[.PRIVATE_IP]):\(config[.LGNS_PORT])"
+                    "TCP": "\(App.current.config[.PRIVATE_IP]):\(App.current.config[.LGNS_PORT])"
                 ],
             ],
         ]
-        defaultLogger.info(
+        Logger.current.info(
             "Registering in consul with payload '\(try! JSONSerialization.data(withJSONObject: params)._string)'"
         )
-        let (maybeData, maybeResponse, maybeError) = try HTTPRequester.requestJSON(
+        let (data, statusCode) = try await HTTPRequester.requestJSON(
             method: .PUT,
             url: "http://consul:8500/v1/agent/service/register",
-            params: params,
-            on: eventLoopGroup.eventLoop
-        ).wait()
+            params: params
+        )
 
-        if let error = maybeError {
-            throw error
+        guard statusCode == 200 else {
+            throw E.Consul("Non-200 status code: \(statusCode), response: '\(data._string)'")
         }
 
-        guard let response = maybeResponse as? HTTPURLResponse else {
-            throw E.Consul("No response")
-        }
-
-        guard
-            let data = maybeData,
-            let json = String(data: data, encoding: .ascii)
-        else {
-            throw E.Consul("No JSON")
-        }
-
-        guard response.statusCode == 200 else {
-            throw E.Consul("Non-200 status code: \(response.statusCode), JSON: '\(json)'")
-        }
-
-        defaultLogger.info("Successfully registered in Consul")
+        Logger.current.info("Successfully registered in Consul")
     } catch {
-        defaultLogger.critical("Could not register to consul: \(error)")
+        Logger.current.critical("Could not register to consul: \(error)")
         fatalError()
     }
 }

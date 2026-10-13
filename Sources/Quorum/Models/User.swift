@@ -1,13 +1,13 @@
 import Foundation
 import LGNCore
-import Entita2FDB
+import FDB
+import FDBEntity
 
 public extension Models {
-    final class User: Model, Entita2FDBIndexedEntity {
-        public typealias Identifier = E2.UUID
-        public typealias Storage = FDB
+    struct User: Model, FDB.IndexedEntity, Sendable {
+        public typealias Identifier = FDB.UUID
 
-        public enum IndexKey: String, AnyIndexKey {
+        public enum IndexKey: String, FDB.EntityIndexKey {
             case username
 
             /// This case is lcfirst (`Like`) and not `like` because of backward compatibility,
@@ -15,26 +15,26 @@ public extension Models {
             case Like
         }
 
-        public enum AccessLevel: String, Codable {
+        public enum AccessLevel: String, Codable, Sendable {
             case User
             case PowerUser
             case Moderator
             case Admin
         }
 
-        public static var IDKey: KeyPath<Models.User, E2.UUID> = \.ID
+        public static var IDKey: KeyPath<Models.User, FDB.UUID> { \.ID }
 
         public static let unknown = User(
-            ID: E2.UUID("00000000-0000-0000-0000-000000000000")!,
+            ID: FDB.UUID("00000000-0000-0000-0000-000000000000")!,
             username: "Frank Strino",
             accessLevel: .User
         )
 
-        public static var indices: [IndexKey: Entita2.Index<Models.User>] = [
-            .username: E2.Index(\.username, unique: true),
+        public static let indices: [IndexKey: FDB.EntityIndex<Models.User>] = [
+            .username: FDB.EntityIndex(\.username, unique: true),
         ]
 
-        public let ID: E2.UUID
+        public let ID: FDB.UUID
 
         // synchronizable from Author
         public var username: String
@@ -45,19 +45,19 @@ public extension Models {
         public var color: String
 
         public var isAtLeastModerator: Bool {
-            return self.accessLevel == .Moderator || self.accessLevel == .Admin
+            self.accessLevel == .Moderator || self.accessLevel == .Admin
         }
 
         public var isOrdinaryUser: Bool {
-            return self.accessLevel == .User
+            self.accessLevel == .User
         }
 
         public var shouldSkipPremoderation: Bool {
-            return self.isAtLeastModerator || self.accessLevel == .PowerUser
+            self.isAtLeastModerator || self.accessLevel == .PowerUser
         }
 
         public init(
-            ID: E2.UUID,
+            ID: FDB.UUID,
             username: String,
             accessLevel: AccessLevel
         ) {
@@ -68,12 +68,6 @@ public extension Models {
             self.mutedUntil = nil
             self.color = "default"
             self.dateLastComment = .distantPast
-        }
-
-        public func set(accessLevel: AccessLevel, storage: User.Storage, on eventLoop: EventLoop) -> EventLoopFuture<Void> {
-            self.accessLevel = accessLevel
-
-            return self.save(storage: storage, on: eventLoop)
         }
     }
 }

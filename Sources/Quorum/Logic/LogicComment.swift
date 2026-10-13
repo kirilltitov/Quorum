@@ -1,257 +1,241 @@
 import Foundation
 import Generated
 import LGNCore
+import LGNLog
 import LGNC
-import Entita2
 import FDB
-import NIO
+import FDBEntity
 
 public extension Logic {
     enum Comment {
-        fileprivate static let defaultFormatter: DateFormatter = {
-            let formatter = DateFormatter()
-
-//            formatter.dateStyle = .long
-//            formatter.timeStyle = .short
-            formatter.dateFormat = "dd.MM.yyyy, HH:mm"
-            formatter.locale = LGNCore.i18n.Locale.enUS.foundationLocale
-
-            return formatter
-        }()
+        fileprivate static let defaultFormatter: DateFormatter = Self.makeFormatter(locale: .enUS)
 
         fileprivate static let formatters: [LGNCore.i18n.Locale: DateFormatter] = .init(
-            uniqueKeysWithValues: Array<LGNCore.i18n.Locale>([.enUS, .ruRU]).map { locale in
-                let formatter = DateFormatter()
-//                formatter.dateStyle = .long
-//                formatter.timeStyle = .short
-                formatter.dateFormat = "dd.MM.yyyy, HH:mm"
-                formatter.locale = locale.foundationLocale
-
-                return (locale, formatter)
-            }
+            uniqueKeysWithValues: Array<LGNCore.i18n.Locale>([.enUS, .ruRU]).map { ($0, Self.makeFormatter(locale: $0)) }
         )
 
-        public static func format(date: Date, locale: LGNCore.i18n.Locale) -> String {
-            return (self.formatters[locale] ?? defaultFormatter).string(from: date)
+        private static func makeFormatter(locale: LGNCore.i18n.Locale) -> DateFormatter {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "dd.MM.yyyy, HH:mm"
+            formatter.locale = locale.foundationLocale
+            return formatter
         }
 
-        public static func get(by ID: Models.Comment.Identifier, on eventLoop: EventLoop) -> EventLoopFuture<Models.Comment?> {
-            return Models.Comment.getUsingRefID(by: ID, storage: fdb, on: eventLoop)
+        public static func format(date: Date, locale: LGNCore.i18n.Locale) -> String {
+            (self.formatters[locale] ?? defaultFormatter).string(from: date)
+        }
+
+        public static func get(by ID: Models.Comment.Identifier) async throws -> Models.Comment? {
+            try await Models.Comment.get(by: ID)
         }
 
         public static func getThrowing(
             by ID: Models.Comment.Identifier,
-            on eventLoop: EventLoop
-        ) -> EventLoopFuture<Models.Comment> {
-            return Models.Comment
-                .getUsingRefID(by: ID, storage: fdb, on: eventLoop)
-                .mapThrowing { maybeComment in
-                    guard let comment = maybeComment else {
-                        throw LGNC.ContractError.GeneralError("Comment not found (it should)", 404)
-                    }
-                    return comment
-                }
-        }
-
-        public static func getThrowingWithTransaction(
-            by ID: Models.Comment.Identifier,
-            on eventLoop: EventLoop
-        ) -> EventLoopFuture<(Models.Comment, AnyFDBTransaction)> {
-            return Models.Comment
-                .getUsingRefIDWithTransaction(by: ID, storage: fdb, on: eventLoop)
-                .mapThrowing { maybeComment, transaction in
-                    guard let comment = maybeComment else {
-                        throw LGNC.ContractError.GeneralError("Comment not found (it should)", 404)
-                    }
-                    return (comment, transaction)
-                }
-        }
-
-        public static func doExists(ID: Int, on eventLoop: EventLoop) -> EventLoopFuture<Bool> {
-            return self
-                .get(by: ID, on: eventLoop)
-                .map { $0 != nil }
-        }
-
-        public static func insert(
-            comment: Models.Comment,
-            as user: Models.User,
-            context: LGNCore.Context
-        ) -> EventLoopFuture<Models.Comment> {
-            let eventLoop = context.eventLoop
-            return eventLoop
-                .makeSucceededFuture()
-                .flatMapThrowing {
-                    if user.isAtLeastModerator {
-                        return
-                    }
-                    let dateLastCommentDiff = Date().timeIntervalSince1970 - user.dateLastComment.timeIntervalSince1970
-                    guard dateLastCommentDiff > COMMENT_POST_COOLDOWN_SECONDS else {
-                        throw LGNC.ContractError.GeneralError("You're commenting too often".tr(context.locale), 429)
-                    }
-                }
-                .flatMap { _ in comment.insert(storage: fdb, on: eventLoop) }
-                .flatMap { Models.PendingComment.savePending(comment: comment, storage: fdb, on: eventLoop) }
-                .flatMap {
-                    if user.shouldSkipPremoderation {
-                        return Logic.Comment
-                            .approve(comment: comment, on: eventLoop)
-                            .map { _ in Void() }
-                    }
-                    return eventLoop.makeSucceededFuture()
-                }
-                .flatMap {
-                    user.dateLastComment = .now
-
-                    return user.save(storage: fdb, on: eventLoop)
-                }
-                .map { comment }
-        }
-
-        public static func save(comment: Models.Comment, on eventLoop: EventLoop) -> EventLoopFuture<Models.Comment> {
+            within transaction: borrowing FDB.Transaction
+        ) async throws -> Models.Comment {
+            guard let comment = try await Models.Comment.get(by: ID, within: transaction) else {
+                throw LGNC.ContractError.GeneralError("Comment not found", 404)
+            }
             return comment
-                .save(storage: fdb, on: eventLoop)
-                .map { _ in comment }
+        }
+
+        public static func getThrowing(by ID: Models.Comment.Identifier) async throws -> Models.Comment {
+            try await App.current.fdb.withTransaction { transaction in
+                try await self.getThrowing(by: ID, within: transaction)
+            }
+        }
+
+        public static func doExists(ID: Int) async throws -> Bool {
+            try await self.get(by: ID) != nil
         }
 
         public static func getProcessedBody(from string: String) -> String {
-            return string
+            string
         }
 
-        public static func delete(comment: Models.Comment, on eventLoop: EventLoop) -> EventLoopFuture<Void> {
-            comment.status = .deleted
-
-            return comment.save(storage: fdb, on: eventLoop)
-        }
-
-        public static func hide(comment: Models.Comment, context: LGNCore.Context) -> EventLoopFuture<Void> {
-            let eventLoop = context.eventLoop
-            return eventLoop
-                .makeSucceededFuture()
-                .flatMap { () -> EventLoopFuture<[(ID: Models.Comment.Identifier, value: Models.Comment)]> in
-                    Logic.Post.getRawCommentsFor(ID: comment.IDPost, on: eventLoop)
+        /// Creates a comment: a pending one, or published right away for users skipping premoderation
+        public static func create(
+            IDPost: Models.Post.Identifier,
+            IDReplyComment: Int?,
+            body: String,
+            as user: Models.User
+        ) async throws -> Models.Comment {
+            let comment: Models.Comment = try await App.current.fdb.withTransaction { transaction in
+                // The user is reloaded within the transaction, so concurrent comments respect the cooldown
+                guard var user = try await Models.User.load(by: user.ID, within: transaction) else {
+                    throw LGNC.ContractError.GeneralError("User not found", 403)
                 }
-                .mapThrowing { comments in
-                    for (_, _comment) in comments {
-                        if _comment.IDReplyComment == comment.ID && _comment.status == .published {
-                            throw LGNC.ContractError.GeneralError(
-                                "Cannot hide comment, it has parent published comment".tr(context.locale),
-                                401
-                            )
-                        }
-                    }
+                let sinceLastComment = Date().timeIntervalSince(user.dateLastComment)
+                guard user.isAtLeastModerator || sinceLastComment > App.COMMENT_POST_COOLDOWN_SECONDS else {
+                    throw LGNC.ContractError.GeneralError("You're commenting too often".tr(), 429)
                 }
-                .flatMap {
-                    comment.status = .hidden
 
-                    return comment.save(storage: fdb, on: eventLoop)
-                }
-                .flatMap { Logic.Post.decrementCommentCounterForPost(ID: comment.IDPost, on: eventLoop) }
-        }
-
-        public static func unhide(comment: Models.Comment, context: LGNCore.Context) -> EventLoopFuture<Void> {
-            let eventLoop = context.eventLoop
-            return eventLoop
-                .makeSucceededFuture()
-                .flatMapThrowing {
-                    guard comment.status == .hidden else {
-                        throw LGNC.ContractError.GeneralError(
-                            "Cannot unhide comment, it should be in 'hidden' state".tr(context.locale),
-                            401
-                        )
-                    }
-                    
+                var comment = Models.Comment(
+                    ID: try await Models.Comment.getNextID(within: transaction),
+                    IDUser: user.ID,
+                    IDPost: IDPost,
+                    IDReplyComment: IDReplyComment,
+                    body: self.getProcessedBody(from: body)
+                )
+                if user.shouldSkipPremoderation {
                     comment.status = .published
-                    
-                    return comment.save(storage: fdb, on: eventLoop)
+                    comment.dateUpdated = Date()
+                    try await comment.insert(within: transaction)
+                    Logic.Post.updateCommentCounterForPost(ID: IDPost, by: 1, within: transaction)
+                } else {
+                    try await comment.insert(within: transaction)
+                    Models.PendingComment.savePending(comment: comment, within: transaction)
                 }
-                .flatMap { Logic.Post.incrementCommentCounterForPost(ID: comment.IDPost, on: eventLoop) }
-        }
 
-        public static func undelete(
-            comment: Models.Comment,
-            on eventLoop: EventLoop
-        ) -> EventLoopFuture<Models.Comment> {
-            comment.status = .published
+                user.dateLastComment = Date()
+                try await user.save(within: transaction)
 
+                return comment
+            }
+            await Logic.User.invalidate(ID: user.ID)
             return comment
-                .save(storage: fdb, on: eventLoop)
-                .map { _ in comment }
         }
 
-        public static func likeOrUnlike(
-            comment: Models.Comment,
-            by currentUser: Models.User,
-            context: LGNCore.Context
-        ) -> EventLoopFuture<Int> {
+        /// Loads the comment, checks it and changes it in a single transaction, returns the changed comment
+        private static func modify(
+            ID: Models.Comment.Identifier,
+            _ body: (inout Models.Comment, borrowing FDB.Transaction) async throws -> Void
+        ) async throws -> Models.Comment {
+            try await App.current.fdb.withTransaction { transaction in
+                var comment = try await self.getThrowing(by: ID, within: transaction)
+                try await body(&comment, transaction)
+                return comment
+            }
+        }
+
+        public static func delete(ID: Models.Comment.Identifier, by user: Models.User) async throws {
+            _ = try await self.modify(ID: ID) { comment, transaction in
+                guard comment.IDUser == user.ID || user.isAtLeastModerator else {
+                    throw LGNC.ContractError.GeneralError("You have no authority to delete this comment", 403)
+                }
+                guard comment.status == .published else {
+                    throw LGNC.ContractError.GeneralError("Comment is not in deleteable status", 400)
+                }
+                comment.status = .deleted
+                try await comment.touchAndSave(within: transaction)
+            }
+        }
+
+        public static func undelete(ID: Models.Comment.Identifier) async throws -> Models.Comment {
+            try await self.modify(ID: ID) { comment, transaction in
+                guard comment.status == .deleted else {
+                    throw LGNC.ContractError.GeneralError("Cannot undelete comment from non-deleted status", 401)
+                }
+                comment.status = .published
+                try await comment.touchAndSave(within: transaction)
+            }
+        }
+
+        public static func hide(ID: Models.Comment.Identifier) async throws {
+            _ = try await self.modify(ID: ID) { comment, transaction in
+                guard comment.status == .published else {
+                    throw LGNC.ContractError.GeneralError("Comment is not in hideable status", 400)
+                }
+                let comments = try await Logic.Post.getRawCommentsFor(ID: comment.IDPost, within: transaction)
+                for reply in comments where reply.IDReplyComment == comment.ID && reply.status == .published {
+                    throw LGNC.ContractError.GeneralError(
+                        "Cannot hide comment, it has parent published comment (#\(reply.ID))".tr(),
+                        401
+                    )
+                }
+                comment.status = .hidden
+                try await comment.touchAndSave(within: transaction)
+                Logic.Post.updateCommentCounterForPost(ID: comment.IDPost, by: -1, within: transaction)
+            }
+        }
+
+        public static func unhide(ID: Models.Comment.Identifier) async throws {
+            _ = try await self.modify(ID: ID) { comment, transaction in
+                guard comment.status == .hidden else {
+                    throw LGNC.ContractError.GeneralError("Cannot unhide comment, it should be in 'hidden' state".tr(), 401)
+                }
+                comment.status = .published
+                try await comment.touchAndSave(within: transaction)
+                Logic.Post.updateCommentCounterForPost(ID: comment.IDPost, by: 1, within: transaction)
+            }
+        }
+
+        public static func approve(ID: Models.Comment.Identifier) async throws -> Models.Comment {
+            try await self.modify(ID: ID) { comment, transaction in
+                guard comment.status == .pending else {
+                    return
+                }
+                comment.status = .published
+                try await comment.touchAndSave(within: transaction)
+                try await Models.PendingComment.clear(comment: comment, within: transaction)
+                Logic.Post.updateCommentCounterForPost(ID: comment.IDPost, by: 1, within: transaction)
+            }
+        }
+
+        public static func reject(ID: Models.Comment.Identifier) async throws {
+            _ = try await self.modify(ID: ID) { comment, transaction in
+                guard comment.status == .pending else {
+                    return
+                }
+                try await comment.delete(within: transaction)
+                try await Models.PendingComment.clear(comment: comment, within: transaction)
+            }
+        }
+
+        public static func likeOrUnlike(comment: Models.Comment, by currentUser: Models.User) async throws -> Int {
+            let logger = Logger.current
+
             guard comment.status == .published else {
-                context.logger.info("Comment is not published, cannot like or unlike")
-                return context.eventLoop.makeSucceededFuture(0)
+                logger.info("Comment is not published, cannot like or unlike")
+                return 0
             }
 
             guard comment.IDUser != currentUser.ID else {
-                context.logger.info("Cannot like own comment")
-                return Models.Like.getLikesFor(comment: comment, on: context.eventLoop)
+                logger.info("Cannot like own comment")
+                return try await Models.Like.getLikesFor(comment: comment)
             }
 
-            return Models.Like.likeOrUnlike(comment: comment, by: currentUser, on: context.eventLoop)
+            return try await Models.Like.likeOrUnlike(comment: comment, by: currentUser)
         }
 
-        public static func edit(
-            comment: Models.Comment,
-            body: String,
-            by user: Models.User,
-            within transaction: AnyFDBTransaction,
-            on eventLoop: EventLoop
-        ) -> EventLoopFuture<Models.Comment> {
-            let newBody = Logic.Comment.getProcessedBody(from: body)
-            let oldBody = comment.body
-
-            if newBody == oldBody {
-                return eventLoop.makeSucceededFuture(comment)
-            }
-
-            comment.body = newBody
-
-            let future: EventLoopFuture<Void> = comment
-                .save(commit: false, within: transaction, storage: fdb, on: eventLoop)
-                .flatMap { _ in
-                    Models.Comment.History.log(
-                        comment: comment,
-                        newBody: newBody,
-                        oldBody: oldBody,
-                        by: user,
-                        within: transaction,
-                        on: eventLoop
-                    )
+        public static func edit(ID: Models.Comment.Identifier, body: String, by user: Models.User) async throws -> Models.Comment {
+            if !user.isAtLeastModerator {
+                // Checked before the transaction, as it's a remote call
+                let IDPost = try await self.getThrowing(by: ID).IDPost
+                guard await Logic.Post.getPostStatus(IDPost) != .NotCommentable else {
+                    throw LGNC.ContractError.GeneralError("Comment is not editable anymore".tr(), 403)
                 }
-                .flatMap { (_: Void) -> EventLoopFuture<Void> in transaction.commit() }
-
-            return future.map { comment }
-        }
-
-        public static func approve(comment: Models.Comment, on eventLoop: EventLoop) -> EventLoopFuture<Models.Comment> {
-            guard comment.status == .pending else {
-                return eventLoop.makeSucceededFuture(comment)
             }
 
-            comment.status = .published
+            return try await self.modify(ID: ID) { comment, transaction in
+                if !user.isAtLeastModerator {
+                    guard user.ID == comment.IDUser else {
+                        throw LGNC.ContractError.GeneralError("It's not your comment".tr(), 403)
+                    }
+                    guard comment.isEditable else {
+                        throw LGNC.ContractError.GeneralError("This comment is not editable anymore".tr(), 408)
+                    }
+                    guard Date().timeIntervalSince(comment.dateUpdated) > App.COMMENT_EDIT_COOLDOWN_SECONDS else {
+                        throw LGNC.ContractError.GeneralError("You're editing too often".tr(), 429)
+                    }
+                }
 
-            return comment
-                .save(storage: fdb, on: eventLoop)
-                .flatMap { Models.PendingComment.clearRoutine(comment: comment, storage: fdb, on: eventLoop) }
-                .flatMap { Logic.Post.incrementCommentCounterForPost(ID: comment.IDPost, on: eventLoop) }
-                .map { comment }
-        }
+                let newBody = self.getProcessedBody(from: body)
+                let oldBody = comment.body
+                guard newBody != oldBody else {
+                    return
+                }
 
-        public static func reject(comment: Models.Comment, on eventLoop: EventLoop) -> EventLoopFuture<Void> {
-            guard comment.status == .pending else {
-                return eventLoop.makeFuture()
+                comment.body = newBody
+                try await comment.touchAndSave(within: transaction)
+                try await Models.Comment.History.log(
+                    comment: comment,
+                    newBody: newBody,
+                    oldBody: oldBody,
+                    by: user,
+                    within: transaction
+                )
             }
-
-            return comment
-                .delete(storage: fdb, on: eventLoop)
-                .flatMap { Models.PendingComment.clearRoutine(comment: comment, storage: fdb, on: eventLoop) }
         }
     }
 }

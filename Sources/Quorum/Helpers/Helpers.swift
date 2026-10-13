@@ -1,8 +1,8 @@
 import Foundation
 import LGNCore
-import Entita2FDB
+import LGNLog
 import FDB
-import NIO
+import FDBEntity
 
 //MARK:- General
 extension Int {
@@ -23,102 +23,7 @@ public extension Data {
     }
 
     var _string: String {
-        self._bytes._string
-    }
-}
-
-public extension Date {
-    static var now: Date {
-        return Date()
-    }
-}
-
-//MARK:- FDB
-public extension FDB.Tuple {
-    var _string: String {
-        return self.tuple
-            .map { String(describing: $0) }
-            .joined(separator: " / ")
-    }
-}
-
-public extension FDB.Subspace {
-    var _string: String {
-        return (try? FDB.Tuple(from: self.prefix)._string) ?? "\(self)"
-    }
-}
-
-public extension AnyFDBKey {
-    var _string: String {
-        return (try? FDB.Tuple(from: self.asFDBKey())._string) ?? "\(self)"
-    }
-}
-
-//MARK:- EventLoopFuture
-public extension EventLoopFuture {
-    func flatMapThrowing<NewValue>(
-        file: StaticString = #file,
-        line: UInt = #line,
-        _ callback: @escaping (Value) throws -> EventLoopFuture<NewValue>
-    ) -> EventLoopFuture<NewValue> {
-        return self.flatMap(file: file, line: line) {
-            do {
-                return try callback($0)
-            } catch {
-                return self.eventLoop.makeFailedFuture(error)
-            }
-        }
-    }
-
-    func mapThrowing<NewValue>(
-        file: StaticString = #file,
-        line: UInt = #line,
-        _ callback: @escaping (Value) throws -> NewValue
-    ) -> EventLoopFuture<NewValue> {
-        return self.flatMapThrowing(file: file, line: line, callback)
-    }
-
-    func flatMapIfErrorThrowing(
-        file: StaticString = #file,
-        line: UInt = #line,
-        _ callback: @escaping (Error) throws -> EventLoopFuture<Value>
-    ) -> EventLoopFuture<Value> {
-        return self.flatMapError(file: file, line: line) {
-            do {
-                return try callback($0)
-            } catch {
-                return self.eventLoop.makeFailedFuture(error)
-            }
-        }
-    }
-}
-
-public extension EventLoop {
-    /// Creates and returns a new void `EventLoopFuture` that is already marked as success.
-    /// Notifications will be done using this `EventLoop` as execution `NIOThread`.
-    ///
-    /// - parameters:
-    ///     - result: the value that is used by the `EventLoopFuture`.
-    /// - returns: a succeeded `EventLoopFuture`.
-    func makeSucceededFuture(file: StaticString = #file, line: UInt = #line) -> EventLoopFuture<Void> {
-        self.makeSucceededFuture((), file: file, line: line)
-    }
-
-    /// Creates and returns a new void `EventLoopFuture` that is already marked as success.
-    /// Notifications will be done using this `EventLoop` as execution `NIOThread`.
-    ///
-    /// - parameters:
-    ///     - result: the value that is used by the `EventLoopFuture`.
-    /// - returns: a succeeded `EventLoopFuture`.
-    func makeFuture(file: StaticString = #file, line: UInt = #line) -> EventLoopFuture<Void> {
-        self.makeSucceededFuture(file: file, line: line)
-    }
-}
-
-//MARK:- General
-public extension EventLoopGroup {
-    var eventLoop: EventLoop {
-        self.next()
+        String(decoding: self, as: UTF8.self)
     }
 }
 
@@ -127,109 +32,60 @@ public func =><T: RawRepresentable & Equatable>(lhs: T, rhs: [T]) -> Bool {
     return rhs.contains(lhs)
 }
 
-//MARK:- Entita2FDB
-public extension E2FDBEntity {
-    static var format: E2.Format { .JSON }
-    static var subspace: FDB.Subspace { subspaceMain }
-}
+//MARK:- FDB
 
-public protocol Model: E2FDBEntity {
-    associatedtype Storage = FDB
-    associatedtype Identifier = E2.UUID
-}
-
-public protocol ModelInt: E2FDBEntity {
-    associatedtype Storage = FDB
-    associatedtype Identifier = Int
-}
-
-public extension Model {
-    func insert(
-        commit: Bool = true,
-        within transaction: AnyFDBTransaction?,
-        storage: Storage,
-        on eventLoop: EventLoop
-    ) -> EventLoopFuture<Void> {
-        self.insert(commit: commit, within: transaction as? AnyTransaction, storage: storage, on: eventLoop)
-    }
-
-    func save(
-        by ID: Identifier? = nil,
-        commit: Bool = true,
-        within transaction: AnyFDBTransaction?,
-        storage: Storage,
-        on eventLoop: EventLoop
-    ) -> EventLoopFuture<Void> {
-        self.save(by: ID, commit: commit, within: transaction as? AnyTransaction, storage: storage, on: eventLoop)
-    }
-
-    func delete(
-        commit: Bool = true,
-        within transaction: AnyFDBTransaction?,
-        storage: Storage,
-        on eventLoop: EventLoop
-    ) -> EventLoopFuture<Void> {
-        self.delete(commit: commit, within: transaction as? AnyTransaction, storage: storage, on: eventLoop)
+public extension Bytes {
+    /// Value of a counter maintained with atomic `add` (little-endian 64-bit integer), `0` for malformed values
+    var counterValue: Int {
+        guard self.count == 8 else {
+            Logger.current.error("Malformed counter value \(self)")
+            return 0
+        }
+        return Int(Int64(littleEndian: self.withUnsafeBytes { $0.loadUnaligned(as: Int64.self) }))
     }
 }
+
+public extension Optional where Wrapped == Bytes {
+    var counterValue: Int {
+        self?.counterValue ?? 0
+    }
+}
+
+public protocol QuorumEntity: FDB.Entity {}
+
+public extension QuorumEntity {
+    static var format: FDB.EntityFormat { .JSON }
+    static var fullEntityName: Bool { false }
+    static var subspace: FDB.Subspace { App.current.subspaceMain }
+    static var storage: any FDB.Transactor { App.current.fdb }
+}
+
+public protocol Model: QuorumEntity where Identifier == FDB.UUID {}
+
+public protocol ModelInt: QuorumEntity where Identifier == Int {}
 
 public extension ModelInt {
-    static func getNextID(storage: Storage, on eventLoop: EventLoop) -> EventLoopFuture<Int> {
-        storage.withTransaction(on: eventLoop) { transaction in
-            Self.getNextID(commit: true, within: transaction)
-        }
+    /// Key of the ID sequence of this entity (shared with Entita2 layout)
+    static var sequenceKey: FDB.Subspace {
+        Self.subspace["idx"][Self.entityName]
     }
 
-    static func getNextID(
-        commit: Bool = true,
-        within transaction: AnyFDBTransaction
-    ) -> EventLoopFuture<Int> {
-        let key = Self.subspace["idx"][Self.entityName]
-        return transaction
-            .atomic(.add, key: key, value: Int(1))
-            .flatMap { $0.get(key: key, commit: commit) }
-            .flatMapThrowing { (maybeBytes: Bytes?, _) -> Int in
-                let result: Int = try maybeBytes!.cast()
-                return result
-            }
+    /// Next ID of the sequence, within given transaction
+    static func getNextID(within transaction: borrowing FDB.Transaction) async throws -> Int {
+        transaction.atomic(.add, key: Self.sequenceKey, value: Int64(1))
+        return try await transaction.get(key: Self.sequenceKey).value.counterValue
     }
 }
 
-//MARK- Migrations
+//MARK:- Sequence
 
-public typealias Migrations = [() throws -> Void]
-
-func runMigrations(_ migrations: Migrations, on fdb: FDB) {
-    let logger = Logger(label: "Quorum.Migrations")
-    let key = subspaceMain["migration"]
-    var lastState: Int
-    do {
-        let lastMigration = try fdb.get(key: key)
-        if lastMigration == nil {
-            let initial: Int = 0
-            try fdb.set(key: key, value: LGNCore.getBytes(initial))
-            lastState = initial
-        } else {
-            lastState = try lastMigration!.cast()
+public extension Sequence {
+    func asyncMap<T>(_ transform: (Element) async throws -> T) async rethrows -> [T] {
+        var result: [T] = []
+        result.reserveCapacity(self.underestimatedCount)
+        for element in self {
+            result.append(try await transform(element))
         }
-    } catch {
-        fatalError("Could not read migration state from fdb: \(error)")
-    }
-    guard migrations.count > lastState else {
-        logger.info("DB state is up to date, no need to perform migrations")
-        return
-    }
-    logger.info("Performing migrations")
-    for idx in lastState..<migrations.count {
-        let migration = migrations[idx]
-        do {
-            logger.info("Trying to apply migration #\(idx)")
-            try migration()
-            try fdb.set(key: key, value: LGNCore.getBytes(idx + 1))
-            logger.info("Successfully applied migration #\(idx)")
-        } catch {
-            logger.critical("Could not run migration #\(idx): \(error)")
-            exit(1)
-        }
+        return result
     }
 }

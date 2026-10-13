@@ -164,8 +164,13 @@ open class Hashids_<T>: HashidsGenerator where T:UnsignedInteger {
     return self.decode(hash)
   }
 
+  /// Returns an empty array for anything that is not a valid hash (as produced by `encode`)
   open func decode(_ value: [Char]) -> [Int] {
-    return self._decode(value)
+    let result = self._decode(value)
+    guard !result.isEmpty, result.allSatisfy({ $0 >= 0 }), self._encode(result) == value else {
+      return []
+    }
+    return result
   }
 
   open func decode64(_ value: String) -> [Int64] {
@@ -263,7 +268,10 @@ open class Hashids_<T>: HashidsGenerator where T:UnsignedInteger {
 
       for subHash in valueHashes {
         shuffle(&alphabet, lsalt, lsaltRange)
-        ret.append(self._unhash(subHash, alphabet))
+        guard let value = self._unhash(subHash, alphabet) else {
+          return []
+        }
+        ret.append(value)
         lsalt.replaceSubrange(lsaltARange, with: alphabet)
       }
     }
@@ -280,25 +288,24 @@ open class Hashids_<T>: HashidsGenerator where T:UnsignedInteger {
     } while (number != 0)
   }
 
-  fileprivate func _unhash<U:Collection>(_ hash: U, _ alphabet: [Char]) -> Int where U.Index == Int, U.Iterator.Element == Char {
-    var value: Double = 0
-
-    var hashLength: Int = numericCast(hash.count)
-    if hashLength > 0 {
-      let alphabetLength = alphabet.count
-      value = hash.reduce(0) {
-        value, token in
-        var tokenValue = 0.0
-        if let token_index = alphabet.firstIndex(of: token as Char) {
-          hashLength = hashLength - 1
-          let mul = pow(Double(alphabetLength), Double(hashLength))
-          tokenValue = Double(token_index) * mul
-        }
-        return value + tokenValue
-      }
+  /// Returns `nil` for characters outside of the alphabet and for values not fitting into `Int`
+  fileprivate func _unhash<U:Collection>(_ hash: U, _ alphabet: [Char]) -> Int? where U.Index == Int, U.Iterator.Element == Char {
+    guard !hash.isEmpty else {
+      return nil
     }
-
-    return Int(trunc(value))
+    var value = 0
+    for token in hash {
+      guard let tokenIndex = alphabet.firstIndex(of: token) else {
+        return nil
+      }
+      let (multiplied, overflow1) = value.multipliedReportingOverflow(by: alphabet.count)
+      let (added, overflow2) = multiplied.addingReportingOverflow(tokenIndex)
+      guard !overflow1 && !overflow2 else {
+        return nil
+      }
+      value = added
+    }
+    return value
   }
 
   fileprivate func _saltify(_ salt: inout [Char], _ lottery: Char, _ alphabet: [Char]) -> (Range<Int>, Range<Int>) {
