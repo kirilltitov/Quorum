@@ -79,9 +79,9 @@ public extension Logic {
             let url = "\(App.current.config[.WEBSITE_DOMAIN])/post/exists/\(ID)"
 
             do {
-                let (maybeData, _) = try await HTTPRequester.requestJSON(method: .GET, url: url)
+                let (data, _) = try await HTTPRequester.requestJSON(method: .GET, url: url)
 
-                guard maybeData?[json: "data", "result"] == true else {
+                guard data[json: "data", "result"] == true else {
                     return .NotFound
                 }
 

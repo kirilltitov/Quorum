@@ -111,7 +111,7 @@ struct Main {
             ]
         )
 
-        LoggingSystem.bootstrap(LGNLogger.init)
+        LoggingSystem.bootstrap { LGNLogger(label: $0) }
         LGNLogger.logLevel = .trace
         LGNLogger.hideLabel = true
         LGNLogger.hideTimezone = true

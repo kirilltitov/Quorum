@@ -3,9 +3,6 @@ import LGNCore
 import LGNLog
 import LGNConfig
 
-#if canImport(FoundationNetworking)
-import FoundationNetworking
-#endif
 
 func registerToConsul() async throws {
     do {
@@ -28,25 +25,14 @@ func registerToConsul() async throws {
         Logger.current.info(
             "Registering in consul with payload '\(try! JSONSerialization.data(withJSONObject: params)._string)'"
         )
-        let (maybeData, maybeResponse) = try await HTTPRequester.requestJSON(
+        let (data, statusCode) = try await HTTPRequester.requestJSON(
             method: .PUT,
             url: "http://consul:8500/v1/agent/service/register",
             params: params
         )
 
-        guard let response = maybeResponse as? HTTPURLResponse else {
-            throw E.Consul("No response")
-        }
-
-        guard
-            let data = maybeData,
-            let json = String(data: data, encoding: .ascii)
-        else {
-            throw E.Consul("No JSON")
-        }
-
-        guard response.statusCode == 200 else {
-            throw E.Consul("Non-200 status code: \(response.statusCode), JSON: '\(json)'")
+        guard statusCode == 200 else {
+            throw E.Consul("Non-200 status code: \(statusCode), response: '\(data._string)'")
         }
 
         Logger.current.info("Successfully registered in Consul")
